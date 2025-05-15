@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 
+This file allows dotnet build to be run at the project level. Without the definition 
+of the SolutionDir property, the build will fail because the SolutionDir property is not defined
+when you run a build from the project level.
+-->
+<Project>
+  <PropertyGroup>
+    <SolutionDir Condition="'$(SolutionDir)'==''">$(MSBuildThisFileDirectory)</SolutionDir>
+  </PropertyGroup>
+</Project>
