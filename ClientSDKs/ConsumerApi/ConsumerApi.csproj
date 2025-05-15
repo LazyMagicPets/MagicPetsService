@@ -6,7 +6,7 @@
 		<Nullable>enable</Nullable>
 	</PropertyGroup>
 	<Import Project="User.props"  Condition="Exists('User.props')" />
-	<Import Project="$(SolutionDir)CommonPackageHandling.targets" Condition="!Exists('ClientSDK.csproj')"/>
+	<Import Project="../../CommonPackageHandling.targets" Condition="!Exists('ClientSDK.csproj')"/>
 	<ItemGroup>
 		<PackageReference Include="Newtonsoft.Json" />
 		<PackageReference Include="FluentValidation" />

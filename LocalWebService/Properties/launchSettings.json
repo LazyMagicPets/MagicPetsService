@@ -1,31 +1,16 @@
 {
-  "profiles": {
-    "Service": {
-      "commandName": "Project",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development",
-        "AWSPROFILE": "lzm-dev",
-        "AWSREGION": "us-west-2",
-        "SYSTEMKEY": "lzm",
-        "TENANTKEY": "lzm-mp",
-        "SUBTENANTKEY": "lzm-mp-uptown"
-      },
-      "applicationUrl": "https://localhost:5001;http://localhost:5000;"
-    },
-    "IIS Express": {
-      "commandName": "IISExpress",
-      "launchBrowser": true,
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      }
+    "profiles": {
+        "Service": {
+            "commandName": "Project",
+            "environmentVariables": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "AWSPROFILE": "lzm-dev",
+                "AWSREGION": "us-west-2",
+                "SYSTEMKEY": "lzm",
+                "TENANTKEY": "lzm-mp",
+                "SUBTENANTKEY": "lzm-mp-uptown"
+            },
+            "applicationUrl": "https://localhost:5001;http://localhost:5000;"
+        }
     }
-  },
-  "iisSettings": {
-    "windowsAuthentication": false,
-    "anonymousAuthentication": true,
-    "iisExpress": {
-      "applicationUrl": "http://localhost:53459/",
-      "sslPort": 44369
-    }
-  }
 }
