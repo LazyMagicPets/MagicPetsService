@@ -36,7 +36,7 @@ public partial class AdminModuleController
     // Implement methods for which the generator does not generate 
     // an implementation. 
 
-    public override async Task<ActionResult<TenantUserStatus>> IsAdmin()
+    public override async Task<ActionResult<TenantUserStatus>> AdminModuleIsAdmin()
     {
         try
         {
@@ -51,7 +51,7 @@ public partial class AdminModuleController
         }
     }
 
-    public override async Task<IActionResult> SeedPets(string store, int numPets)
+    public override async Task<IActionResult> AdminModuleSeedPets(string store, int numPets)
     {
         try
         {
@@ -75,8 +75,8 @@ public partial class AdminModuleController
         }
     }
 
-    [HttpGet, Route("subtenant/listSubtenants")]
-    public override async Task<ActionResult<ICollection<Subtenant>>> ListSubtenants()
+    [HttpGet, Route("AdminModule/subtenant/listSubtenants")]
+    public override async Task<ActionResult<ICollection<Subtenant>>> AdminModuleListSubtenants()
     {
         var callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
         return await SubtenantRepo.ListAsync(callerInfo);

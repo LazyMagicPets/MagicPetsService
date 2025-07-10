@@ -1,10 +1,29 @@
 openapi: 3.0.1
 paths:
-  /public/pet/listPets:
+  /PublicModule/fingerprint/create:
+    post:
+      operationId: PublicModuleFingerprintCreate
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Fingerprint'
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fingerprint'
+        403:
+          description: Invalid permissions
+        405:
+          description: Invalid data
+      x-lz-gencall: FingerprintRepo.CreateAsync(callerInfo, body)
+  /PublicModule/pet/listPets:
     get:
       summary: List all pets
-      operationId: listPets
-      x-lz-gencall: PetRepo.ListAsync(callerInfo)
+      operationId: PublicModuleListPets
       responses:
         200:
           description: successful operation
@@ -16,22 +35,23 @@ paths:
                   $ref: '#/components/schemas/Pet'
         400:
           description: Invalid status value
-  /public/pet/findByStatus:
+      x-lz-gencall: PetRepo.ListAsync(callerInfo)
+  /PublicModule/pet/findByStatus:
     get:
       summary: Finds Pets by status
       description: Multiple status values can be provided with comma separated strings
-      operationId: findPetsByStatus
+      operationId: PublicModuleFindPetsByStatus
       parameters:
       - name: petStatus
         in: query
-        description: Status values that need to be considered for filter
-        required: true
         explode: true
+        required: true
+        description: Status values that need to be considered for filter
         schema:
           type: array
+          default: available
           items:
             $ref: '#/components/schemas/PetStatus'
-          default: available
       responses:
         200:
           description: successful operation
@@ -43,17 +63,17 @@ paths:
                   $ref: '#/components/schemas/Pet'
         400:
           description: Invalid status value
-  /public/pet/findByTags:
+  /PublicModule/pet/findByTags:
     get:
       summary: Finds Pets by tags
       description: Muliple tags can be provided with comma separated strings. Use\ \ tag1, tag2, tag3 for testing.
-      operationId: findPetsByTags
+      operationId: PublicModuleFindPetsByTags
       parameters:
       - name: tags
         in: query
-        description: Tags to filter by
-        required: true
         explode: true
+        required: true
+        description: Tags to filter by
         schema:
           type: array
           items:
@@ -69,11 +89,10 @@ paths:
                   $ref: '#/components/schemas/Pet'
         400:
           description: Invalid tag value
-  /public/pet/categories:
+  /PublicModule/pet/categories:
     get:
       summary: Get all Pet Categories
-      operationId: getPetCategories
-      x-lz-gencall: CategoryRepo.ListAsync(callerInfo)
+      operationId: PublicModuleGetPetCategories
       responses:
         200:
           description: successful operation
@@ -83,11 +102,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Category'
-  /public/pet/tags:
+      x-lz-gencall: CategoryRepo.ListAsync(callerInfo)
+  /PublicModule/pet/tags:
     get:
       summary: Get all Pet Tags
-      operationId: getPetTags
-      x-lz-gencall: TagRepo.ListAsync(callerInfo)
+      operationId: PublicModuleGetPetTags
       responses:
         200:
           description: successful operation
@@ -97,17 +116,17 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Tag'
-  '/public/pet/{petId}':
+      x-lz-gencall: TagRepo.ListAsync(callerInfo)
+  '/PublicModule/pet/{petId}':
     get:
       summary: Find pet by ID
       description: Returns a single pet
-      operationId: getPetById
-      x-lz-gencall: PetRepo.ReadAsync(callerInfo, petId)
+      operationId: PublicModuleGetPetById
       parameters:
       - name: petId
         in: path
-        description: ID of pet to return
         required: true
+        description: ID of pet to return
         schema:
           type: string
       responses:
@@ -121,6 +140,7 @@ paths:
           description: Invalid ID supplied
         404:
           description: Pet not found
+      x-lz-gencall: PetRepo.ReadAsync(callerInfo, petId)
 components:
   schemas:
     Preferences:
@@ -290,4 +310,51 @@ components:
         name:
           type: string
       x-lz-genrepo: true
+    Fingerprint:
+      type: object
+      properties:
+        id:
+          type: string
+        fingerprint:
+          type: number
+        browser:
+          type: string
+        browserVersion:
+          type: string
+        os:
+          type: string
+        osVersion:
+          type: string
+        resolution:
+          type: string
+        userAgent:
+          type: string
+        device:
+          type: string
+        deviceType:
+          type: string
+        deviceVendor:
+          type: string
+        language:
+          type: string
+        timeZone:
+          type: string
+        screenPrint:
+          type: string
+        isMobile:
+          type: boolean
+        isChrome:
+          type: boolean
+        isFirefox:
+          type: boolean
+        isSafari:
+          type: boolean
+        isIE:
+          type: boolean
+        createUtcTick:
+          type: integer
+          format: int64
+        updateUtcTick:
+          type: integer
+          format: int64
 ...

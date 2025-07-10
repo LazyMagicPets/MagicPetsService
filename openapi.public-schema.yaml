@@ -9,3 +9,50 @@ components:
           type: string
         name:
           type: string    
+    Fingerprint:
+      type: object
+      properties:
+        id:
+          type: string
+        fingerprint:
+          type: number
+        browser:
+          type: string
+        browserVersion:
+          type: string
+        os:
+          type: string
+        osVersion:
+          type: string
+        resolution:
+          type: string
+        userAgent:
+          type: string
+        device:
+          type: string
+        deviceType:
+          type: string
+        deviceVendor:
+          type: string
+        language:
+          type: string
+        timeZone:
+          type: string
+        screenPrint:
+          type: string
+        isMobile:
+          type: boolean
+        isChrome:
+          type: boolean
+        isFirefox:
+          type: boolean
+        isSafari:
+          type: boolean
+        isIE:
+          type: boolean
+        createUtcTick: 
+          type: integer 
+          format: int64
+        updateUtcTick: 
+          type: integer 
+          format: int64

@@ -15,12 +15,12 @@ public static partial class AdminSchemaRepoExtensions
 {
     public static IServiceCollection AddAdminSchemaRepo(this IServiceCollection services)
     {
+        AddCustom(services);    
 
         services.TryAddAWSService<Amazon.DynamoDBv2.IAmazonDynamoDB>();
-		services.TryAddSingleton<ITenantUserRepo, TenantUserRepo>();
+		services.TryAddTransient<ITenantUserRepo, TenantUserRepo>();
 
 
-        AddCustom(services);    
         return services;
     }
     // Implement this partial method in a separate file to add custom service registrations

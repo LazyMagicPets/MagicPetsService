@@ -3,9 +3,15 @@ namespace PublicModule
  
 {
 
-    [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.0.3.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))")]
+    [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.0.3.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.3.0))")]
     public interface IPublicModuleController
     {
+
+
+
+        /// <returns>successful operation</returns>
+
+        Task<ActionResult<Fingerprint>> PublicModuleFingerprintCreate(Fingerprint body);
 
         /// <summary>
         /// List all pets
@@ -13,7 +19,7 @@ namespace PublicModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> ListPets();
+        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> PublicModuleListPets();
 
         /// <summary>
         /// Finds Pets by status
@@ -27,7 +33,7 @@ namespace PublicModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> FindPetsByStatus(System.Collections.Generic.IEnumerable<PetStatus> petStatus);
+        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> PublicModuleFindPetsByStatus(System.Collections.Generic.IEnumerable<PetStatus> petStatus);
 
         /// <summary>
         /// Finds Pets by tags
@@ -41,7 +47,7 @@ namespace PublicModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> FindPetsByTags(System.Collections.Generic.IEnumerable<string> tags);
+        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> PublicModuleFindPetsByTags(System.Collections.Generic.IEnumerable<string> tags);
 
         /// <summary>
         /// Get all Pet Categories
@@ -49,7 +55,7 @@ namespace PublicModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Category>>> GetPetCategories();
+        Task<ActionResult<System.Collections.Generic.ICollection<Category>>> PublicModuleGetPetCategories();
 
         /// <summary>
         /// Get all Pet Tags
@@ -57,7 +63,7 @@ namespace PublicModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Tag>>> GetPetTags();
+        Task<ActionResult<System.Collections.Generic.ICollection<Tag>>> PublicModuleGetPetTags();
 
         /// <summary>
         /// Find pet by ID
@@ -71,7 +77,7 @@ namespace PublicModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Pet>> GetPetById(string petId);
+        Task<ActionResult<Pet>> PublicModuleGetPetById(string petId);
 
     }
 

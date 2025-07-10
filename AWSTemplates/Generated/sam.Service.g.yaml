@@ -298,7 +298,7 @@ Resources:
       DefinitionBody:
         openapi: 3.0.1
         paths:
-          '/isAdmin':
+          '/AdminModule/isAdmin':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -307,7 +307,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/tenantUser':
+          '/AdminModule/tenantUser':
             post:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -324,7 +324,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/tenantUser/listTenantUsers':
+          '/AdminModule/tenantUser/listTenantUsers':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -333,7 +333,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/subtenant':
+          '/AdminModule/subtenant':
             post:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -350,7 +350,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/subtenant/listSubtenants':
+          '/AdminModule/subtenant/listSubtenants':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -359,7 +359,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/subtenant/seedPets/{store}/{numPets}':
+          '/AdminModule/subtenant/seedPets/{store}/{numPets}':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -368,7 +368,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/suspendTenantUser/{tenantUser}':
+          '/AdminModule/suspendTenantUser/{tenantUser}':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -377,7 +377,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/tenantUser/{tenantUserId}':
+          '/AdminModule/tenantUser/{tenantUserId}':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -386,7 +386,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/tenantUser/delete/{tenantUserId}':
+          '/AdminModule/tenantUser/delete/{tenantUserId}':
             delete:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -395,7 +395,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/subtenant/{subtenantId}':
+          '/AdminModule/subtenant/{subtenantId}':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -404,7 +404,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${AdminLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/subtenant/delete/{subtenantId}':
+          '/AdminModule/subtenant/delete/{subtenantId}':
             delete:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -458,7 +458,7 @@ Resources:
       DefinitionBody:
         openapi: 3.0.1
         paths:
-          '/pet/listPets':
+          '/StoreModule/pet/listPets':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -467,7 +467,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StoreLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/pet/findByStatus':
+          '/StoreModule/pet/findByStatus':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -476,7 +476,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StoreLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/pet':
+          '/StoreModule/pet':
             post:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -493,7 +493,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StoreLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/pet/findByTags':
+          '/StoreModule/pet/findByTags':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -502,7 +502,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StoreLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/pet/categories':
+          '/StoreModule/pet/categories':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -511,7 +511,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StoreLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/pet/tags':
+          '/StoreModule/pet/tags':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -520,7 +520,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StoreLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/order/inventory':
+          '/StoreModule/order/inventory':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -529,7 +529,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StoreLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/order':
+          '/StoreModule/order':
             post:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -538,7 +538,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StoreLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/pet/{petId}':
+          '/StoreModule/pet/{petId}':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -555,7 +555,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StoreLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/order/{orderId}':
+          '/StoreModule/order/{orderId}':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -572,7 +572,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${StoreLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/preferences':
+          '/ConsumerModule/preferences':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -589,7 +589,16 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConsumerLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/listPets':
+          '/PublicModule/fingerprint/create':
+            post:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
+                payloadFormatVersion: 2.0
+
+          '/PublicModule/pet/listPets':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -598,7 +607,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/findByStatus':
+          '/PublicModule/pet/findByStatus':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -607,7 +616,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/findByTags':
+          '/PublicModule/pet/findByTags':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -616,7 +625,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/categories':
+          '/PublicModule/pet/categories':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -625,7 +634,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/tags':
+          '/PublicModule/pet/tags':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -634,7 +643,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/{petId}':
+          '/PublicModule/pet/{petId}':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -688,7 +697,7 @@ Resources:
       DefinitionBody:
         openapi: 3.0.1
         paths:
-          '/preferences':
+          '/ConsumerModule/preferences':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -705,7 +714,16 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConsumerLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/listPets':
+          '/PublicModule/fingerprint/create':
+            post:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
+                payloadFormatVersion: 2.0
+
+          '/PublicModule/pet/listPets':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -714,7 +732,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/findByStatus':
+          '/PublicModule/pet/findByStatus':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -723,7 +741,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/findByTags':
+          '/PublicModule/pet/findByTags':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -732,7 +750,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/categories':
+          '/PublicModule/pet/categories':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -741,7 +759,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/tags':
+          '/PublicModule/pet/tags':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -750,7 +768,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/{petId}':
+          '/PublicModule/pet/{petId}':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -794,7 +812,16 @@ Resources:
       DefinitionBody:
         openapi: 3.0.1
         paths:
-          '/public/pet/listPets':
+          '/PublicModule/fingerprint/create':
+            post:
+              x-amazon-apigateway-integration:
+                httpMethod: POST
+                type: aws_proxy
+                uri:
+                  Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
+                payloadFormatVersion: 2.0
+
+          '/PublicModule/pet/listPets':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -803,7 +830,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/findByStatus':
+          '/PublicModule/pet/findByStatus':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -812,7 +839,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/findByTags':
+          '/PublicModule/pet/findByTags':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -821,7 +848,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/categories':
+          '/PublicModule/pet/categories':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -830,7 +857,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/tags':
+          '/PublicModule/pet/tags':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST
@@ -839,7 +866,7 @@ Resources:
                   Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${PublicLambda.Arn}/invocations
                 payloadFormatVersion: 2.0
 
-          '/public/pet/{petId}':
+          '/PublicModule/pet/{petId}':
             get:
               x-amazon-apigateway-integration:
                 httpMethod: POST

@@ -28,4 +28,6 @@ global using StoreModule;
 global using ConsumerSchema;
 global using ConsumerSchemaRepo;
 global using ConsumerModule;
+global using PublicSchema;
+global using PublicSchemaRepo;
 global using PublicModule;

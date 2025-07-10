@@ -2,7 +2,7 @@
 	<Import Project="$(SolutionDir)ServiceVersion.props" Condition="!Exists('ClientSDK')"/>
 	<!-- Common properties for package handling -->
 	<PropertyGroup>
-		<PackageRepoFolder>$(SolutionDir)\Packages</PackageRepoFolder>
+		<PackageRepoFolder>$(SolutionDir)\..\Packages</PackageRepoFolder>
 		<Copyright>Copyright (c) 2021,2024 Insight Sciences Corporation. All rights reserved.</Copyright>
 		<PackageProjectUrl>https://LazyMagic.org</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/LazyMagicNet/Service</RepositoryUrl>

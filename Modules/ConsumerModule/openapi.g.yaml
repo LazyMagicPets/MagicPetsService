@@ -1,10 +1,9 @@
 openapi: 3.0.1
 paths:
-  /preferences:
+  /ConsumerModule/preferences:
     get:
       summary: Get user preferences
-      operationId: getPreferences
-      x-lz-gencall: PreferencesRepo.ReadAsync(callerInfo, callerInfo.LzUserId)
+      operationId: ConsumerModuleGetPreferences
       responses:
         200:
           description: successful operation
@@ -12,10 +11,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Preferences'
+      x-lz-gencall: PreferencesRepo.ReadAsync(callerInfo, callerInfo.LzUserId)
     post:
       summary: Update user preferences
-      operationId: updatePreferences
-      x-lz-gencall: PreferencesRepo.UpdateAsync(callerInfo, body)
+      operationId: ConsumerModuleUpdatePreferences
       requestBody:
         content:
           application/json:
@@ -28,6 +27,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Preferences'
+      x-lz-gencall: PreferencesRepo.UpdateAsync(callerInfo, body)
 components:
   schemas:
     Preferences:
@@ -197,4 +197,50 @@ components:
         name:
           type: string
       x-lz-genrepo: true
-...
+    Fingerprint:
+      type: object
+      properties:
+        id:
+          type: string
+        fingerprint:
+          type: number
+        browser:
+          type: string
+        browserVersion:
+          type: string
+        os:
+          type: string
+        osVersion:
+          type: string
+        resolution:
+          type: string
+        userAgent:
+          type: string
+        device:
+          type: string
+        deviceType:
+          type: string
+        deviceVendor:
+          type: string
+        language:
+          type: string
+        timeZone:
+          type: string
+        screenPrint:
+          type: string
+        isMobile:
+          type: boolean
+        isChrome:
+          type: boolean
+        isFirefox:
+          type: boolean
+        isSafari:
+          type: boolean
+        isIE:
+          type: boolean
+        createUtcTick:
+          type: integer
+          format: int64
+        updateUtcTick:
+          type: integer
+          format: int64

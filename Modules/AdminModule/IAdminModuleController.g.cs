@@ -3,7 +3,7 @@ namespace AdminModule
  
 {
 
-    [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.0.3.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))")]
+    [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.0.3.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.3.0))")]
     public interface IAdminModuleController
     {
 
@@ -13,7 +13,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<TenantUserStatus>> IsAdmin();
+        Task<ActionResult<TenantUserStatus>> AdminModuleIsAdmin();
 
         /// <summary>
         /// Add a new tenantUser
@@ -22,7 +22,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<TenantUser>> AddTenantUser(TenantUser body);
+        Task<ActionResult<TenantUser>> AdminModuleAddTenantUser(TenantUser body);
 
         /// <summary>
         /// Update an existing tenantUser
@@ -31,7 +31,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<TenantUser>> UpdateTenantUser(TenantUser body);
+        Task<ActionResult<TenantUser>> AdminModuleUpdateTenantUser(TenantUser body);
 
         /// <summary>
         /// List all tenantUsers
@@ -39,7 +39,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<TenantUser>>> ListTenantUsers();
+        Task<ActionResult<System.Collections.Generic.ICollection<TenantUser>>> AdminModuleListTenantUsers();
 
         /// <summary>
         /// Add a new Subtenant
@@ -48,7 +48,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Subtenant>> AddSubtenant(Subtenant body);
+        Task<ActionResult<Subtenant>> AdminModuleAddSubtenant(Subtenant body);
 
         /// <summary>
         /// Update an existing Subtenant
@@ -57,7 +57,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Subtenant>> UpdateSubtenant(Subtenant body);
+        Task<ActionResult<Subtenant>> AdminModuleUpdateSubtenant(Subtenant body);
 
         /// <summary>
         /// List all Subtenants
@@ -65,7 +65,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Subtenant>>> ListSubtenants();
+        Task<ActionResult<System.Collections.Generic.ICollection<Subtenant>>> AdminModuleListSubtenants();
 
         /// <summary>
         /// See pet database
@@ -77,7 +77,7 @@ namespace AdminModule
 
         /// <returns>Success</returns>
 
-        Task<IActionResult> SeedPets(string store, int numPets);
+        Task<IActionResult> AdminModuleSeedPets(string store, int numPets);
 
         /// <summary>
         /// Suspend TenantUser
@@ -87,7 +87,7 @@ namespace AdminModule
 
         /// <returns>Success</returns>
 
-        Task<IActionResult> SuspendTenantUser(string tenantUser);
+        Task<IActionResult> AdminModuleSuspendTenantUser(string tenantUser);
 
         /// <summary>
         /// Find tenantUser by ID
@@ -97,7 +97,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<TenantUser>> GetTenantUserById(string tenantUserId);
+        Task<ActionResult<TenantUser>> AdminModuleGetTenantUserById(string tenantUserId);
 
         /// <summary>
         /// Delete tenantUser by ID
@@ -107,7 +107,7 @@ namespace AdminModule
 
         /// <returns>Success</returns>
 
-        Task<IActionResult> DeleteTenantUser(string tenantUserId);
+        Task<IActionResult> AdminModuleDeleteTenantUser(string tenantUserId);
 
         /// <summary>
         /// Find Subtenant by ID
@@ -117,7 +117,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Subtenant>> GetSubtenantById(string subtenantId);
+        Task<ActionResult<Subtenant>> AdminModuleGetSubtenantById(string subtenantId);
 
         /// <summary>
         /// Delete Subtenant by ID
@@ -127,7 +127,7 @@ namespace AdminModule
 
         /// <returns>Success</returns>
 
-        Task<IActionResult> DeleteSubtenant(string subtenantId);
+        Task<IActionResult> AdminModuleDeleteSubtenant(string subtenantId);
 
     }
 

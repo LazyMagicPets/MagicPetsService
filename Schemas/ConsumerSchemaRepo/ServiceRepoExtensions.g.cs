@@ -15,12 +15,12 @@ public static partial class ConsumerSchemaRepoExtensions
 {
     public static IServiceCollection AddConsumerSchemaRepo(this IServiceCollection services)
     {
+        AddCustom(services);    
 
         services.TryAddAWSService<Amazon.DynamoDBv2.IAmazonDynamoDB>();
-		services.TryAddSingleton<IPreferencesRepo, PreferencesRepo>();
+		services.TryAddTransient<IPreferencesRepo, PreferencesRepo>();
 
 
-        AddCustom(services);    
         return services;
     }
     // Implement this partial method in a separate file to add custom service registrations

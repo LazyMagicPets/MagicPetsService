@@ -3,7 +3,7 @@ namespace StoreModule
  
 {
 
-    [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.0.3.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))")]
+    [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.0.3.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.3.0))")]
     public interface IStoreModuleController
     {
 
@@ -13,7 +13,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> ListPets();
+        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> StoreModuleListPets();
 
         /// <summary>
         /// Finds Pets by status
@@ -27,7 +27,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> FindPetsByStatus(System.Collections.Generic.IEnumerable<PetStatus> petStatus);
+        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> StoreModuleFindPetsByStatus(System.Collections.Generic.IEnumerable<PetStatus> petStatus);
 
         /// <summary>
         /// Add a new pet to the store
@@ -36,7 +36,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Pet>> AddPet(Pet body);
+        Task<ActionResult<Pet>> StoreModuleAddPet(Pet body);
 
         /// <summary>
         /// Update an existing pet
@@ -45,7 +45,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Pet>> UpdatePet(Pet body);
+        Task<ActionResult<Pet>> StoreModuleUpdatePet(Pet body);
 
         /// <summary>
         /// Finds Pets by tags
@@ -59,7 +59,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> FindPetsByTags(System.Collections.Generic.IEnumerable<string> tags);
+        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> StoreModuleFindPetsByTags(System.Collections.Generic.IEnumerable<string> tags);
 
         /// <summary>
         /// Get all Pet Categories
@@ -67,7 +67,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Category>>> GetPetCategories();
+        Task<ActionResult<System.Collections.Generic.ICollection<Category>>> StoreModuleGetPetCategories();
 
         /// <summary>
         /// Get all Pet Tags
@@ -75,7 +75,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Tag>>> GetPetTags();
+        Task<ActionResult<System.Collections.Generic.ICollection<Tag>>> StoreModuleGetPetTags();
 
         /// <summary>
         /// Returns pet inventories by status
@@ -87,7 +87,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.IDictionary<string, int>>> GetInventory();
+        Task<ActionResult<System.Collections.Generic.IDictionary<string, int>>> StoreModuleGetInventory();
 
         /// <summary>
         /// Place an order for a pet
@@ -97,7 +97,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Order>> PlaceOrder(Order body);
+        Task<ActionResult<Order>> StoreModulePlaceOrder(Order body);
 
         /// <summary>
         /// Find pet by ID
@@ -111,7 +111,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Pet>> GetPetById(string petId);
+        Task<ActionResult<Pet>> StoreModuleGetPetById(string petId);
 
         /// <summary>
         /// Deletes a pet
@@ -121,7 +121,7 @@ namespace StoreModule
 
         /// <returns>Success</returns>
 
-        Task<IActionResult> DeletePet(string petId);
+        Task<IActionResult> StoreModuleDeletePet(string petId);
 
         /// <summary>
         /// Find purchase order by ID
@@ -135,7 +135,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Order>> GetOrderById(string orderId);
+        Task<ActionResult<Order>> StoreModuleGetOrderById(string orderId);
 
         /// <summary>
         /// Delete purchase order by ID
@@ -145,7 +145,7 @@ namespace StoreModule
 
         /// <returns>Success</returns>
 
-        Task<IActionResult> DeleteOrder(string orderId);
+        Task<IActionResult> StoreModuleDeleteOrder(string orderId);
 
     }
 
