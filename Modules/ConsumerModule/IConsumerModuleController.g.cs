@@ -13,7 +13,7 @@ namespace ConsumerModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Preferences>> ConsumerModuleGetPreferences();
+        Task<ActionResult<Preferences>> ConsumerModuleGetPreferencesAsync();
 
         /// <summary>
         /// Update user preferences
@@ -22,7 +22,7 @@ namespace ConsumerModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Preferences>> ConsumerModuleUpdatePreferences(Preferences body);
+        Task<ActionResult<Preferences>> ConsumerModuleUpdatePreferencesAsync(Preferences body);
 
     }
 

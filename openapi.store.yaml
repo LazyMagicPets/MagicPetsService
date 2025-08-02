@@ -17,35 +17,6 @@ paths:
                   $ref: '#/components/schemas/Pet'
         '400':
           description: Invalid status value
-  '/pet/findByStatus':
-    get:
-      summary: Finds Pets by status
-      description: Multiple status values can be provided with comma separated strings
-      operationId: findPetsByStatus
-      # x-lz-gencall: petRepo.FindPetsByStatusAsync(callerInfo, petStatus)
-      parameters:
-      - name: petStatus
-        in: query
-        description: Status values that need to be considered for filter
-        required: true
-        explode: true
-        schema:
-          type: array
-          items:
-            $ref: '#/components/schemas/PetStatus'
-          default: available
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pet'
-        '400':
-          description: Invalid status value
-
 
   '/pet':
     post:
@@ -91,29 +62,6 @@ paths:
 
 
   '/pet/{petId}':
-    get:
-      summary: Find pet by ID
-      description: Returns a single pet
-      operationId: getPetById
-      x-lz-gencall: PetRepo.ReadAsync(callerInfo, petId)
-      parameters:
-      - name: petId
-        in: path
-        description: ID of pet to return
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Pet'
-        '400':
-          description: Invalid ID supplied
-        '404':
-          description: Pet not found
     delete:
       summary: Deletes a pet
       operationId: deletePet
@@ -133,64 +81,6 @@ paths:
         '404':
           description: Pet not found
 
-  '/pet/findByTags':
-    get:
-      summary: Finds Pets by tags
-      description: >-
-        Muliple tags can be provided with comma separated strings. Use\ \ tag1, tag2, tag3 for testing.
-      operationId: findPetsByTags
-      # x-lz-gencall: PetRepo.FindPetsByTagsAsync(callerInfo, tags)
-      parameters:
-      - name: tags
-        in: query
-        description: Tags to filter by
-        required: true
-        explode: true
-        schema:
-          type: array
-          items:
-            type: string
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pet'
-        '400':
-          description: Invalid tag value
-  # Categories
-  '/pet/categories':
-    get:
-      summary: Get all Pet Categories
-      operationId: getPetCategories
-      x-lz-gencall: CategoryRepo.ListAsync(callerInfo)
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Category'
-  # Tags
-  '/pet/tags':
-    get:
-      summary: Get all Pet Tags
-      operationId: getPetTags
-      x-lz-gencall: TagRepo.ListAsync(callerInfo)
-      responses:
-        '200':
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Tag'
   # Inventory
   '/order/inventory':
     get:

@@ -3,7 +3,7 @@ paths:
   /ConsumerModule/preferences:
     get:
       summary: Get user preferences
-      operationId: ConsumerModuleGetPreferences
+      operationId: ConsumerModuleGetPreferencesAsync
       responses:
         200:
           description: successful operation
@@ -14,7 +14,7 @@ paths:
       x-lz-gencall: PreferencesRepo.ReadAsync(callerInfo, callerInfo.LzUserId)
     post:
       summary: Update user preferences
-      operationId: ConsumerModuleUpdatePreferences
+      operationId: ConsumerModuleUpdatePreferencesAsync
       requestBody:
         content:
           application/json:

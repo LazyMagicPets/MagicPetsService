@@ -16,7 +16,7 @@ Directives:
     Type: Module
     IsDefault: true # this directive may be referenced by other Module directives
     Artifacts:
-      DotNetControllerProject: # methods for each REST path operation
+      DotNetControllerProject: # methods for each REST path operation (now also generates client interface)
 
   # CONTAINERS Default  
   AwsApiLambdaContainerDefault:
@@ -126,6 +126,9 @@ Directives:
     Type: Container
     Defaults: AwsApiLambdaContainerDefault
     Modules:
+    - PublicModule
+    - ConsumerModule    
+    - StoreModule
     - AdminModule
     Artifacts:
       AwsApiLambdaResource: # AWS SAM template resource for the Lambda function
@@ -141,12 +144,15 @@ Directives:
     Type: Container
     Defaults: AwsApiLambdaContainerDefault
     Modules:
+    - PublicModule
+    - ConsumerModule    
     - StoreModule
 
   ConsumerLambda:
     Type: Container
     Defaults: AwsApiLambdaContainerDefault
     Modules:
+    - PublicModule
     - ConsumerModule
 
   PublicLambda:
@@ -169,8 +175,6 @@ Directives:
     Authentication: TenantAuth
     Containers:
     - StoreLambda
-    - ConsumerLambda
-    - PublicLambda
 
   ConsumerApi:
     Type: Api
@@ -178,7 +182,6 @@ Directives:
     Authentication: ConsumerAuth
     Containers:
     - ConsumerLambda
-    - PublicLambda
 
   PublicApi:
     Type: Api
@@ -220,9 +223,6 @@ Directives:
     Path: admin
     Apis:
     - AdminApi
-    - StoreApi
-    - ConsumerApi
-    - PublicApi
 
   StoreApp:
     Type: WebApp
@@ -230,8 +230,6 @@ Directives:
     Path: store 
     Apis:
     - StoreApi
-    - ConsumerApi
-    - PublicApi
 
   ConsumerApp:
     Type: WebApp
@@ -239,7 +237,6 @@ Directives:
     Path: app
     Apis:
     - ConsumerApi
-    - PublicApi
 
 # TENANCIES
   Tenancy:

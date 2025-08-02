@@ -27,7 +27,7 @@ namespace PublicModule
 
         /// <returns>successful operation</returns>
         [HttpPost, Route("PublicModule/fingerprint/create")]
-        public virtual async Task<ActionResult<Fingerprint>> PublicModuleFingerprintCreate([FromBody] Fingerprint body)
+        public virtual async Task<ActionResult<Fingerprint>> PublicModuleFingerprintCreateAsync([FromBody] Fingerprint body)
         {
             var callerInfo = await PublicModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await FingerprintRepo.CreateAsync(callerInfo, body);
@@ -37,7 +37,7 @@ namespace PublicModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpGet, Route("PublicModule/pet/listPets")]
-        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> PublicModuleListPets()
+        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> PublicModuleListPetsAsync()
         {
             var callerInfo = await PublicModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await PetRepo.ListAsync(callerInfo);
@@ -51,7 +51,7 @@ namespace PublicModule
         /// <param name="petStatus">Status values that need to be considered for filter</param>
         /// <returns>successful operation</returns>
         [HttpGet, Route("PublicModule/pet/findByStatus")]
-        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> PublicModuleFindPetsByStatus([FromQuery] System.Collections.Generic.IEnumerable<PetStatus> petStatus)
+        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> PublicModuleFindPetsByStatusAsync([FromQuery] System.Collections.Generic.IEnumerable<PetStatus> petStatus)
         {
             throw new NotImplementedException();
         }
@@ -64,7 +64,7 @@ namespace PublicModule
         /// <param name="tags">Tags to filter by</param>
         /// <returns>successful operation</returns>
         [HttpGet, Route("PublicModule/pet/findByTags")]
-        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> PublicModuleFindPetsByTags([FromQuery] System.Collections.Generic.IEnumerable<string> tags)
+        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> PublicModuleFindPetsByTagsAsync([FromQuery] System.Collections.Generic.IEnumerable<string> tags)
         {
             throw new NotImplementedException();
         }
@@ -73,7 +73,7 @@ namespace PublicModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpGet, Route("PublicModule/pet/categories")]
-        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Category>>> PublicModuleGetPetCategories()
+        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Category>>> PublicModuleGetPetCategoriesAsync()
         {
             var callerInfo = await PublicModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await CategoryRepo.ListAsync(callerInfo);
@@ -83,7 +83,7 @@ namespace PublicModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpGet, Route("PublicModule/pet/tags")]
-        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Tag>>> PublicModuleGetPetTags()
+        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Tag>>> PublicModuleGetPetTagsAsync()
         {
             var callerInfo = await PublicModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await TagRepo.ListAsync(callerInfo);
@@ -97,7 +97,7 @@ namespace PublicModule
         /// <param name="petId">ID of pet to return</param>
         /// <returns>successful operation</returns>
         [HttpGet, Route("PublicModule/pet/{petId}")]
-        public virtual async Task<ActionResult<Pet>> PublicModuleGetPetById(string petId)
+        public virtual async Task<ActionResult<Pet>> PublicModuleGetPetByIdAsync(string petId)
         {
             var callerInfo = await PublicModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await PetRepo.ReadAsync(callerInfo, petId);

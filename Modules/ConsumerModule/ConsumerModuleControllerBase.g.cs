@@ -30,7 +30,7 @@ namespace ConsumerModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpGet, Route("ConsumerModule/preferences")]
-        public virtual async Task<ActionResult<Preferences>> ConsumerModuleGetPreferences()
+        public virtual async Task<ActionResult<Preferences>> ConsumerModuleGetPreferencesAsync()
         {
             var callerInfo = await ConsumerModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await PreferencesRepo.ReadAsync(callerInfo, callerInfo.LzUserId);
@@ -40,7 +40,7 @@ namespace ConsumerModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpPost, Route("ConsumerModule/preferences")]
-        public virtual async Task<ActionResult<Preferences>> ConsumerModuleUpdatePreferences([FromBody] Preferences body)
+        public virtual async Task<ActionResult<Preferences>> ConsumerModuleUpdatePreferencesAsync([FromBody] Preferences body)
         {
             var callerInfo = await ConsumerModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await PreferencesRepo.UpdateAsync(callerInfo, body);

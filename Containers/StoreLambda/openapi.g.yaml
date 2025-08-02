@@ -1,9 +1,29 @@
 openapi: 3.0.1
 paths:
-  /StoreModule/pet/listPets:
+  /PublicModule/fingerprint/create:
+    post:
+      operationId: PublicModuleFingerprintCreateAsync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Fingerprint'
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fingerprint'
+        403:
+          description: Invalid permissions
+        405:
+          description: Invalid data
+      x-lz-gencall: FingerprintRepo.CreateAsync(callerInfo, body)
+  /PublicModule/pet/listPets:
     get:
       summary: List all pets
-      operationId: StoreModuleListPets
+      operationId: PublicModuleListPetsAsync
       responses:
         200:
           description: successful operation
@@ -16,11 +36,11 @@ paths:
         400:
           description: Invalid status value
       x-lz-gencall: PetRepo.ListAsync(callerInfo)
-  /StoreModule/pet/findByStatus:
+  /PublicModule/pet/findByStatus:
     get:
       summary: Finds Pets by status
       description: Multiple status values can be provided with comma separated strings
-      operationId: StoreModuleFindPetsByStatus
+      operationId: PublicModuleFindPetsByStatusAsync
       parameters:
       - name: petStatus
         in: query
@@ -43,52 +63,11 @@ paths:
                   $ref: '#/components/schemas/Pet'
         400:
           description: Invalid status value
-  /StoreModule/pet:
-    post:
-      summary: Add a new pet to the store
-      operationId: StoreModuleAddPet
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Pet'
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Pet'
-        405:
-          description: Invalid input
-      x-lz-gencall: PetRepo.CreateAsync(callerInfo, body)
-    put:
-      summary: Update an existing pet
-      operationId: StoreModuleUpdatePet
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Pet'
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Pet'
-        400:
-          description: Invalid ID supplied
-        404:
-          description: Pet not found
-        405:
-          description: Validation exception
-      x-lz-gencall: PetRepo.UpdateAsync(callerInfo, body)
-  /StoreModule/pet/findByTags:
+  /PublicModule/pet/findByTags:
     get:
       summary: Finds Pets by tags
       description: Muliple tags can be provided with comma separated strings. Use\ \ tag1, tag2, tag3 for testing.
-      operationId: StoreModuleFindPetsByTags
+      operationId: PublicModuleFindPetsByTagsAsync
       parameters:
       - name: tags
         in: query
@@ -110,10 +89,10 @@ paths:
                   $ref: '#/components/schemas/Pet'
         400:
           description: Invalid tag value
-  /StoreModule/pet/categories:
+  /PublicModule/pet/categories:
     get:
       summary: Get all Pet Categories
-      operationId: StoreModuleGetPetCategories
+      operationId: PublicModuleGetPetCategoriesAsync
       responses:
         200:
           description: successful operation
@@ -124,10 +103,10 @@ paths:
                 items:
                   $ref: '#/components/schemas/Category'
       x-lz-gencall: CategoryRepo.ListAsync(callerInfo)
-  /StoreModule/pet/tags:
+  /PublicModule/pet/tags:
     get:
       summary: Get all Pet Tags
-      operationId: StoreModuleGetPetTags
+      operationId: PublicModuleGetPetTagsAsync
       responses:
         200:
           description: successful operation
@@ -138,11 +117,96 @@ paths:
                 items:
                   $ref: '#/components/schemas/Tag'
       x-lz-gencall: TagRepo.ListAsync(callerInfo)
+  /ConsumerModule/preferences:
+    get:
+      summary: Get user preferences
+      operationId: ConsumerModuleGetPreferencesAsync
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+      x-lz-gencall: PreferencesRepo.ReadAsync(callerInfo, callerInfo.LzUserId)
+    post:
+      summary: Update user preferences
+      operationId: ConsumerModuleUpdatePreferencesAsync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Preferences'
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+      x-lz-gencall: PreferencesRepo.UpdateAsync(callerInfo, body)
+  /StoreModule/pet/listPets:
+    get:
+      summary: List all pets
+      operationId: StoreModuleListPetsAsync
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+        400:
+          description: Invalid status value
+      x-lz-gencall: PetRepo.ListAsync(callerInfo)
+  /StoreModule/pet:
+    post:
+      summary: Add a new pet to the store
+      operationId: StoreModuleAddPetAsync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pet'
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+        405:
+          description: Invalid input
+      x-lz-gencall: PetRepo.CreateAsync(callerInfo, body)
+    put:
+      summary: Update an existing pet
+      operationId: StoreModuleUpdatePetAsync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pet'
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+        400:
+          description: Invalid ID supplied
+        404:
+          description: Pet not found
+        405:
+          description: Validation exception
+      x-lz-gencall: PetRepo.UpdateAsync(callerInfo, body)
   /StoreModule/order/inventory:
     get:
       summary: Returns pet inventories by status
       description: Returns a map of status codes to quantities
-      operationId: StoreModuleGetInventory
+      operationId: StoreModuleGetInventoryAsync
       responses:
         200:
           description: successful operation
@@ -156,7 +220,7 @@ paths:
   /StoreModule/order:
     post:
       summary: Place an order for a pet
-      operationId: StoreModulePlaceOrder
+      operationId: StoreModulePlaceOrderAsync
       requestBody:
         description: order placed for purchasing the pet
         content:
@@ -174,11 +238,11 @@ paths:
         400:
           description: Invalid Order
       x-lz-gencall: OrderRepo.CreateAsync(callerInfo, body)
-  '/StoreModule/pet/{petId}':
+  '/PublicModule/pet/{petId}':
     get:
       summary: Find pet by ID
       description: Returns a single pet
-      operationId: StoreModuleGetPetById
+      operationId: PublicModuleGetPetByIdAsync
       parameters:
       - name: petId
         in: path
@@ -198,9 +262,10 @@ paths:
         404:
           description: Pet not found
       x-lz-gencall: PetRepo.ReadAsync(callerInfo, petId)
+  '/StoreModule/pet/{petId}':
     delete:
       summary: Deletes a pet
-      operationId: StoreModuleDeletePet
+      operationId: StoreModuleDeletePetAsync
       parameters:
       - name: petId
         in: path
@@ -220,7 +285,7 @@ paths:
     get:
       summary: Find purchase order by ID
       description: For valid response try integer IDs with value >= 1 and <= 10.\ \ Other values will generated exceptions
-      operationId: StoreModuleGetOrderById
+      operationId: StoreModuleGetOrderByIdAsync
       parameters:
       - name: orderId
         in: path
@@ -244,7 +309,7 @@ paths:
       x-lz-gencall: OrderRepo.ReadAsync(callerInfo, orderId)
     delete:
       summary: Delete purchase order by ID
-      operationId: StoreModuleDeleteOrder
+      operationId: StoreModuleDeleteOrderAsync
       parameters:
       - name: orderId
         in: path

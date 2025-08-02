@@ -30,7 +30,7 @@ namespace AdminModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpGet, Route("AdminModule/isAdmin")]
-        public virtual async Task<ActionResult<TenantUserStatus>> AdminModuleIsAdmin()
+        public virtual async Task<ActionResult<TenantUserStatus>> AdminModuleIsAdminAsync()
         {
             throw new NotImplementedException();
         }
@@ -39,7 +39,7 @@ namespace AdminModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpPost, Route("AdminModule/tenantUser")]
-        public virtual async Task<ActionResult<TenantUser>> AdminModuleAddTenantUser([FromBody] TenantUser body)
+        public virtual async Task<ActionResult<TenantUser>> AdminModuleAddTenantUserAsync([FromBody] TenantUser body)
         {
             var callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await TenantUserRepo.CreateAsync(callerInfo, body);
@@ -49,7 +49,7 @@ namespace AdminModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpPut, Route("AdminModule/tenantUser")]
-        public virtual async Task<ActionResult<TenantUser>> AdminModuleUpdateTenantUser([FromBody] TenantUser body)
+        public virtual async Task<ActionResult<TenantUser>> AdminModuleUpdateTenantUserAsync([FromBody] TenantUser body)
         {
             var callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await TenantUserRepo.UpdateAsync(callerInfo, body);
@@ -59,7 +59,7 @@ namespace AdminModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpGet, Route("AdminModule/tenantUser/listTenantUsers")]
-        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<TenantUser>>> AdminModuleListTenantUsers()
+        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<TenantUser>>> AdminModuleListTenantUsersAsync()
         {
             var callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await TenantUserRepo.ListAsync(callerInfo);
@@ -69,7 +69,7 @@ namespace AdminModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpPost, Route("AdminModule/subtenant")]
-        public virtual async Task<ActionResult<Subtenant>> AdminModuleAddSubtenant([FromBody] Subtenant body)
+        public virtual async Task<ActionResult<Subtenant>> AdminModuleAddSubtenantAsync([FromBody] Subtenant body)
         {
             throw new NotImplementedException();
         }
@@ -78,7 +78,7 @@ namespace AdminModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpPut, Route("AdminModule/subtenant")]
-        public virtual async Task<ActionResult<Subtenant>> AdminModuleUpdateSubtenant([FromBody] Subtenant body)
+        public virtual async Task<ActionResult<Subtenant>> AdminModuleUpdateSubtenantAsync([FromBody] Subtenant body)
         {
             throw new NotImplementedException();
         }
@@ -87,7 +87,7 @@ namespace AdminModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpGet, Route("AdminModule/subtenant/listSubtenants")]
-        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Subtenant>>> AdminModuleListSubtenants()
+        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Subtenant>>> AdminModuleListSubtenantsAsync()
         {
             throw new NotImplementedException();
         }
@@ -98,7 +98,7 @@ namespace AdminModule
         /// <param name="numPets">Number of pets to seed</param>
         /// <returns>Success</returns>
         [HttpGet, Route("AdminModule/subtenant/seedPets/{store}/{numPets}")]
-        public virtual async Task<IActionResult> AdminModuleSeedPets(string store, int numPets)
+        public virtual async Task<IActionResult> AdminModuleSeedPetsAsync(string store, int numPets)
         {
             throw new NotImplementedException();
         }
@@ -108,7 +108,7 @@ namespace AdminModule
         /// <param name="tenantUser">tenantUser login</param>
         /// <returns>Success</returns>
         [HttpGet, Route("AdminModule/suspendTenantUser/{tenantUser}")]
-        public virtual async Task<IActionResult> AdminModuleSuspendTenantUser(string tenantUser)
+        public virtual async Task<IActionResult> AdminModuleSuspendTenantUserAsync(string tenantUser)
         {
             throw new NotImplementedException();
         }
@@ -118,7 +118,7 @@ namespace AdminModule
         /// <param name="tenantUserId">ID of tenantUser that needs to be fetched</param>
         /// <returns>successful operation</returns>
         [HttpGet, Route("AdminModule/tenantUser/{tenantUserId}")]
-        public virtual async Task<ActionResult<TenantUser>> AdminModuleGetTenantUserById(string tenantUserId)
+        public virtual async Task<ActionResult<TenantUser>> AdminModuleGetTenantUserByIdAsync(string tenantUserId)
         {
             var callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await TenantUserRepo.ReadAsync(callerInfo, tenantUserId);
@@ -129,7 +129,7 @@ namespace AdminModule
         /// <param name="tenantUserId">ID of tenantUser that needs to be deleted</param>
         /// <returns>Success</returns>
         [HttpDelete, Route("AdminModule/tenantUser/delete/{tenantUserId}")]
-        public virtual async Task<IActionResult> AdminModuleDeleteTenantUser(string tenantUserId)
+        public virtual async Task<IActionResult> AdminModuleDeleteTenantUserAsync(string tenantUserId)
         {
             var callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await TenantUserRepo.DeleteAsync(callerInfo, tenantUserId);
@@ -140,7 +140,7 @@ namespace AdminModule
         /// <param name="subtenantId">ID of Subtenant that needs to be fetched</param>
         /// <returns>successful operation</returns>
         [HttpGet, Route("AdminModule/subtenant/{subtenantId}")]
-        public virtual async Task<ActionResult<Subtenant>> AdminModuleGetSubtenantById(string subtenantId)
+        public virtual async Task<ActionResult<Subtenant>> AdminModuleGetSubtenantByIdAsync(string subtenantId)
         {
             throw new NotImplementedException();
         }
@@ -150,7 +150,7 @@ namespace AdminModule
         /// <param name="subtenantId">ID of Subtenant that needs to be deleted</param>
         /// <returns>Success</returns>
         [HttpDelete, Route("AdminModule/subtenant/delete/{subtenantId}")]
-        public virtual async Task<IActionResult> AdminModuleDeleteSubtenant(string subtenantId)
+        public virtual async Task<IActionResult> AdminModuleDeleteSubtenantAsync(string subtenantId)
         {
             throw new NotImplementedException();
         }

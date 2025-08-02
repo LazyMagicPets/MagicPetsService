@@ -3,7 +3,7 @@ paths:
   /AdminModule/isAdmin:
     get:
       summary: Check if currently logged in tenantUser is an admin
-      operationId: AdminModuleIsAdmin
+      operationId: AdminModuleIsAdminAsync
       responses:
         200:
           description: successful operation
@@ -14,7 +14,7 @@ paths:
   /AdminModule/tenantUser:
     post:
       summary: Add a new tenantUser
-      operationId: AdminModuleAddTenantUser
+      operationId: AdminModuleAddTenantUserAsync
       requestBody:
         content:
           application/json:
@@ -32,7 +32,7 @@ paths:
       x-lz-gencall: TenantUserRepo.CreateAsync(callerInfo, body)
     put:
       summary: Update an existing tenantUser
-      operationId: AdminModuleUpdateTenantUser
+      operationId: AdminModuleUpdateTenantUserAsync
       requestBody:
         content:
           application/json:
@@ -55,7 +55,7 @@ paths:
   /AdminModule/tenantUser/listTenantUsers:
     get:
       summary: List all tenantUsers
-      operationId: AdminModuleListTenantUsers
+      operationId: AdminModuleListTenantUsersAsync
       responses:
         200:
           description: successful operation
@@ -71,7 +71,7 @@ paths:
   /AdminModule/subtenant:
     post:
       summary: Add a new Subtenant
-      operationId: AdminModuleAddSubtenant
+      operationId: AdminModuleAddSubtenantAsync
       requestBody:
         content:
           application/json:
@@ -88,7 +88,7 @@ paths:
           description: Invalid input
     put:
       summary: Update an existing Subtenant
-      operationId: AdminModuleUpdateSubtenant
+      operationId: AdminModuleUpdateSubtenantAsync
       requestBody:
         content:
           application/json:
@@ -110,7 +110,7 @@ paths:
   /AdminModule/subtenant/listSubtenants:
     get:
       summary: List all Subtenants
-      operationId: AdminModuleListSubtenants
+      operationId: AdminModuleListSubtenantsAsync
       responses:
         200:
           description: successful operation
@@ -125,7 +125,7 @@ paths:
   /AdminModule/subtenant/seedPets/{store}/{numPets}:
     get:
       summary: See pet database
-      operationId: AdminModuleSeedPets
+      operationId: AdminModuleSeedPetsAsync
       parameters:
       - name: store
         in: path
@@ -146,7 +146,7 @@ paths:
   /AdminModule/suspendTenantUser/{tenantUser}:
     get:
       summary: Suspend TenantUser
-      operationId: AdminModuleSuspendTenantUser
+      operationId: AdminModuleSuspendTenantUserAsync
       parameters:
       - name: tenantUser
         in: path
@@ -160,7 +160,7 @@ paths:
   /AdminModule/tenantUser/{tenantUserId}:
     get:
       summary: Find tenantUser by ID
-      operationId: AdminModuleGetTenantUserById
+      operationId: AdminModuleGetTenantUserByIdAsync
       parameters:
       - name: tenantUserId
         in: path
@@ -183,7 +183,7 @@ paths:
   /AdminModule/tenantUser/delete/{tenantUserId}:
     delete:
       summary: Delete tenantUser by ID
-      operationId: AdminModuleDeleteTenantUser
+      operationId: AdminModuleDeleteTenantUserAsync
       parameters:
       - name: tenantUserId
         in: path
@@ -202,7 +202,7 @@ paths:
   /AdminModule/subtenant/{subtenantId}:
     get:
       summary: Find Subtenant by ID
-      operationId: AdminModuleGetSubtenantById
+      operationId: AdminModuleGetSubtenantByIdAsync
       parameters:
       - name: SubtenantId
         in: path
@@ -224,7 +224,7 @@ paths:
   /AdminModule/subtenant/delete/{subtenantId}:
     delete:
       summary: Delete Subtenant by ID
-      operationId: AdminModuleDeleteSubtenant
+      operationId: AdminModuleDeleteSubtenantAsync
       parameters:
       - name: SubtenantId
         in: path

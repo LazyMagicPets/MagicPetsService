@@ -13,21 +13,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> StoreModuleListPets();
-
-        /// <summary>
-        /// Finds Pets by status
-        /// </summary>
-
-        /// <remarks>
-        /// Multiple status values can be provided with comma separated strings
-        /// </remarks>
-
-        /// <param name="petStatus">Status values that need to be considered for filter</param>
-
-        /// <returns>successful operation</returns>
-
-        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> StoreModuleFindPetsByStatus(System.Collections.Generic.IEnumerable<PetStatus> petStatus);
+        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> StoreModuleListPetsAsync();
 
         /// <summary>
         /// Add a new pet to the store
@@ -36,7 +22,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Pet>> StoreModuleAddPet(Pet body);
+        Task<ActionResult<Pet>> StoreModuleAddPetAsync(Pet body);
 
         /// <summary>
         /// Update an existing pet
@@ -45,37 +31,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Pet>> StoreModuleUpdatePet(Pet body);
-
-        /// <summary>
-        /// Finds Pets by tags
-        /// </summary>
-
-        /// <remarks>
-        /// Muliple tags can be provided with comma separated strings. Use\ \ tag1, tag2, tag3 for testing.
-        /// </remarks>
-
-        /// <param name="tags">Tags to filter by</param>
-
-        /// <returns>successful operation</returns>
-
-        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> StoreModuleFindPetsByTags(System.Collections.Generic.IEnumerable<string> tags);
-
-        /// <summary>
-        /// Get all Pet Categories
-        /// </summary>
-
-        /// <returns>successful operation</returns>
-
-        Task<ActionResult<System.Collections.Generic.ICollection<Category>>> StoreModuleGetPetCategories();
-
-        /// <summary>
-        /// Get all Pet Tags
-        /// </summary>
-
-        /// <returns>successful operation</returns>
-
-        Task<ActionResult<System.Collections.Generic.ICollection<Tag>>> StoreModuleGetPetTags();
+        Task<ActionResult<Pet>> StoreModuleUpdatePetAsync(Pet body);
 
         /// <summary>
         /// Returns pet inventories by status
@@ -87,7 +43,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.IDictionary<string, int>>> StoreModuleGetInventory();
+        Task<ActionResult<System.Collections.Generic.IDictionary<string, int>>> StoreModuleGetInventoryAsync();
 
         /// <summary>
         /// Place an order for a pet
@@ -97,21 +53,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Order>> StoreModulePlaceOrder(Order body);
-
-        /// <summary>
-        /// Find pet by ID
-        /// </summary>
-
-        /// <remarks>
-        /// Returns a single pet
-        /// </remarks>
-
-        /// <param name="petId">ID of pet to return</param>
-
-        /// <returns>successful operation</returns>
-
-        Task<ActionResult<Pet>> StoreModuleGetPetById(string petId);
+        Task<ActionResult<Order>> StoreModulePlaceOrderAsync(Order body);
 
         /// <summary>
         /// Deletes a pet
@@ -121,7 +63,7 @@ namespace StoreModule
 
         /// <returns>Success</returns>
 
-        Task<IActionResult> StoreModuleDeletePet(string petId);
+        Task<IActionResult> StoreModuleDeletePetAsync(string petId);
 
         /// <summary>
         /// Find purchase order by ID
@@ -135,7 +77,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Order>> StoreModuleGetOrderById(string orderId);
+        Task<ActionResult<Order>> StoreModuleGetOrderByIdAsync(string orderId);
 
         /// <summary>
         /// Delete purchase order by ID
@@ -145,7 +87,7 @@ namespace StoreModule
 
         /// <returns>Success</returns>
 
-        Task<IActionResult> StoreModuleDeleteOrder(string orderId);
+        Task<IActionResult> StoreModuleDeleteOrderAsync(string orderId);
 
     }
 

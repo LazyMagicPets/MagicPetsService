@@ -1,36 +1,8 @@
 openapi: 3.0.1
 paths:
-  /ConsumerModule/preferences:
-    get:
-      summary: Get user preferences
-      operationId: ConsumerModuleGetPreferences
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Preferences'
-      x-lz-gencall: PreferencesRepo.ReadAsync(callerInfo, callerInfo.LzUserId)
-    post:
-      summary: Update user preferences
-      operationId: ConsumerModuleUpdatePreferences
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Preferences'
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Preferences'
-      x-lz-gencall: PreferencesRepo.UpdateAsync(callerInfo, body)
   /PublicModule/fingerprint/create:
     post:
-      operationId: PublicModuleFingerprintCreate
+      operationId: PublicModuleFingerprintCreateAsync
       requestBody:
         content:
           application/json:
@@ -51,7 +23,7 @@ paths:
   /PublicModule/pet/listPets:
     get:
       summary: List all pets
-      operationId: PublicModuleListPets
+      operationId: PublicModuleListPetsAsync
       responses:
         200:
           description: successful operation
@@ -68,7 +40,7 @@ paths:
     get:
       summary: Finds Pets by status
       description: Multiple status values can be provided with comma separated strings
-      operationId: PublicModuleFindPetsByStatus
+      operationId: PublicModuleFindPetsByStatusAsync
       parameters:
       - name: petStatus
         in: query
@@ -95,7 +67,7 @@ paths:
     get:
       summary: Finds Pets by tags
       description: Muliple tags can be provided with comma separated strings. Use\ \ tag1, tag2, tag3 for testing.
-      operationId: PublicModuleFindPetsByTags
+      operationId: PublicModuleFindPetsByTagsAsync
       parameters:
       - name: tags
         in: query
@@ -120,7 +92,7 @@ paths:
   /PublicModule/pet/categories:
     get:
       summary: Get all Pet Categories
-      operationId: PublicModuleGetPetCategories
+      operationId: PublicModuleGetPetCategoriesAsync
       responses:
         200:
           description: successful operation
@@ -134,7 +106,7 @@ paths:
   /PublicModule/pet/tags:
     get:
       summary: Get all Pet Tags
-      operationId: PublicModuleGetPetTags
+      operationId: PublicModuleGetPetTagsAsync
       responses:
         200:
           description: successful operation
@@ -145,11 +117,39 @@ paths:
                 items:
                   $ref: '#/components/schemas/Tag'
       x-lz-gencall: TagRepo.ListAsync(callerInfo)
+  /ConsumerModule/preferences:
+    get:
+      summary: Get user preferences
+      operationId: ConsumerModuleGetPreferencesAsync
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+      x-lz-gencall: PreferencesRepo.ReadAsync(callerInfo, callerInfo.LzUserId)
+    post:
+      summary: Update user preferences
+      operationId: ConsumerModuleUpdatePreferencesAsync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Preferences'
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+      x-lz-gencall: PreferencesRepo.UpdateAsync(callerInfo, body)
   '/PublicModule/pet/{petId}':
     get:
       summary: Find pet by ID
       description: Returns a single pet
-      operationId: PublicModuleGetPetById
+      operationId: PublicModuleGetPetByIdAsync
       parameters:
       - name: petId
         in: path

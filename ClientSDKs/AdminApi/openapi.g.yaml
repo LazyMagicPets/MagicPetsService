@@ -1,9 +1,247 @@
 openapi: 3.0.1
 paths:
+  /PublicModule/fingerprint/create:
+    post:
+      operationId: PublicModuleFingerprintCreateAsync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Fingerprint'
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fingerprint'
+        403:
+          description: Invalid permissions
+        405:
+          description: Invalid data
+      x-lz-gencall: FingerprintRepo.CreateAsync(callerInfo, body)
+  /PublicModule/pet/listPets:
+    get:
+      summary: List all pets
+      operationId: PublicModuleListPetsAsync
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+        400:
+          description: Invalid status value
+      x-lz-gencall: PetRepo.ListAsync(callerInfo)
+  /PublicModule/pet/findByStatus:
+    get:
+      summary: Finds Pets by status
+      description: Multiple status values can be provided with comma separated strings
+      operationId: PublicModuleFindPetsByStatusAsync
+      parameters:
+      - name: petStatus
+        in: query
+        explode: true
+        required: true
+        description: Status values that need to be considered for filter
+        schema:
+          type: array
+          default: available
+          items:
+            $ref: '#/components/schemas/PetStatus'
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+        400:
+          description: Invalid status value
+  /PublicModule/pet/findByTags:
+    get:
+      summary: Finds Pets by tags
+      description: Muliple tags can be provided with comma separated strings. Use\ \ tag1, tag2, tag3 for testing.
+      operationId: PublicModuleFindPetsByTagsAsync
+      parameters:
+      - name: tags
+        in: query
+        explode: true
+        required: true
+        description: Tags to filter by
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+        400:
+          description: Invalid tag value
+  /PublicModule/pet/categories:
+    get:
+      summary: Get all Pet Categories
+      operationId: PublicModuleGetPetCategoriesAsync
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+      x-lz-gencall: CategoryRepo.ListAsync(callerInfo)
+  /PublicModule/pet/tags:
+    get:
+      summary: Get all Pet Tags
+      operationId: PublicModuleGetPetTagsAsync
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+      x-lz-gencall: TagRepo.ListAsync(callerInfo)
+  /ConsumerModule/preferences:
+    get:
+      summary: Get user preferences
+      operationId: ConsumerModuleGetPreferencesAsync
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+      x-lz-gencall: PreferencesRepo.ReadAsync(callerInfo, callerInfo.LzUserId)
+    post:
+      summary: Update user preferences
+      operationId: ConsumerModuleUpdatePreferencesAsync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Preferences'
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Preferences'
+      x-lz-gencall: PreferencesRepo.UpdateAsync(callerInfo, body)
+  /StoreModule/pet/listPets:
+    get:
+      summary: List all pets
+      operationId: StoreModuleListPetsAsync
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+        400:
+          description: Invalid status value
+      x-lz-gencall: PetRepo.ListAsync(callerInfo)
+  /StoreModule/pet:
+    post:
+      summary: Add a new pet to the store
+      operationId: StoreModuleAddPetAsync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pet'
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+        405:
+          description: Invalid input
+      x-lz-gencall: PetRepo.CreateAsync(callerInfo, body)
+    put:
+      summary: Update an existing pet
+      operationId: StoreModuleUpdatePetAsync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Pet'
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+        400:
+          description: Invalid ID supplied
+        404:
+          description: Pet not found
+        405:
+          description: Validation exception
+      x-lz-gencall: PetRepo.UpdateAsync(callerInfo, body)
+  /StoreModule/order/inventory:
+    get:
+      summary: Returns pet inventories by status
+      description: Returns a map of status codes to quantities
+      operationId: StoreModuleGetInventoryAsync
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: integer
+                  format: int32
+  /StoreModule/order:
+    post:
+      summary: Place an order for a pet
+      operationId: StoreModulePlaceOrderAsync
+      requestBody:
+        description: order placed for purchasing the pet
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Order'
+        required: true
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        400:
+          description: Invalid Order
+      x-lz-gencall: OrderRepo.CreateAsync(callerInfo, body)
   /AdminModule/isAdmin:
     get:
       summary: Check if currently logged in tenantUser is an admin
-      operationId: AdminModuleIsAdmin
+      operationId: AdminModuleIsAdminAsync
       responses:
         200:
           description: successful operation
@@ -14,7 +252,7 @@ paths:
   /AdminModule/tenantUser:
     post:
       summary: Add a new tenantUser
-      operationId: AdminModuleAddTenantUser
+      operationId: AdminModuleAddTenantUserAsync
       requestBody:
         content:
           application/json:
@@ -32,7 +270,7 @@ paths:
       x-lz-gencall: TenantUserRepo.CreateAsync(callerInfo, body)
     put:
       summary: Update an existing tenantUser
-      operationId: AdminModuleUpdateTenantUser
+      operationId: AdminModuleUpdateTenantUserAsync
       requestBody:
         content:
           application/json:
@@ -55,7 +293,7 @@ paths:
   /AdminModule/tenantUser/listTenantUsers:
     get:
       summary: List all tenantUsers
-      operationId: AdminModuleListTenantUsers
+      operationId: AdminModuleListTenantUsersAsync
       responses:
         200:
           description: successful operation
@@ -71,7 +309,7 @@ paths:
   /AdminModule/subtenant:
     post:
       summary: Add a new Subtenant
-      operationId: AdminModuleAddSubtenant
+      operationId: AdminModuleAddSubtenantAsync
       requestBody:
         content:
           application/json:
@@ -88,7 +326,7 @@ paths:
           description: Invalid input
     put:
       summary: Update an existing Subtenant
-      operationId: AdminModuleUpdateSubtenant
+      operationId: AdminModuleUpdateSubtenantAsync
       requestBody:
         content:
           application/json:
@@ -110,7 +348,7 @@ paths:
   /AdminModule/subtenant/listSubtenants:
     get:
       summary: List all Subtenants
-      operationId: AdminModuleListSubtenants
+      operationId: AdminModuleListSubtenantsAsync
       responses:
         200:
           description: successful operation
@@ -122,10 +360,97 @@ paths:
                   $ref: '#/components/schemas/Subtenant'
         400:
           description: Invalid status value
+  '/PublicModule/pet/{petId}':
+    get:
+      summary: Find pet by ID
+      description: Returns a single pet
+      operationId: PublicModuleGetPetByIdAsync
+      parameters:
+      - name: petId
+        in: path
+        required: true
+        description: ID of pet to return
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+        400:
+          description: Invalid ID supplied
+        404:
+          description: Pet not found
+      x-lz-gencall: PetRepo.ReadAsync(callerInfo, petId)
+  '/StoreModule/pet/{petId}':
+    delete:
+      summary: Deletes a pet
+      operationId: StoreModuleDeletePetAsync
+      parameters:
+      - name: petId
+        in: path
+        required: true
+        description: Pet id to delete
+        schema:
+          type: string
+      responses:
+        200:
+          description: Success
+        400:
+          description: Invalid ID supplied
+        404:
+          description: Pet not found
+      x-lz-gencall: PetRepo.DeleteAsync(callerInfo, petId)
+  '/StoreModule/order/{orderId}':
+    get:
+      summary: Find purchase order by ID
+      description: For valid response try integer IDs with value >= 1 and <= 10.\ \ Other values will generated exceptions
+      operationId: StoreModuleGetOrderByIdAsync
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        description: ID of pet that needs to be fetched
+        schema:
+          type: string
+          maximum: 10
+          minimum: 1
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        400:
+          description: Invalid ID supplied
+        404:
+          description: Order not found
+      x-lz-gencall: OrderRepo.ReadAsync(callerInfo, orderId)
+    delete:
+      summary: Delete purchase order by ID
+      operationId: StoreModuleDeleteOrderAsync
+      parameters:
+      - name: orderId
+        in: path
+        required: true
+        description: ID of the order that needs to be deleted
+        schema:
+          type: string
+      responses:
+        200:
+          description: Success
+        400:
+          description: Invalid ID supplied
+        404:
+          description: Order not found
+      x-lz-gencall: OrderRepo.DeleteAsync(callerInfo, orderId)
   '/AdminModule/subtenant/seedPets/{store}/{numPets}':
     get:
       summary: See pet database
-      operationId: AdminModuleSeedPets
+      operationId: AdminModuleSeedPetsAsync
       parameters:
       - name: store
         in: path
@@ -146,7 +471,7 @@ paths:
   '/AdminModule/suspendTenantUser/{tenantUser}':
     get:
       summary: Suspend TenantUser
-      operationId: AdminModuleSuspendTenantUser
+      operationId: AdminModuleSuspendTenantUserAsync
       parameters:
       - name: tenantUser
         in: path
@@ -160,7 +485,7 @@ paths:
   '/AdminModule/tenantUser/{tenantUserId}':
     get:
       summary: Find tenantUser by ID
-      operationId: AdminModuleGetTenantUserById
+      operationId: AdminModuleGetTenantUserByIdAsync
       parameters:
       - name: tenantUserId
         in: path
@@ -183,7 +508,7 @@ paths:
   '/AdminModule/tenantUser/delete/{tenantUserId}':
     delete:
       summary: Delete tenantUser by ID
-      operationId: AdminModuleDeleteTenantUser
+      operationId: AdminModuleDeleteTenantUserAsync
       parameters:
       - name: tenantUserId
         in: path
@@ -202,7 +527,7 @@ paths:
   '/AdminModule/subtenant/{subtenantId}':
     get:
       summary: Find Subtenant by ID
-      operationId: AdminModuleGetSubtenantById
+      operationId: AdminModuleGetSubtenantByIdAsync
       parameters:
       - name: SubtenantId
         in: path
@@ -224,7 +549,7 @@ paths:
   '/AdminModule/subtenant/delete/{subtenantId}':
     delete:
       summary: Delete Subtenant by ID
-      operationId: AdminModuleDeleteSubtenant
+      operationId: AdminModuleDeleteSubtenantAsync
       parameters:
       - name: SubtenantId
         in: path

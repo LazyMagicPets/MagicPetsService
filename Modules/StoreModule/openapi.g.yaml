@@ -3,7 +3,7 @@ paths:
   /StoreModule/pet/listPets:
     get:
       summary: List all pets
-      operationId: StoreModuleListPets
+      operationId: StoreModuleListPetsAsync
       responses:
         200:
           description: successful operation
@@ -16,37 +16,10 @@ paths:
         400:
           description: Invalid status value
       x-lz-gencall: PetRepo.ListAsync(callerInfo)
-  /StoreModule/pet/findByStatus:
-    get:
-      summary: Finds Pets by status
-      description: Multiple status values can be provided with comma separated strings
-      operationId: StoreModuleFindPetsByStatus
-      parameters:
-      - name: petStatus
-        in: query
-        explode: true
-        required: true
-        description: Status values that need to be considered for filter
-        schema:
-          type: array
-          default: available
-          items:
-            $ref: '#/components/schemas/PetStatus'
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pet'
-        400:
-          description: Invalid status value
   /StoreModule/pet:
     post:
       summary: Add a new pet to the store
-      operationId: StoreModuleAddPet
+      operationId: StoreModuleAddPetAsync
       requestBody:
         content:
           application/json:
@@ -64,7 +37,7 @@ paths:
       x-lz-gencall: PetRepo.CreateAsync(callerInfo, body)
     put:
       summary: Update an existing pet
-      operationId: StoreModuleUpdatePet
+      operationId: StoreModuleUpdatePetAsync
       requestBody:
         content:
           application/json:
@@ -84,65 +57,11 @@ paths:
         405:
           description: Validation exception
       x-lz-gencall: PetRepo.UpdateAsync(callerInfo, body)
-  /StoreModule/pet/findByTags:
-    get:
-      summary: Finds Pets by tags
-      description: Muliple tags can be provided with comma separated strings. Use\ \ tag1, tag2, tag3 for testing.
-      operationId: StoreModuleFindPetsByTags
-      parameters:
-      - name: tags
-        in: query
-        explode: true
-        required: true
-        description: Tags to filter by
-        schema:
-          type: array
-          items:
-            type: string
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Pet'
-        400:
-          description: Invalid tag value
-  /StoreModule/pet/categories:
-    get:
-      summary: Get all Pet Categories
-      operationId: StoreModuleGetPetCategories
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Category'
-      x-lz-gencall: CategoryRepo.ListAsync(callerInfo)
-  /StoreModule/pet/tags:
-    get:
-      summary: Get all Pet Tags
-      operationId: StoreModuleGetPetTags
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Tag'
-      x-lz-gencall: TagRepo.ListAsync(callerInfo)
   /StoreModule/order/inventory:
     get:
       summary: Returns pet inventories by status
       description: Returns a map of status codes to quantities
-      operationId: StoreModuleGetInventory
+      operationId: StoreModuleGetInventoryAsync
       responses:
         200:
           description: successful operation
@@ -156,7 +75,7 @@ paths:
   /StoreModule/order:
     post:
       summary: Place an order for a pet
-      operationId: StoreModulePlaceOrder
+      operationId: StoreModulePlaceOrderAsync
       requestBody:
         description: order placed for purchasing the pet
         content:
@@ -175,32 +94,9 @@ paths:
           description: Invalid Order
       x-lz-gencall: OrderRepo.CreateAsync(callerInfo, body)
   /StoreModule/pet/{petId}:
-    get:
-      summary: Find pet by ID
-      description: Returns a single pet
-      operationId: StoreModuleGetPetById
-      parameters:
-      - name: petId
-        in: path
-        required: true
-        description: ID of pet to return
-        schema:
-          type: string
-      responses:
-        200:
-          description: successful operation
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Pet'
-        400:
-          description: Invalid ID supplied
-        404:
-          description: Pet not found
-      x-lz-gencall: PetRepo.ReadAsync(callerInfo, petId)
     delete:
       summary: Deletes a pet
-      operationId: StoreModuleDeletePet
+      operationId: StoreModuleDeletePetAsync
       parameters:
       - name: petId
         in: path
@@ -220,7 +116,7 @@ paths:
     get:
       summary: Find purchase order by ID
       description: For valid response try integer IDs with value >= 1 and <= 10.\ \ Other values will generated exceptions
-      operationId: StoreModuleGetOrderById
+      operationId: StoreModuleGetOrderByIdAsync
       parameters:
       - name: orderId
         in: path
@@ -244,7 +140,7 @@ paths:
       x-lz-gencall: OrderRepo.ReadAsync(callerInfo, orderId)
     delete:
       summary: Delete purchase order by ID
-      operationId: StoreModuleDeleteOrder
+      operationId: StoreModuleDeleteOrderAsync
       parameters:
       - name: orderId
         in: path

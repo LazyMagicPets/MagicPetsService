@@ -2,7 +2,7 @@ openapi: 3.0.1
 paths:
   /PublicModule/fingerprint/create:
     post:
-      operationId: PublicModuleFingerprintCreate
+      operationId: PublicModuleFingerprintCreateAsync
       requestBody:
         content:
           application/json:
@@ -23,7 +23,7 @@ paths:
   /PublicModule/pet/listPets:
     get:
       summary: List all pets
-      operationId: PublicModuleListPets
+      operationId: PublicModuleListPetsAsync
       responses:
         200:
           description: successful operation
@@ -40,7 +40,7 @@ paths:
     get:
       summary: Finds Pets by status
       description: Multiple status values can be provided with comma separated strings
-      operationId: PublicModuleFindPetsByStatus
+      operationId: PublicModuleFindPetsByStatusAsync
       parameters:
       - name: petStatus
         in: query
@@ -67,7 +67,7 @@ paths:
     get:
       summary: Finds Pets by tags
       description: Muliple tags can be provided with comma separated strings. Use\ \ tag1, tag2, tag3 for testing.
-      operationId: PublicModuleFindPetsByTags
+      operationId: PublicModuleFindPetsByTagsAsync
       parameters:
       - name: tags
         in: query
@@ -92,7 +92,7 @@ paths:
   /PublicModule/pet/categories:
     get:
       summary: Get all Pet Categories
-      operationId: PublicModuleGetPetCategories
+      operationId: PublicModuleGetPetCategoriesAsync
       responses:
         200:
           description: successful operation
@@ -106,7 +106,7 @@ paths:
   /PublicModule/pet/tags:
     get:
       summary: Get all Pet Tags
-      operationId: PublicModuleGetPetTags
+      operationId: PublicModuleGetPetTagsAsync
       responses:
         200:
           description: successful operation
@@ -121,7 +121,7 @@ paths:
     get:
       summary: Find pet by ID
       description: Returns a single pet
-      operationId: PublicModuleGetPetById
+      operationId: PublicModuleGetPetByIdAsync
       parameters:
       - name: petId
         in: path
