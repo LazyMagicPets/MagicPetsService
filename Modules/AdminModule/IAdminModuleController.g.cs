@@ -22,7 +22,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<TenantUser>> AdminModuleAddTenantUserAsync(TenantUser body);
+        Task<ActionResult<TenantUser>> AdminModuleAddTenantUserAsync(TenantUser body = null);
 
         /// <summary>
         /// Update an existing tenantUser
@@ -31,7 +31,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<TenantUser>> AdminModuleUpdateTenantUserAsync(TenantUser body);
+        Task<ActionResult<TenantUser>> AdminModuleUpdateTenantUserAsync(TenantUser body = null);
 
         /// <summary>
         /// List all tenantUsers
@@ -48,7 +48,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Subtenant>> AdminModuleAddSubtenantAsync(Subtenant body);
+        Task<ActionResult<Subtenant>> AdminModuleAddSubtenantAsync(Subtenant body = null);
 
         /// <summary>
         /// Update an existing Subtenant
@@ -57,7 +57,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Subtenant>> AdminModuleUpdateSubtenantAsync(Subtenant body);
+        Task<ActionResult<Subtenant>> AdminModuleUpdateSubtenantAsync(Subtenant body = null);
 
         /// <summary>
         /// List all Subtenants
@@ -71,13 +71,13 @@ namespace AdminModule
         /// See pet database
         /// </summary>
 
-        /// <param name="store">Store to seed</param>
-
         /// <param name="numPets">Number of pets to seed</param>
+
+        /// <param name="store">Store to seed</param>
 
         /// <returns>Success</returns>
 
-        Task<IActionResult> AdminModuleSeedPetsAsync(string store, int numPets);
+        Task<IActionResult> AdminModuleSeedPetsAsync(int numPets, string store);
 
         /// <summary>
         /// Suspend TenantUser

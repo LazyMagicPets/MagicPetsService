@@ -40,7 +40,7 @@ namespace ConsumerModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpPost, Route("ConsumerModule/preferences")]
-        public virtual async Task<ActionResult<Preferences>> ConsumerModuleUpdatePreferencesAsync([FromBody] Preferences body)
+        public virtual async Task<ActionResult<Preferences>> ConsumerModuleUpdatePreferencesAsync([FromBody] Preferences body = null)
         {
             var callerInfo = await ConsumerModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await PreferencesRepo.UpdateAsync(callerInfo, body);

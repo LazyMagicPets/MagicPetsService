@@ -27,7 +27,7 @@ namespace PublicModule
 
         /// <returns>successful operation</returns>
         [HttpPost, Route("PublicModule/fingerprint/create")]
-        public virtual async Task<ActionResult<Fingerprint>> PublicModuleFingerprintCreateAsync([FromBody] Fingerprint body)
+        public virtual async Task<ActionResult<Fingerprint>> PublicModuleFingerprintCreateAsync([FromBody] Fingerprint body = null)
         {
             var callerInfo = await PublicModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await FingerprintRepo.CreateAsync(callerInfo, body);

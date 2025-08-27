@@ -22,7 +22,7 @@ namespace ConsumerModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Preferences>> ConsumerModuleUpdatePreferencesAsync(Preferences body);
+        Task<ActionResult<Preferences>> ConsumerModuleUpdatePreferencesAsync(Preferences body = null);
 
     }
 

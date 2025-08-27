@@ -39,7 +39,7 @@ namespace AdminModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpPost, Route("AdminModule/tenantUser")]
-        public virtual async Task<ActionResult<TenantUser>> AdminModuleAddTenantUserAsync([FromBody] TenantUser body)
+        public virtual async Task<ActionResult<TenantUser>> AdminModuleAddTenantUserAsync([FromBody] TenantUser body = null)
         {
             var callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await TenantUserRepo.CreateAsync(callerInfo, body);
@@ -49,7 +49,7 @@ namespace AdminModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpPut, Route("AdminModule/tenantUser")]
-        public virtual async Task<ActionResult<TenantUser>> AdminModuleUpdateTenantUserAsync([FromBody] TenantUser body)
+        public virtual async Task<ActionResult<TenantUser>> AdminModuleUpdateTenantUserAsync([FromBody] TenantUser body = null)
         {
             var callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await TenantUserRepo.UpdateAsync(callerInfo, body);
@@ -69,7 +69,7 @@ namespace AdminModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpPost, Route("AdminModule/subtenant")]
-        public virtual async Task<ActionResult<Subtenant>> AdminModuleAddSubtenantAsync([FromBody] Subtenant body)
+        public virtual async Task<ActionResult<Subtenant>> AdminModuleAddSubtenantAsync([FromBody] Subtenant body = null)
         {
             throw new NotImplementedException();
         }
@@ -78,7 +78,7 @@ namespace AdminModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpPut, Route("AdminModule/subtenant")]
-        public virtual async Task<ActionResult<Subtenant>> AdminModuleUpdateSubtenantAsync([FromBody] Subtenant body)
+        public virtual async Task<ActionResult<Subtenant>> AdminModuleUpdateSubtenantAsync([FromBody] Subtenant body = null)
         {
             throw new NotImplementedException();
         }
@@ -94,11 +94,11 @@ namespace AdminModule
         /// <summary>
         /// See pet database
         /// </summary>
-        /// <param name="store">Store to seed</param>
         /// <param name="numPets">Number of pets to seed</param>
+        /// <param name="store">Store to seed</param>
         /// <returns>Success</returns>
         [HttpGet, Route("AdminModule/subtenant/seedPets/{store}/{numPets}")]
-        public virtual async Task<IActionResult> AdminModuleSeedPetsAsync(string store, int numPets)
+        public virtual async Task<IActionResult> AdminModuleSeedPetsAsync(int numPets, string store)
         {
             throw new NotImplementedException();
         }

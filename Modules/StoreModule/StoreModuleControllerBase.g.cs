@@ -40,7 +40,7 @@ namespace StoreModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpPost, Route("StoreModule/pet")]
-        public virtual async Task<ActionResult<Pet>> StoreModuleAddPetAsync([FromBody] Pet body)
+        public virtual async Task<ActionResult<Pet>> StoreModuleAddPetAsync([FromBody] Pet body = null)
         {
             var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await PetRepo.CreateAsync(callerInfo, body);
@@ -50,7 +50,7 @@ namespace StoreModule
         /// </summary>
         /// <returns>successful operation</returns>
         [HttpPut, Route("StoreModule/pet")]
-        public virtual async Task<ActionResult<Pet>> StoreModuleUpdatePetAsync([FromBody] Pet body)
+        public virtual async Task<ActionResult<Pet>> StoreModuleUpdatePetAsync([FromBody] Pet body = null)
         {
             var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await PetRepo.UpdateAsync(callerInfo, body);

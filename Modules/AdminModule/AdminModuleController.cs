@@ -51,7 +51,8 @@ public partial class AdminModuleController
         }
     }
 
-    public override async Task<IActionResult> AdminModuleSeedPetsAsync(string store, int numPets)
+    [HttpGet, Route("AdminModule/subtenant/seedPets/{store}/{numPets}")]
+    public override async Task<IActionResult> AdminModuleSeedPetsAsync(int numPets, string store)
     {
         try
         {

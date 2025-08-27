@@ -11,7 +11,7 @@ namespace PublicModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Fingerprint>> PublicModuleFingerprintCreateAsync(Fingerprint body);
+        Task<ActionResult<Fingerprint>> PublicModuleFingerprintCreateAsync(Fingerprint body = null);
 
         /// <summary>
         /// List all pets

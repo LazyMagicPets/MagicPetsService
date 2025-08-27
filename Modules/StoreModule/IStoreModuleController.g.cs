@@ -22,7 +22,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Pet>> StoreModuleAddPetAsync(Pet body);
+        Task<ActionResult<Pet>> StoreModuleAddPetAsync(Pet body = null);
 
         /// <summary>
         /// Update an existing pet
@@ -31,7 +31,7 @@ namespace StoreModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Pet>> StoreModuleUpdatePetAsync(Pet body);
+        Task<ActionResult<Pet>> StoreModuleUpdatePetAsync(Pet body = null);
 
         /// <summary>
         /// Returns pet inventories by status
