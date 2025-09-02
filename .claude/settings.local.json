@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(/mnt/c/Users/TimothyMay/repos/_Dev/MagicPets/**)",
+      "Read(/mnt/c/Users/TimothyMay/repos/_Dev/MagicPets/AdminApp/**)",
+      "Read(/mnt/c/Users/TimothyMay/repos/_Dev/MagicPets/AdminApp/WASMApp/**)",
+      "Read(/mnt/c/Users/TimothyMay/repos/_Dev/MagicPets/AdminApp/MAUIApp/**)",
+      "Read(/mnt/c/Users/TimothyMay/repos/_Dev/MagicPets/Tenancies/**)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

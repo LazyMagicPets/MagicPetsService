@@ -27,10 +27,10 @@ namespace ConsumerApi
         private string _baseUrl;
         #pragma warning restore 8618
 
-        private ILzHttpClient _httpClient;
+        private HttpClient _httpClient;
         private static System.Lazy<Newtonsoft.Json.JsonSerializerSettings> _settings = new System.Lazy<Newtonsoft.Json.JsonSerializerSettings>(CreateSerializerSettings, true);
 
-        public ConsumerApi(ILzHttpClient httpClient)
+        public ConsumerApi(HttpClient httpClient)
         {
             _httpClient = httpClient;
         }
@@ -46,9 +46,9 @@ namespace ConsumerApi
 
         static partial void UpdateJsonSerializerSettings(Newtonsoft.Json.JsonSerializerSettings settings);
 
-        partial void PrepareRequest(ILzHttpClient client, System.Net.Http.HttpRequestMessage request, string url);
-        partial void PrepareRequest(ILzHttpClient client, System.Net.Http.HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
-        partial void ProcessResponse(ILzHttpClient client, System.Net.Http.HttpResponseMessage response);
+        partial void PrepareRequest(HttpClient client, System.Net.Http.HttpRequestMessage request, string url);
+        partial void PrepareRequest(HttpClient client, System.Net.Http.HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
+        partial void ProcessResponse(HttpClient client, System.Net.Http.HttpResponseMessage response);
 
         /// <returns>successful operation</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
