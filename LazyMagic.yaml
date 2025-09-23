@@ -50,13 +50,13 @@ Directives:
     Service: Service
 
   # AUTHENTICATORS - Authentication services
-  TenantAuth:
+  tenantauth:
     Type: Authentication
     Artifacts:
       AwsCognitoResource: 
         Template: Templates/sam.cognito.tenant.yaml
 
-  ConsumerAuth:
+  consumerauth:
     Type: Authentication
     Artifacts:
       AwsCognitoResource:
@@ -165,21 +165,21 @@ Directives:
   AdminApi:
     Type: Api
     Defaults: ApiDefault
-    Authentication: TenantAuth
+    Authentication: tenantauth
     Containers:
     - AdminLambda
 
   StoreApi:
     Type: Api
     Defaults: ApiDefault
-    Authentication: TenantAuth
+    Authentication: tenantauth
     Containers:
     - StoreLambda
 
   ConsumerApi:
     Type: Api
     Defaults: ApiDefault
-    Authentication: ConsumerAuth
+    Authentication: consumerauth
     Containers:
     - ConsumerLambda
 

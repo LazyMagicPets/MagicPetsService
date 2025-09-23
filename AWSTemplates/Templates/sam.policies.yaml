@@ -3,6 +3,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Description: | 
   This stack creates ubiqutious cloudfront policies, functions etc. for tenancies
 Parameters:
+
   SystemKey:
     Description: "System Name"
     Type: String
@@ -112,6 +113,7 @@ Resources:
         import cf from 'cloudfront';
         const kvsARN = "${KeyValueStoreArnParameter}";
         const kvs = cf.kvs(); 
+        const debug = false;
 
         async function handler(event) {
             try {
@@ -122,10 +124,21 @@ Resources:
                 const originalDomain = headers.host.value;
                 if(!request.uri) request.uri = '/';
 
+                let logMessage = "";
+                if (request.querystring) {
+                    // Check if it has a 'value' property like headers do
+                    if (request.querystring.value) {
+                        logMessage += '?' + request.querystring.value + '\n';
+                    } else {
+                        // Log the whole object to understand its structure
+                        logMessage += '?querystring object: ' + JSON.stringify(request.querystring) + '\n';
+                    }
+                }
+        
                 // Helper function for error responses
                 const err = (code, msg) => ({statusCode: code, statusDescription: code === 404 ? 'Not Found' : 'Error', body: msg});
 
-                // Get config
+                // Get config from KVS
                 let config = await GetConfig(headers.host.value);
                 const configJson = JSON.stringify(config);  
 
@@ -164,9 +177,10 @@ Resources:
                         });
                     });
 
-                    // Sort by path length (longest first) and find first match
+                    // Sort by path length (longest first)
                     behaviorsRef.sort((a, b) => b[0].length - a[0].length);
 
+                    // Find the first behavior that matches the request.uri 
                     for(let i = 0; i < behaviorsRef.length; i++) {
                         if (request.uri.startsWith(behaviorsRef[i][0])) {
                             redirectPath = behaviorsRef[i][2];
@@ -175,14 +189,6 @@ Resources:
                         }            
                     }
                 }   
-
-                if(redirectPath) {
-                    return {
-                        statusCode: 302,
-                        statusDescription: 'Found',
-                        headers: {location: {value: redirectPath}}
-                    };
-                }
 
                 if(!behavior) return err(404, 'No path match');
 
@@ -193,6 +199,7 @@ Resources:
                 let removePrefix = false;
                 let addCacheHeader = false;
                 let assetName = "";
+                let appPath = "";
 
                 switch(assetType) {
                     case "api":
@@ -206,6 +213,8 @@ Resources:
                             headers['lz-config-authorization'] = {value: authheader};
                         }
                         headers['lz-aws-kvsarn'] = {value: kvsARN};
+                        const apiSecondSlash = request.uri.indexOf('/', 1); 
+                        request.uri = apiSecondSlash > 0 ? request.uri.slice(apiSecondSlash) : '/';
                         break;
                     case "assets":
                         const behaviorLevel = behavior[4];
@@ -214,15 +223,25 @@ Resources:
                         assetName = systemKey + '-' + assetTenantKey + '-' + assetSubtenantKey + '-' + assetType + '-' + behavior[2] + '.s3.' + behavior[3] + awsSuffix;
                         removePrefix = true;
                         addCacheHeader = true;
+                        const assetsSecondSlash = request.uri.indexOf('/', 1); 
+                        request.uri = assetsSecondSlash > 0 ? request.uri.slice(assetsSecondSlash) : '/';
                         break;
                     case "webapp":
+                        const paths = behavior[0].split(',');
+                        appPath = paths[0];
                         const webLevel = behavior[4];
                         const webTenantKey = webLevel > 0 ? tenantKey : '';
                         const webSubtenantKey = webLevel > 1 ? subtenantKey : '';
                         assetName = systemKey + '-' + webTenantKey + '-' + webSubtenantKey + '-' + assetType + '-' + behavior[2] + '-' + behavior[3] + '.s3.' + behavior[4] + awsSuffix;
-                        removePrefix = true;
+                        removePrefix = false;
                         addCacheHeader = true;
                         originPath = "/wwwroot";
+
+                        // Adjust uri for non-static page requests. We need to return index.html for 
+                        // non-static webapp content. This happens when processing redirects for example.
+                            if (!(/\.[a-zA-Z0-9]+$/.test(request.uri))) {
+                                request.uri = appPath + 'index.html';
+                            }
                         break;
                 }
 
@@ -234,28 +253,26 @@ Resources:
 
                 if (assetName.includes('{')) return err(404, 'Bad Config behavior entry');
 
-                // Handle webapp Page URLs
-                if (assetType == 'webapp' && request.uri.endsWith("Page")) {
-                    request.uri = request.uri.substring(0, request.uri.lastIndexOf('/'));
-                }
-
-                if(removePrefix) {
-                    const secondSlash = request.uri.indexOf('/', 1); 
-                    request.uri = secondSlash > 0 ? request.uri.slice(secondSlash) : '/';
-                }
-
-                const cacheKeyValue = assetName + '-' + originPath + '-' + request.uri;
+                const cacheKeyValue = assetName + '-' + originPath + '-' +  request.uri;
                 if(addCacheHeader) {
                     headers['x-custom-cache-key'] = {value: cacheKeyValue};
                 }
-        
 
                 if(request.uri === '/') {
                     headers['referrer'] = {value: originalDomain + '/sets'};
                 }
 
-
-                // console.log("request: " + originalDomain + originalUri + ", redirect: " + assetName + originPath + request.uri + " cachekey: " + cacheKeyValue);
+                if(debug && assetType == 'webapp' && appPath === "/baseapp/") {
+                    logMessage += "\n originalDomain: " +  originalDomain
+                               + "\n originalUri: " + originalUri
+                               + "\n appPath: " + appPath
+                               + "\n redirectPath:" + redirectPath
+                               + "\n assetName: " + assetName
+                               + "\n originPath:" + originPath
+                               + "\n cachekey: " + cacheKeyValue
+                               + "\n request.uri: " + request.uri;
+                    console.log(logMessage);
+                }
 
                 cf.updateRequestOrigin({
                     "domainName": assetName,
@@ -281,6 +298,7 @@ Resources:
                 }        
             }
         }
+
 
 
 

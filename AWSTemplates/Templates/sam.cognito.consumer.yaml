@@ -6,6 +6,11 @@ Description: |
   to sign themselves up.
 
 Parameters:
+
+  SystemSuffixParameter:
+    Description: "SystemSuffix"
+    Type: String
+
   SystemKeyParameter:
     Type: String
 
@@ -14,10 +19,10 @@ Parameters:
     Type: String
     Default: "Tenant_UserPool"    
 
-  DomainPrefixParameter:
-    Description: "Cognito Domain Prefix"
+  CustomDomainParameter:
+    Description: "Optional custom domain for Cognito (e.g., auth.example.com)"
     Type: String
-    Default: "magicpets"
+    Default: ""
 
   DeleteAfterDaysParameter:
     Description: "DeleteAfterDays"
@@ -39,11 +44,14 @@ Parameters:
     Type: Number
     Default: 1
 
+Conditions:
+  HasCustomDomain: !Not [!Equals [!Ref CustomDomainParameter, ""]]
+
 Resources:
   BackupVault:
     Type: AWS::Backup::BackupVault
     Properties:
-      BackupVaultName: !Sub ${SystemKeyParameter}---${UserPoolNameParameter}CognitoBackupVault
+      BackupVaultName: !Sub ${SystemSuffixParameter}---${UserPoolNameParameter}CognitoBackupVault
 
   BackupPlan:
     Type: AWS::Backup::BackupPlan
@@ -78,7 +86,7 @@ Resources:
   UserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain
     Properties:
-      Domain: !Ref DomainPrefixParameter
+      Domain: !Sub ${SystemSuffixParameter}-${UserPoolNameParameter}
       UserPoolId: !Ref UserPool
       
   UserPoolUICustomization:
@@ -166,22 +174,44 @@ Resources:
       - profile
       CallbackURLs:
       - awsloginmaui://auth-callback
-      - http://localhost:7777/auth-callback
-      - https://*.magicpetsdev.com/AuthPage/login-callback
-      - https://localhost:7218/AuthPage/login-callback
-      - https://localhost:7777/auth-callback
+      - https://localhost:7218/authentication/login-callback
+      - https://uptown.lazymagicdev.click/app/authentication/login-callback
+      - https://downtown.lazymagicdev.click/app/authentication/login-callback 
+
       LogoutURLs:
-      - https://*.magicpetsdev.com/
       - https://localhost:7218/
+      - https://uptown.lazymagicdev.click/app/
+      - https://downtown.lazymagicdev.click/app/
 
 Outputs:
   UserPoolId:
     Value: !Ref UserPool
   UserPoolClientId:
     Value: !Ref UserPoolClient
+  ClientId:
+    Description: "The OAuth2/OIDC Client ID (same as UserPoolClientId)"
+    Value: !Ref UserPoolClient
   UserPoolArn:
     Value: !GetAtt UserPool.Arn
   UserPoolDomain:
     Value: !Ref UserPoolDomain
+  IssuerUrl:
+    Description: "The JWT issuer URL (appears in the 'iss' claim of tokens)"
+    Value: !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+  AuthorityDomain:
+    Description: "The authority domain for OAuth2/OIDC authentication (custom domain if configured, otherwise same as IssuerUrl)"
+    Value: !If 
+      - HasCustomDomain
+      - !Sub https://${CustomDomainParameter}
+      - !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}
+  MetadataUrl:
+    Description: "The OIDC metadata discovery URL"
+    Value: !If
+      - HasCustomDomain
+      - !Sub https://${CustomDomainParameter}/.well-known/openid-configuration
+      - !Sub https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}/.well-known/openid-configuration
+  HostedUIDomain:
+    Description: "The Cognito Hosted UI domain (where users log in)"
+    Value: !Sub https://${UserPoolDomain}.auth.${AWS::Region}.amazoncognito.com
   SecurityLevel:
     Value: !Ref SecurityLevelParameter  

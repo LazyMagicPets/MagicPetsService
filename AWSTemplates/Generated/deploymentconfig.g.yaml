@@ -1,5 +1,5 @@
 Authentications:
-- Name: TenantAuth
+- Name: tenantauth
   Template: Templates/sam.cognito.tenant.yaml
   CallbackURL: https://www.example.com
   LogoutURL: https://www.example.com
@@ -7,7 +7,7 @@ Authentications:
   StartWindowMinutes: 60
   ScheduleExpression: cron(0 5 ? * * *)
   SecurityLevel: 1
-- Name: ConsumerAuth
+- Name: consumerauth
   Template: Templates/sam.cognito.consumer.yaml
   CallbackURL: https://www.example.com
   LogoutURL: https://www.example.com

@@ -24,25 +24,25 @@ Parameters:
     Type: String    
 
 #LzParameters start
-  TenantAuthUserPoolIdParameter:
+  tenantauthUserPoolIdParameter:
     Type: String
-  TenantAuthUserPoolClientIdParameter:
+  tenantauthUserPoolClientIdParameter:
     Type: String
-  TenantAuthIdentityPoolIdParameter:
+  tenantauthIdentityPoolIdParameter:
     Type: String
-  TenantAuthSecurityLevelParameter:
+  tenantauthSecurityLevelParameter:
     Type: String
-  TenantAuthUserPoolArnParameter:
+  tenantauthUserPoolArnParameter:
     Type: String
-  ConsumerAuthUserPoolIdParameter:
+  consumerauthUserPoolIdParameter:
     Type: String
-  ConsumerAuthUserPoolClientIdParameter:
+  consumerauthUserPoolClientIdParameter:
     Type: String
-  ConsumerAuthIdentityPoolIdParameter:
+  consumerauthIdentityPoolIdParameter:
     Type: String
-  ConsumerAuthSecurityLevelParameter:
+  consumerauthSecurityLevelParameter:
     Type: String
-  ConsumerAuthUserPoolArnParameter:
+  consumerauthUserPoolArnParameter:
     Type: String
 #LzParameters end
 
@@ -242,9 +242,9 @@ Resources:
             IdentitySource: $request.header.Authorization
             JwtConfiguration:
               issuer:
-                Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${TenantAuthUserPoolIdParameter}
+                Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${tenantauthUserPoolIdParameter}
               audience:
-              - Ref: TenantAuthUserPoolClientIdParameter
+              - Ref: tenantauthUserPoolClientIdParameter
         DefaultAuthorizer: OpenIdAuthorizer
 
       CorsConfiguration:
@@ -552,9 +552,9 @@ Resources:
             IdentitySource: $request.header.Authorization
             JwtConfiguration:
               issuer:
-                Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${TenantAuthUserPoolIdParameter}
+                Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${tenantauthUserPoolIdParameter}
               audience:
-              - Ref: TenantAuthUserPoolClientIdParameter
+              - Ref: tenantauthUserPoolClientIdParameter
         DefaultAuthorizer: OpenIdAuthorizer
 
       CorsConfiguration:
@@ -747,9 +747,9 @@ Resources:
             IdentitySource: $request.header.Authorization
             JwtConfiguration:
               issuer:
-                Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${ConsumerAuthUserPoolIdParameter}
+                Fn::Sub: https://cognito-idp.${AWS::Region}.amazonaws.com/${consumerauthUserPoolIdParameter}
               audience:
-              - Ref: ConsumerAuthUserPoolClientIdParameter
+              - Ref: consumerauthUserPoolClientIdParameter
         DefaultAuthorizer: OpenIdAuthorizer
 
       CorsConfiguration:
