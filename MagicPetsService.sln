@@ -3,31 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.6.33815.320
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{7D3B82E1-0428-4F38-BCB6-CD4008F43C2B}"
-	ProjectSection(SolutionItems) = preProject
-		.gitignore = .gitignore
-		CommonPackageHandling.targets = CommonPackageHandling.targets
-		Directory.Build.props = Directory.Build.props
-		Directory.Packages.props = Directory.Packages.props
-		LazyMagic.yaml = LazyMagic.yaml
-		LICENSE.txt = LICENSE.txt
-		LocalApis.json = LocalApis.json
-		openapi.admin-schema.yaml = openapi.admin-schema.yaml
-		openapi.admin.yaml = openapi.admin.yaml
-		openapi.consumer-schema.yaml = openapi.consumer-schema.yaml
-		openapi.consumer.yaml = openapi.consumer.yaml
-		openapi.messaging-schema.yaml = openapi.messaging-schema.yaml
-		openapi.messaging.yaml = openapi.messaging.yaml
-		openapi.public-schema.yaml = openapi.public-schema.yaml
-		openapi.public.yaml = openapi.public.yaml
-		openapi.shared-schema.yaml = openapi.shared-schema.yaml
-		openapi.store-schema.yaml = openapi.store-schema.yaml
-		openapi.store.yaml = openapi.store.yaml
-		.github\workflows\publish-nuget.yaml = .github\workflows\publish-nuget.yaml
-		README.md = README.md
-		ServiceVersion.props = ServiceVersion.props
-	EndProjectSection
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MakeRelease", "MakeRelease\MakeRelease.csproj", "{F1F11D3F-EBC4-40C1-8651-456A72D58DA1}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSTemplates", "AWSTemplates\AWSTemplates.csproj", "{B8EE3057-0BCC-4D51-8137-88991B57FBDE}"
@@ -101,8 +76,6 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "PublicApi", "ClientSDKs\Pub
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminModule", "Modules\AdminModule\AdminModule.csproj", "{F5F8EE6B-DE97-40EB-A31C-63B4BC423C36}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminLambda", "Containers\AdminLambda\AdminLambda.csproj", "{04491452-1D92-4602-9644-C66D0050AC3A}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminApi", "ClientSDKs\AdminApi\AdminApi.csproj", "{81FE8E6F-BC3D-429A-9CFD-A2FC8073E438}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ModuleClientInterface", "ProjectTemplates\ModuleClientInterface\ModuleClientInterface.csproj", "{766CAB4F-A317-41CE-81A6-E0133C27F55B}"
@@ -116,6 +89,36 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PublicModuleClientInterface", "ClientSDKs\PublicModuleClientInterface\PublicModuleClientInterface.csproj", "{38F521FA-E57B-2A6C-4FCE-EBC4B6040726}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "StoreModuleClientInterface", "ClientSDKs\StoreModuleClientInterface\StoreModuleClientInterface.csproj", "{C0BF45E0-D747-2883-40D5-EE9648652333}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{629B071D-24D3-40B3-90CC-8C15F70C4B0E}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		CommonPackageHandling.targets = CommonPackageHandling.targets
+		Directory.Build.props = Directory.Build.props
+		Directory.Packages.props = Directory.Packages.props
+		LazyMagic.yaml = LazyMagic.yaml
+		LICENSE.txt = LICENSE.txt
+		LocalApis.json = LocalApis.json
+		README.md = README.md
+		ServiceVersion.props = ServiceVersion.props
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "OpenAPI", "OpenAPI", "{0CCE4969-15D0-4657-B6DF-FBEDBC67F0EC}"
+	ProjectSection(SolutionItems) = preProject
+		openapi.admin-schema.yaml = openapi.admin-schema.yaml
+		openapi.admin.yaml = openapi.admin.yaml
+		openapi.consumer-schema.yaml = openapi.consumer-schema.yaml
+		openapi.consumer.yaml = openapi.consumer.yaml
+		openapi.messaging-schema.yaml = openapi.messaging-schema.yaml
+		openapi.messaging.yaml = openapi.messaging.yaml
+		openapi.public-schema.yaml = openapi.public-schema.yaml
+		openapi.public.yaml = openapi.public.yaml
+		openapi.shared-schema.yaml = openapi.shared-schema.yaml
+		openapi.store-schema.yaml = openapi.store-schema.yaml
+		openapi.store.yaml = openapi.store.yaml
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AdminLambda", "Containers\AdminLambda\AdminLambda.csproj", "{67C0B4B4-380F-477D-80B9-541855E27160}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -487,18 +490,6 @@ Global
 		{F5F8EE6B-DE97-40EB-A31C-63B4BC423C36}.Release|x64.Build.0 = Release|Any CPU
 		{F5F8EE6B-DE97-40EB-A31C-63B4BC423C36}.Release|x86.ActiveCfg = Release|Any CPU
 		{F5F8EE6B-DE97-40EB-A31C-63B4BC423C36}.Release|x86.Build.0 = Release|Any CPU
-		{04491452-1D92-4602-9644-C66D0050AC3A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{04491452-1D92-4602-9644-C66D0050AC3A}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{04491452-1D92-4602-9644-C66D0050AC3A}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{04491452-1D92-4602-9644-C66D0050AC3A}.Debug|x64.Build.0 = Debug|Any CPU
-		{04491452-1D92-4602-9644-C66D0050AC3A}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{04491452-1D92-4602-9644-C66D0050AC3A}.Debug|x86.Build.0 = Debug|Any CPU
-		{04491452-1D92-4602-9644-C66D0050AC3A}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{04491452-1D92-4602-9644-C66D0050AC3A}.Release|Any CPU.Build.0 = Release|Any CPU
-		{04491452-1D92-4602-9644-C66D0050AC3A}.Release|x64.ActiveCfg = Release|Any CPU
-		{04491452-1D92-4602-9644-C66D0050AC3A}.Release|x64.Build.0 = Release|Any CPU
-		{04491452-1D92-4602-9644-C66D0050AC3A}.Release|x86.ActiveCfg = Release|Any CPU
-		{04491452-1D92-4602-9644-C66D0050AC3A}.Release|x86.Build.0 = Release|Any CPU
 		{81FE8E6F-BC3D-429A-9CFD-A2FC8073E438}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{81FE8E6F-BC3D-429A-9CFD-A2FC8073E438}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{81FE8E6F-BC3D-429A-9CFD-A2FC8073E438}.Debug|x64.ActiveCfg = Debug|Any CPU
@@ -583,18 +574,18 @@ Global
 		{C0BF45E0-D747-2883-40D5-EE9648652333}.Release|x64.Build.0 = Release|Any CPU
 		{C0BF45E0-D747-2883-40D5-EE9648652333}.Release|x86.ActiveCfg = Release|Any CPU
 		{C0BF45E0-D747-2883-40D5-EE9648652333}.Release|x86.Build.0 = Release|Any CPU
-		{282DF343-14D3-0AD6-CFCC-A98FD7FB0A4D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{282DF343-14D3-0AD6-CFCC-A98FD7FB0A4D}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{282DF343-14D3-0AD6-CFCC-A98FD7FB0A4D}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{282DF343-14D3-0AD6-CFCC-A98FD7FB0A4D}.Debug|x64.Build.0 = Debug|Any CPU
-		{282DF343-14D3-0AD6-CFCC-A98FD7FB0A4D}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{282DF343-14D3-0AD6-CFCC-A98FD7FB0A4D}.Debug|x86.Build.0 = Debug|Any CPU
-		{282DF343-14D3-0AD6-CFCC-A98FD7FB0A4D}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{282DF343-14D3-0AD6-CFCC-A98FD7FB0A4D}.Release|Any CPU.Build.0 = Release|Any CPU
-		{282DF343-14D3-0AD6-CFCC-A98FD7FB0A4D}.Release|x64.ActiveCfg = Release|Any CPU
-		{282DF343-14D3-0AD6-CFCC-A98FD7FB0A4D}.Release|x64.Build.0 = Release|Any CPU
-		{282DF343-14D3-0AD6-CFCC-A98FD7FB0A4D}.Release|x86.ActiveCfg = Release|Any CPU
-		{282DF343-14D3-0AD6-CFCC-A98FD7FB0A4D}.Release|x86.Build.0 = Release|Any CPU
+		{67C0B4B4-380F-477D-80B9-541855E27160}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{67C0B4B4-380F-477D-80B9-541855E27160}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{67C0B4B4-380F-477D-80B9-541855E27160}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{67C0B4B4-380F-477D-80B9-541855E27160}.Debug|x64.Build.0 = Debug|Any CPU
+		{67C0B4B4-380F-477D-80B9-541855E27160}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{67C0B4B4-380F-477D-80B9-541855E27160}.Debug|x86.Build.0 = Debug|Any CPU
+		{67C0B4B4-380F-477D-80B9-541855E27160}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{67C0B4B4-380F-477D-80B9-541855E27160}.Release|Any CPU.Build.0 = Release|Any CPU
+		{67C0B4B4-380F-477D-80B9-541855E27160}.Release|x64.ActiveCfg = Release|Any CPU
+		{67C0B4B4-380F-477D-80B9-541855E27160}.Release|x64.Build.0 = Release|Any CPU
+		{67C0B4B4-380F-477D-80B9-541855E27160}.Release|x86.ActiveCfg = Release|Any CPU
+		{67C0B4B4-380F-477D-80B9-541855E27160}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -627,7 +618,6 @@ Global
 		{E1495856-98A0-4CBC-8A69-F50301CC5533} = {AB5364B2-AFA3-45F1-BA33-98908617401C}
 		{5047F97C-A9E5-4109-B90A-8CB3BD30BF67} = {AB5364B2-AFA3-45F1-BA33-98908617401C}
 		{F5F8EE6B-DE97-40EB-A31C-63B4BC423C36} = {57AACA63-0021-429A-B7F7-B2D489D454B7}
-		{04491452-1D92-4602-9644-C66D0050AC3A} = {FAF6C838-3B9D-4855-BA48-F09ADE9E29DD}
 		{81FE8E6F-BC3D-429A-9CFD-A2FC8073E438} = {AB5364B2-AFA3-45F1-BA33-98908617401C}
 		{766CAB4F-A317-41CE-81A6-E0133C27F55B} = {CB7F969B-7AA8-45AD-9AE4-9AB646E9C230}
 		{6D123211-7E29-49BE-82AF-FCC0F54F5D5A} = {CB7F969B-7AA8-45AD-9AE4-9AB646E9C230}
@@ -635,7 +625,7 @@ Global
 		{11924752-128B-EAB4-8E5E-091FB31EF33B} = {AB5364B2-AFA3-45F1-BA33-98908617401C}
 		{38F521FA-E57B-2A6C-4FCE-EBC4B6040726} = {AB5364B2-AFA3-45F1-BA33-98908617401C}
 		{C0BF45E0-D747-2883-40D5-EE9648652333} = {AB5364B2-AFA3-45F1-BA33-98908617401C}
-		{282DF343-14D3-0AD6-CFCC-A98FD7FB0A4D} = {FAF6C838-3B9D-4855-BA48-F09ADE9E29DD}
+		{67C0B4B4-380F-477D-80B9-541855E27160} = {FAF6C838-3B9D-4855-BA48-F09ADE9E29DD}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {0513C17B-C55E-4C6F-90B2-29118935F219}
