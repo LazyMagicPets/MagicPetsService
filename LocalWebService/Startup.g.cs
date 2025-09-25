@@ -137,7 +137,18 @@ public partial class Startup
             }
         }
 
-        app.UseAwsLocalWebApiRoutingMiddleware();
+        // UseAwsLocalWebApiRoutingMiddleware is a LazyMagic middleware that handles routing based on
+        // your systemconfig.yaml and AWS CloudFront Key-Value Store configuration.
+        // It is only useful in a local web service environment where the systemconfig.yaml
+        // file can be read. This routine is used to mimic the behavior of the CloudFront 
+        // {systemKey}---request function, which adds headers to the request required by 
+        // the LzAuthorization middleware.
+        // 1. Reads the local systemconfig.yaml file to get the systemKey and defaultTenancy.
+        // 2. Reads the system's CloudFront KeyValueStore named {systemKey}---kvs to get the ARN of the KeyValueStore. 
+        // 3. Loads the _defaultTenancy config, which is subsequently used to set headers for each Api request.
+        // See the LazyMagic.Service.AwsLocalWebApiRoutingMiddleware
+        // project for more details. https://github.com/LazyMagicOrg/LazyMagic
+        app.UseAwsLocalWebApiRoutingMiddleware(); 
         app.UseRouting();
         app.UseCors();
         app.UseWebSockets(new WebSocketOptions()

@@ -6,10 +6,13 @@
 
 global using Newtonsoft.Json;
 global using Newtonsoft.Json.Serialization;
-global using ConsumerSchema;
-global using ConsumerSchemaRepo;
 global using SharedSchema;
 global using SharedSchemaRepo;
 global using StoreSchema;
 global using StoreSchemaRepo;
+global using PublicSchema;
+global using PublicSchemaRepo;
+global using PublicModule;
+global using ConsumerSchema;
+global using ConsumerSchemaRepo;
 global using ConsumerModule;

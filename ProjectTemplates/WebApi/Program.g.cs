@@ -12,23 +12,23 @@ public partial class Program
 {
     public static void Main(string[] args)
     {
-        // Configure AWS credentials before building the host
-        using (var reader = new StreamReader("../../systemconfig.yaml"))
-        {
-            var yaml = new YamlStream();
-            yaml.Load(reader);
-            var mapping = (YamlMappingNode)yaml.Documents[0].RootNode;
-            var profile = ((YamlScalarNode)mapping.Children[new YamlScalarNode("Profile")]).Value;
-            var region = ((YamlScalarNode)mapping.Children[new YamlScalarNode("Region")]).Value;
+        //// Configure AWS credentials before building the host
+        //using (var reader = new StreamReader("../../systemconfig.yaml"))
+        //{
+        //    var yaml = new YamlStream();
+        //    yaml.Load(reader);
+        //    var mapping = (YamlMappingNode)yaml.Documents[0].RootNode;
+        //    var profile = ((YamlScalarNode)mapping.Children[new YamlScalarNode("Profile")]).Value;
+        //    var region = ((YamlScalarNode)mapping.Children[new YamlScalarNode("Region")]).Value;
 
-            var chain = new CredentialProfileStoreChain();
-            if (chain.TryGetAWSCredentials(profile, out var credentials))
-            {
-                Amazon.Runtime.FallbackCredentialsFactory.Reset();
-                Amazon.Runtime.FallbackCredentialsFactory.CredentialsGenerators.Clear();
-                Amazon.Runtime.FallbackCredentialsFactory.CredentialsGenerators.Add(() => credentials);
-            }
-        }
+        //    var chain = new CredentialProfileStoreChain();
+        //    if (chain.TryGetAWSCredentials(profile, out var credentials))
+        //    {
+        //        Amazon.Runtime.FallbackCredentialsFactory.Reset();
+        //        Amazon.Runtime.FallbackCredentialsFactory.CredentialsGenerators.Clear();
+        //        Amazon.Runtime.FallbackCredentialsFactory.CredentialsGenerators.Add(() => credentials);
+        //    }
+        //}
 
         var host = CreateHostBuilder(args).Build();
         using (var scope = host.Services.CreateScope())

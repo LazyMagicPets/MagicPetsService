@@ -1,10 +1,126 @@
 openapi: 3.0.1
 paths:
-  /preferences:
+  /PublicModule/fingerprint/create:
+    post:
+      operationId: PublicModuleFingerprintCreateAsync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Fingerprint'
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Fingerprint'
+        403:
+          description: Invalid permissions
+        405:
+          description: Invalid data
+      x-lz-gencall: FingerprintRepo.CreateAsync(callerInfo, body)
+  /PublicModule/pet/listPets:
+    get:
+      summary: List all pets
+      operationId: PublicModuleListPetsAsync
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+        400:
+          description: Invalid status value
+      x-lz-gencall: PetRepo.ListAsync(callerInfo)
+  /PublicModule/pet/findByStatus:
+    get:
+      summary: Finds Pets by status
+      description: Multiple status values can be provided with comma separated strings
+      operationId: PublicModuleFindPetsByStatusAsync
+      parameters:
+      - name: petStatus
+        in: query
+        explode: true
+        required: true
+        description: Status values that need to be considered for filter
+        schema:
+          type: array
+          default: available
+          items:
+            $ref: '#/components/schemas/PetStatus'
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+        400:
+          description: Invalid status value
+  /PublicModule/pet/findByTags:
+    get:
+      summary: Finds Pets by tags
+      description: Muliple tags can be provided with comma separated strings. Use\ \ tag1, tag2, tag3 for testing.
+      operationId: PublicModuleFindPetsByTagsAsync
+      parameters:
+      - name: tags
+        in: query
+        explode: true
+        required: true
+        description: Tags to filter by
+        schema:
+          type: array
+          items:
+            type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Pet'
+        400:
+          description: Invalid tag value
+  /PublicModule/pet/categories:
+    get:
+      summary: Get all Pet Categories
+      operationId: PublicModuleGetPetCategoriesAsync
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+      x-lz-gencall: CategoryRepo.ListAsync(callerInfo)
+  /PublicModule/pet/tags:
+    get:
+      summary: Get all Pet Tags
+      operationId: PublicModuleGetPetTagsAsync
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Tag'
+      x-lz-gencall: TagRepo.ListAsync(callerInfo)
+  /ConsumerModule/preferences:
     get:
       summary: Get user preferences
-      operationId: getPreferences
-      x-lz-gencall: PreferencesRepo.ReadAsync(callerInfo, callerInfo.LzUserId)
+      operationId: ConsumerModuleGetPreferencesAsync
       responses:
         200:
           description: successful operation
@@ -12,10 +128,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Preferences'
+      x-lz-gencall: PreferencesRepo.ReadAsync(callerInfo, callerInfo.LzUserId)
     post:
       summary: Update user preferences
-      operationId: updatePreferences
-      x-lz-gencall: PreferencesRepo.UpdateAsync(callerInfo, body)
+      operationId: ConsumerModuleUpdatePreferencesAsync
       requestBody:
         content:
           application/json:
@@ -28,6 +144,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Preferences'
+      x-lz-gencall: PreferencesRepo.UpdateAsync(callerInfo, body)
+  '/PublicModule/pet/{petId}':
+    get:
+      summary: Find pet by ID
+      description: Returns a single pet
+      operationId: PublicModuleGetPetByIdAsync
+      parameters:
+      - name: petId
+        in: path
+        required: true
+        description: ID of pet to return
+        schema:
+          type: string
+      responses:
+        200:
+          description: successful operation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Pet'
+        400:
+          description: Invalid ID supplied
+        404:
+          description: Pet not found
+      x-lz-gencall: PetRepo.ReadAsync(callerInfo, petId)
 components:
   schemas:
     Preferences:
@@ -197,4 +338,51 @@ components:
         name:
           type: string
       x-lz-genrepo: true
+    Fingerprint:
+      type: object
+      properties:
+        id:
+          type: string
+        fingerprint:
+          type: number
+        browser:
+          type: string
+        browserVersion:
+          type: string
+        os:
+          type: string
+        osVersion:
+          type: string
+        resolution:
+          type: string
+        userAgent:
+          type: string
+        device:
+          type: string
+        deviceType:
+          type: string
+        deviceVendor:
+          type: string
+        language:
+          type: string
+        timeZone:
+          type: string
+        screenPrint:
+          type: string
+        isMobile:
+          type: boolean
+        isChrome:
+          type: boolean
+        isFirefox:
+          type: boolean
+        isSafari:
+          type: boolean
+        isIE:
+          type: boolean
+        createUtcTick:
+          type: integer
+          format: int64
+        updateUtcTick:
+          type: integer
+          format: int64
 ...

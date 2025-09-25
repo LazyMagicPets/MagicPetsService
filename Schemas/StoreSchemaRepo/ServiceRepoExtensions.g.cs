@@ -15,12 +15,12 @@ public static partial class StoreSchemaRepoExtensions
 {
     public static IServiceCollection AddStoreSchemaRepo(this IServiceCollection services)
     {
+        AddCustom(services);    
 
         services.TryAddAWSService<Amazon.DynamoDBv2.IAmazonDynamoDB>();
-		services.TryAddSingleton<IOrderRepo, OrderRepo>();
+		services.TryAddTransient<IOrderRepo, OrderRepo>();
 
 
-        AddCustom(services);    
         return services;
     }
     // Implement this partial method in a separate file to add custom service registrations

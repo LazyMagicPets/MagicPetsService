@@ -15,12 +15,13 @@ public static partial class PublicSchemaRepoExtensions
 {
     public static IServiceCollection AddPublicSchemaRepo(this IServiceCollection services)
     {
+        AddCustom(services);    
 
         services.TryAddAWSService<Amazon.DynamoDBv2.IAmazonDynamoDB>();
-		services.TryAddSingleton<IBadaRepo, BadaRepo>();
+		services.TryAddTransient<IBadaRepo, BadaRepo>();
+		services.TryAddTransient<IFingerprintRepo, FingerprintRepo>();
 
 
-        AddCustom(services);    
         return services;
     }
     // Implement this partial method in a separate file to add custom service registrations

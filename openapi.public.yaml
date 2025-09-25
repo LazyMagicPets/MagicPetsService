@@ -1,6 +1,27 @@
 openapi: 3.0.1
 paths:
-  '/public/pet/listPets':
+  '/fingerprint/create':
+    post:
+      operationId: FingerprintCreate
+      x-lz-gencall: FingerprintRepo.CreateAsync(callerInfo, body)
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Fingerprint'
+      responses:
+        '200':
+          description: successful operation
+          content:
+              application/json:
+                schema:
+                    $ref: '#/components/schemas/Fingerprint'
+        '403':
+          description: Invalid permissions
+        '405':
+          description: Invalid data
+
+  '/pet/listPets':
     get:
       summary: List all pets 
       operationId: listPets 
@@ -17,7 +38,7 @@ paths:
         '400':
           description: Invalid status value
           
-  '/public/pet/findByStatus':
+  '/pet/findByStatus':
     get:
       summary: Finds Pets by status
       description: Multiple status values can be provided with comma separated strings
@@ -46,7 +67,7 @@ paths:
         '400':
           description: Invalid status value
 
-  '/public/pet/{petId}':
+  '/pet/{petId}':
     get:
       summary: Find pet by ID
       description: Returns a single pet
@@ -71,7 +92,7 @@ paths:
         '404':
           description: Pet not found
 
-  '/public/pet/findByTags':
+  '/pet/findByTags':
     get:
       summary: Finds Pets by tags
       description: >-
@@ -100,7 +121,7 @@ paths:
         '400':
           description: Invalid tag value
   # Categories
-  '/public/pet/categories':
+  '/pet/categories':
     get:
       summary: Get all Pet Categories
       operationId: getPetCategories
@@ -115,7 +136,7 @@ paths:
                 items:
                   $ref: '#/components/schemas/Category'
   # Tags
-  '/public/pet/tags':
+  '/pet/tags':
     get:
       summary: Get all Pet Tags
       operationId: getPetTags

@@ -15,14 +15,14 @@ public static partial class SharedSchemaRepoExtensions
 {
     public static IServiceCollection AddSharedSchemaRepo(this IServiceCollection services)
     {
+        AddCustom(services);    
 
         services.TryAddAWSService<Amazon.DynamoDBv2.IAmazonDynamoDB>();
-		services.TryAddSingleton<ICategoryRepo, CategoryRepo>();
-		services.TryAddSingleton<ITagRepo, TagRepo>();
-		services.TryAddSingleton<IPetRepo, PetRepo>();
+		services.TryAddTransient<ICategoryRepo, CategoryRepo>();
+		services.TryAddTransient<ITagRepo, TagRepo>();
+		services.TryAddTransient<IPetRepo, PetRepo>();
 
 
-        AddCustom(services);    
         return services;
     }
     // Implement this partial method in a separate file to add custom service registrations

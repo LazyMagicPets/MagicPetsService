@@ -16,7 +16,7 @@ Directives:
     Type: Module
     IsDefault: true # this directive may be referenced by other Module directives
     Artifacts:
-      DotNetControllerProject: # methods for each REST path operation
+      DotNetControllerProject: # methods for each REST path operation (now also generates client interface)
 
   # CONTAINERS Default  
   AwsApiLambdaContainerDefault:
@@ -50,13 +50,13 @@ Directives:
     Service: Service
 
   # AUTHENTICATORS - Authentication services
-  TenantAuth:
+  tenantauth:
     Type: Authentication
     Artifacts:
       AwsCognitoResource: 
         Template: Templates/sam.cognito.tenant.yaml
 
-  ConsumerAuth:
+  consumerauth:
     Type: Authentication
     Artifacts:
       AwsCognitoResource:
@@ -124,9 +124,11 @@ Directives:
  
   AdminLambda:
     Type: Container
-    ApiPrefix: Admin
     Defaults: AwsApiLambdaContainerDefault
     Modules:
+    - PublicModule
+    - ConsumerModule    
+    - StoreModule
     - AdminModule
     Artifacts:
       AwsApiLambdaResource: # AWS SAM template resource for the Lambda function
@@ -140,21 +142,21 @@ Directives:
 
   StoreLambda:
     Type: Container
-    ApiPrefix: Store
     Defaults: AwsApiLambdaContainerDefault
     Modules:
+    - PublicModule
+    - ConsumerModule    
     - StoreModule
 
   ConsumerLambda:
     Type: Container
-    ApiPrefix: Consumer
     Defaults: AwsApiLambdaContainerDefault
     Modules:
+    - PublicModule
     - ConsumerModule
 
   PublicLambda:
     Type: Container
-    ApiPrefix: Public
     Defaults: AwsApiLambdaContainerDefault
     Modules:
     - PublicModule
@@ -163,26 +165,23 @@ Directives:
   AdminApi:
     Type: Api
     Defaults: ApiDefault
-    Authentication: TenantAuth
+    Authentication: tenantauth
     Containers:
     - AdminLambda
 
   StoreApi:
     Type: Api
     Defaults: ApiDefault
-    Authentication: TenantAuth
+    Authentication: tenantauth
     Containers:
     - StoreLambda
-    - ConsumerLambda
-    - PublicLambda
 
   ConsumerApi:
     Type: Api
     Defaults: ApiDefault
-    Authentication: ConsumerAuth
+    Authentication: consumerauth
     Containers:
     - ConsumerLambda
-    - PublicLambda
 
   PublicApi:
     Type: Api
@@ -224,9 +223,6 @@ Directives:
     Path: admin
     Apis:
     - AdminApi
-    - StoreApi
-    - ConsumerApi
-    - PublicApi
 
   StoreApp:
     Type: WebApp
@@ -234,8 +230,6 @@ Directives:
     Path: store 
     Apis:
     - StoreApi
-    - ConsumerApi
-    - PublicApi
 
   ConsumerApp:
     Type: WebApp
@@ -243,7 +237,6 @@ Directives:
     Path: app
     Apis:
     - ConsumerApi
-    - PublicApi
 
 # TENANCIES
   Tenancy:

@@ -15,6 +15,7 @@ namespace PublicModule
             services.TryAddSingleton<IPublicModuleController, PublicModuleController>();
             services.AddSharedSchemaRepo();
 			services.AddStoreSchemaRepo();
+			services.AddPublicSchemaRepo();
             CustomConfigurations(services);
             return services;            
         }

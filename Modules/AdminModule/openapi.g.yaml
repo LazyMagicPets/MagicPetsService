@@ -1,9 +1,9 @@
 openapi: 3.0.1
 paths:
-  /isAdmin:
+  /AdminModule/isAdmin:
     get:
       summary: Check if currently logged in tenantUser is an admin
-      operationId: isAdmin
+      operationId: AdminModuleIsAdminAsync
       responses:
         200:
           description: successful operation
@@ -11,11 +11,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TenantUserStatus'
-  /tenantUser:
+  /AdminModule/tenantUser:
     post:
       summary: Add a new tenantUser
-      operationId: addTenantUser
-      x-lz-gencall: TenantUserRepo.CreateAsync(callerInfo, body)
+      operationId: AdminModuleAddTenantUserAsync
       requestBody:
         content:
           application/json:
@@ -30,10 +29,10 @@ paths:
                 $ref: '#/components/schemas/TenantUser'
         405:
           description: Invalid input
+      x-lz-gencall: TenantUserRepo.CreateAsync(callerInfo, body)
     put:
       summary: Update an existing tenantUser
-      operationId: updateTenantUser
-      x-lz-gencall: TenantUserRepo.UpdateAsync(callerInfo, body)
+      operationId: AdminModuleUpdateTenantUserAsync
       requestBody:
         content:
           application/json:
@@ -52,11 +51,11 @@ paths:
           description: TenantUser not found
         405:
           description: Validation exception
-  /tenantUser/listTenantUsers:
+      x-lz-gencall: TenantUserRepo.UpdateAsync(callerInfo, body)
+  /AdminModule/tenantUser/listTenantUsers:
     get:
       summary: List all tenantUsers
-      operationId: listTenantUsers
-      x-lz-gencall: TenantUserRepo.ListAsync(callerInfo)
+      operationId: AdminModuleListTenantUsersAsync
       responses:
         200:
           description: successful operation
@@ -68,10 +67,11 @@ paths:
                   $ref: '#/components/schemas/TenantUser'
         400:
           description: Invalid status value
-  /subtenant:
+      x-lz-gencall: TenantUserRepo.ListAsync(callerInfo)
+  /AdminModule/subtenant:
     post:
       summary: Add a new Subtenant
-      operationId: addSubtenant
+      operationId: AdminModuleAddSubtenantAsync
       requestBody:
         content:
           application/json:
@@ -88,7 +88,7 @@ paths:
           description: Invalid input
     put:
       summary: Update an existing Subtenant
-      operationId: updateSubtenant
+      operationId: AdminModuleUpdateSubtenantAsync
       requestBody:
         content:
           application/json:
@@ -107,10 +107,10 @@ paths:
           description: Subtenant not found
         405:
           description: Validation exception
-  /subtenant/listSubtenants:
+  /AdminModule/subtenant/listSubtenants:
     get:
       summary: List all Subtenants
-      operationId: listSubtenants
+      operationId: AdminModuleListSubtenantsAsync
       responses:
         200:
           description: successful operation
@@ -122,51 +122,50 @@ paths:
                   $ref: '#/components/schemas/Subtenant'
         400:
           description: Invalid status value
-  '/subtenant/seedPets/{store}/{numPets}':
+  /AdminModule/subtenant/seedPets/{store}/{numPets}:
     get:
       summary: See pet database
-      operationId: seedPets
+      operationId: AdminModuleSeedPetsAsync
       parameters:
       - name: store
         in: path
-        description: Store to seed
         required: true
+        description: Store to seed
         schema:
           type: string
       - name: numPets
         in: path
-        description: Number of pets to seed
         required: true
+        description: Number of pets to seed
         schema:
           type: integer
         default: 10
       responses:
         200:
           description: Success
-  '/suspendTenantUser/{tenantUser}':
+  /AdminModule/suspendTenantUser/{tenantUser}:
     get:
       summary: Suspend TenantUser
-      operationId: suspendTenantUser
+      operationId: AdminModuleSuspendTenantUserAsync
       parameters:
       - name: tenantUser
         in: path
-        description: tenantUser login
         required: true
+        description: tenantUser login
         schema:
           type: string
       responses:
         200:
           description: Success
-  '/tenantUser/{tenantUserId}':
+  /AdminModule/tenantUser/{tenantUserId}:
     get:
       summary: Find tenantUser by ID
-      operationId: getTenantUserById
-      x-lz-gencall: TenantUserRepo.ReadAsync(callerInfo, tenantUserId)
+      operationId: AdminModuleGetTenantUserByIdAsync
       parameters:
       - name: tenantUserId
         in: path
-        description: ID of tenantUser that needs to be fetched
         required: true
+        description: ID of tenantUser that needs to be fetched
         schema:
           type: string
       responses:
@@ -180,16 +179,16 @@ paths:
           description: Invalid ID supplied
         404:
           description: TenantUser not found
-  '/tenantUser/delete/{tenantUserId}':
+      x-lz-gencall: TenantUserRepo.ReadAsync(callerInfo, tenantUserId)
+  /AdminModule/tenantUser/delete/{tenantUserId}:
     delete:
       summary: Delete tenantUser by ID
-      operationId: deleteTenantUser
-      x-lz-gencall: TenantUserRepo.DeleteAsync(callerInfo, tenantUserId)
+      operationId: AdminModuleDeleteTenantUserAsync
       parameters:
       - name: tenantUserId
         in: path
-        description: ID of tenantUser that needs to be deleted
         required: true
+        description: ID of tenantUser that needs to be deleted
         schema:
           type: string
       responses:
@@ -199,15 +198,16 @@ paths:
           description: Invalid ID supplied
         404:
           description: TenantUser not found
-  '/subtenant/{subtenantId}':
+      x-lz-gencall: TenantUserRepo.DeleteAsync(callerInfo, tenantUserId)
+  /AdminModule/subtenant/{subtenantId}:
     get:
       summary: Find Subtenant by ID
-      operationId: getSubtenantById
+      operationId: AdminModuleGetSubtenantByIdAsync
       parameters:
       - name: SubtenantId
         in: path
-        description: ID of Subtenant that needs to be fetched
         required: true
+        description: ID of Subtenant that needs to be fetched
         schema:
           type: string
       responses:
@@ -221,15 +221,15 @@ paths:
           description: Invalid ID supplied
         404:
           description: Subtenant not found
-  '/subtenant/delete/{subtenantId}':
+  /AdminModule/subtenant/delete/{subtenantId}:
     delete:
       summary: Delete Subtenant by ID
-      operationId: deleteSubtenant
+      operationId: AdminModuleDeleteSubtenantAsync
       parameters:
       - name: SubtenantId
         in: path
-        description: ID of Subtenant that needs to be deleted
         required: true
+        description: ID of Subtenant that needs to be deleted
         schema:
           type: string
       responses:
@@ -408,4 +408,50 @@ components:
         name:
           type: string
       x-lz-genrepo: true
-...
+    Fingerprint:
+      type: object
+      properties:
+        id:
+          type: string
+        fingerprint:
+          type: number
+        browser:
+          type: string
+        browserVersion:
+          type: string
+        os:
+          type: string
+        osVersion:
+          type: string
+        resolution:
+          type: string
+        userAgent:
+          type: string
+        device:
+          type: string
+        deviceType:
+          type: string
+        deviceVendor:
+          type: string
+        language:
+          type: string
+        timeZone:
+          type: string
+        screenPrint:
+          type: string
+        isMobile:
+          type: boolean
+        isChrome:
+          type: boolean
+        isFirefox:
+          type: boolean
+        isSafari:
+          type: boolean
+        isIE:
+          type: boolean
+        createUtcTick:
+          type: integer
+          format: int64
+        updateUtcTick:
+          type: integer
+          format: int64

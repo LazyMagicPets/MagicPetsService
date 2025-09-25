@@ -7,13 +7,19 @@ namespace PublicModule
     public interface IPublicModuleController
     {
 
+
+
+        /// <returns>successful operation</returns>
+
+        Task<ActionResult<Fingerprint>> PublicModuleFingerprintCreateAsync(Fingerprint body = null);
+
         /// <summary>
         /// List all pets
         /// </summary>
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> ListPets();
+        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> PublicModuleListPetsAsync();
 
         /// <summary>
         /// Finds Pets by status
@@ -27,7 +33,7 @@ namespace PublicModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> FindPetsByStatus(System.Collections.Generic.IEnumerable<PetStatus> petStatus);
+        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> PublicModuleFindPetsByStatusAsync(System.Collections.Generic.IEnumerable<PetStatus> petStatus);
 
         /// <summary>
         /// Finds Pets by tags
@@ -41,7 +47,7 @@ namespace PublicModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> FindPetsByTags(System.Collections.Generic.IEnumerable<string> tags);
+        Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> PublicModuleFindPetsByTagsAsync(System.Collections.Generic.IEnumerable<string> tags);
 
         /// <summary>
         /// Get all Pet Categories
@@ -49,7 +55,7 @@ namespace PublicModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Category>>> GetPetCategories();
+        Task<ActionResult<System.Collections.Generic.ICollection<Category>>> PublicModuleGetPetCategoriesAsync();
 
         /// <summary>
         /// Get all Pet Tags
@@ -57,7 +63,7 @@ namespace PublicModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Tag>>> GetPetTags();
+        Task<ActionResult<System.Collections.Generic.ICollection<Tag>>> PublicModuleGetPetTagsAsync();
 
         /// <summary>
         /// Find pet by ID
@@ -71,7 +77,7 @@ namespace PublicModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Pet>> GetPetById(string petId);
+        Task<ActionResult<Pet>> PublicModuleGetPetByIdAsync(string petId);
 
     }
 

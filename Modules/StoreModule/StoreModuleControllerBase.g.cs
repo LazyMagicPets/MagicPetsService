@@ -29,31 +29,18 @@ namespace StoreModule
         /// List all pets
         /// </summary>
         /// <returns>successful operation</returns>
-        [HttpGet, Route("pet/listPets")]
-        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> ListPets()
+        [HttpGet, Route("StoreModule/pet/listPets")]
+        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> StoreModuleListPetsAsync()
         {
             var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await PetRepo.ListAsync(callerInfo);
         }
         /// <summary>
-        /// Finds Pets by status
-        /// </summary>
-        /// <remarks>
-        /// Multiple status values can be provided with comma separated strings
-        /// </remarks>
-        /// <param name="petStatus">Status values that need to be considered for filter</param>
-        /// <returns>successful operation</returns>
-        [HttpGet, Route("pet/findByStatus")]
-        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> FindPetsByStatus([FromQuery] System.Collections.Generic.IEnumerable<PetStatus> petStatus)
-        {
-            throw new NotImplementedException();
-        }
-        /// <summary>
         /// Add a new pet to the store
         /// </summary>
         /// <returns>successful operation</returns>
-        [HttpPost, Route("pet")]
-        public virtual async Task<ActionResult<Pet>> AddPet([FromBody] Pet body)
+        [HttpPost, Route("StoreModule/pet")]
+        public virtual async Task<ActionResult<Pet>> StoreModuleAddPetAsync([FromBody] Pet body = null)
         {
             var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await PetRepo.CreateAsync(callerInfo, body);
@@ -62,44 +49,11 @@ namespace StoreModule
         /// Update an existing pet
         /// </summary>
         /// <returns>successful operation</returns>
-        [HttpPut, Route("pet")]
-        public virtual async Task<ActionResult<Pet>> UpdatePet([FromBody] Pet body)
+        [HttpPut, Route("StoreModule/pet")]
+        public virtual async Task<ActionResult<Pet>> StoreModuleUpdatePetAsync([FromBody] Pet body = null)
         {
             var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await PetRepo.UpdateAsync(callerInfo, body);
-        }
-        /// <summary>
-        /// Finds Pets by tags
-        /// </summary>
-        /// <remarks>
-        /// Muliple tags can be provided with comma separated strings. Use\ \ tag1, tag2, tag3 for testing.
-        /// </remarks>
-        /// <param name="tags">Tags to filter by</param>
-        /// <returns>successful operation</returns>
-        [HttpGet, Route("pet/findByTags")]
-        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> FindPetsByTags([FromQuery] System.Collections.Generic.IEnumerable<string> tags)
-        {
-            throw new NotImplementedException();
-        }
-        /// <summary>
-        /// Get all Pet Categories
-        /// </summary>
-        /// <returns>successful operation</returns>
-        [HttpGet, Route("pet/categories")]
-        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Category>>> GetPetCategories()
-        {
-            var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await CategoryRepo.ListAsync(callerInfo);
-        }
-        /// <summary>
-        /// Get all Pet Tags
-        /// </summary>
-        /// <returns>successful operation</returns>
-        [HttpGet, Route("pet/tags")]
-        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Tag>>> GetPetTags()
-        {
-            var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await TagRepo.ListAsync(callerInfo);
         }
         /// <summary>
         /// Returns pet inventories by status
@@ -108,8 +62,8 @@ namespace StoreModule
         /// Returns a map of status codes to quantities
         /// </remarks>
         /// <returns>successful operation</returns>
-        [HttpGet, Route("order/inventory")]
-        public virtual async Task<ActionResult<System.Collections.Generic.IDictionary<string, int>>> GetInventory()
+        [HttpGet, Route("StoreModule/order/inventory")]
+        public virtual async Task<ActionResult<System.Collections.Generic.IDictionary<string, int>>> StoreModuleGetInventoryAsync()
         {
             throw new NotImplementedException();
         }
@@ -118,33 +72,19 @@ namespace StoreModule
         /// </summary>
         /// <param name="body">order placed for purchasing the pet</param>
         /// <returns>successful operation</returns>
-        [HttpPost, Route("order")]
-        public virtual async Task<ActionResult<Order>> PlaceOrder([FromBody] Order body)
+        [HttpPost, Route("StoreModule/order")]
+        public virtual async Task<ActionResult<Order>> StoreModulePlaceOrderAsync([FromBody] Order body)
         {
             var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await OrderRepo.CreateAsync(callerInfo, body);
-        }
-        /// <summary>
-        /// Find pet by ID
-        /// </summary>
-        /// <remarks>
-        /// Returns a single pet
-        /// </remarks>
-        /// <param name="petId">ID of pet to return</param>
-        /// <returns>successful operation</returns>
-        [HttpGet, Route("pet/{petId}")]
-        public virtual async Task<ActionResult<Pet>> GetPetById(string petId)
-        {
-            var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await PetRepo.ReadAsync(callerInfo, petId);
         }
         /// <summary>
         /// Deletes a pet
         /// </summary>
         /// <param name="petId">Pet id to delete</param>
         /// <returns>Success</returns>
-        [HttpDelete, Route("pet/{petId}")]
-        public virtual async Task<IActionResult> DeletePet(string petId)
+        [HttpDelete, Route("StoreModule/pet/{petId}")]
+        public virtual async Task<IActionResult> StoreModuleDeletePetAsync(string petId)
         {
             var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await PetRepo.DeleteAsync(callerInfo, petId);
@@ -157,8 +97,8 @@ namespace StoreModule
         /// </remarks>
         /// <param name="orderId">ID of pet that needs to be fetched</param>
         /// <returns>successful operation</returns>
-        [HttpGet, Route("order/{orderId}")]
-        public virtual async Task<ActionResult<Order>> GetOrderById(string orderId)
+        [HttpGet, Route("StoreModule/order/{orderId}")]
+        public virtual async Task<ActionResult<Order>> StoreModuleGetOrderByIdAsync(string orderId)
         {
             var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await OrderRepo.ReadAsync(callerInfo, orderId);
@@ -168,8 +108,8 @@ namespace StoreModule
         /// </summary>
         /// <param name="orderId">ID of the order that needs to be deleted</param>
         /// <returns>Success</returns>
-        [HttpDelete, Route("order/{orderId}")]
-        public virtual async Task<IActionResult> DeleteOrder(string orderId)
+        [HttpDelete, Route("StoreModule/order/{orderId}")]
+        public virtual async Task<IActionResult> StoreModuleDeleteOrderAsync(string orderId)
         {
             var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await OrderRepo.DeleteAsync(callerInfo, orderId);

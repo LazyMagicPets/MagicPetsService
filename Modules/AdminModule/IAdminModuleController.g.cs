@@ -13,7 +13,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<TenantUserStatus>> IsAdmin();
+        Task<ActionResult<TenantUserStatus>> AdminModuleIsAdminAsync();
 
         /// <summary>
         /// Add a new tenantUser
@@ -22,7 +22,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<TenantUser>> AddTenantUser(TenantUser body);
+        Task<ActionResult<TenantUser>> AdminModuleAddTenantUserAsync(TenantUser body = null);
 
         /// <summary>
         /// Update an existing tenantUser
@@ -31,7 +31,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<TenantUser>> UpdateTenantUser(TenantUser body);
+        Task<ActionResult<TenantUser>> AdminModuleUpdateTenantUserAsync(TenantUser body = null);
 
         /// <summary>
         /// List all tenantUsers
@@ -39,7 +39,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<TenantUser>>> ListTenantUsers();
+        Task<ActionResult<System.Collections.Generic.ICollection<TenantUser>>> AdminModuleListTenantUsersAsync();
 
         /// <summary>
         /// Add a new Subtenant
@@ -48,7 +48,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Subtenant>> AddSubtenant(Subtenant body);
+        Task<ActionResult<Subtenant>> AdminModuleAddSubtenantAsync(Subtenant body = null);
 
         /// <summary>
         /// Update an existing Subtenant
@@ -57,7 +57,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Subtenant>> UpdateSubtenant(Subtenant body);
+        Task<ActionResult<Subtenant>> AdminModuleUpdateSubtenantAsync(Subtenant body = null);
 
         /// <summary>
         /// List all Subtenants
@@ -65,19 +65,19 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<System.Collections.Generic.ICollection<Subtenant>>> ListSubtenants();
+        Task<ActionResult<System.Collections.Generic.ICollection<Subtenant>>> AdminModuleListSubtenantsAsync();
 
         /// <summary>
         /// See pet database
         /// </summary>
 
-        /// <param name="store">Store to seed</param>
-
         /// <param name="numPets">Number of pets to seed</param>
+
+        /// <param name="store">Store to seed</param>
 
         /// <returns>Success</returns>
 
-        Task<IActionResult> SeedPets(string store, int numPets);
+        Task<IActionResult> AdminModuleSeedPetsAsync(int numPets, string store);
 
         /// <summary>
         /// Suspend TenantUser
@@ -87,7 +87,7 @@ namespace AdminModule
 
         /// <returns>Success</returns>
 
-        Task<IActionResult> SuspendTenantUser(string tenantUser);
+        Task<IActionResult> AdminModuleSuspendTenantUserAsync(string tenantUser);
 
         /// <summary>
         /// Find tenantUser by ID
@@ -97,7 +97,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<TenantUser>> GetTenantUserById(string tenantUserId);
+        Task<ActionResult<TenantUser>> AdminModuleGetTenantUserByIdAsync(string tenantUserId);
 
         /// <summary>
         /// Delete tenantUser by ID
@@ -107,7 +107,7 @@ namespace AdminModule
 
         /// <returns>Success</returns>
 
-        Task<IActionResult> DeleteTenantUser(string tenantUserId);
+        Task<IActionResult> AdminModuleDeleteTenantUserAsync(string tenantUserId);
 
         /// <summary>
         /// Find Subtenant by ID
@@ -117,7 +117,7 @@ namespace AdminModule
 
         /// <returns>successful operation</returns>
 
-        Task<ActionResult<Subtenant>> GetSubtenantById(string subtenantId);
+        Task<ActionResult<Subtenant>> AdminModuleGetSubtenantByIdAsync(string subtenantId);
 
         /// <summary>
         /// Delete Subtenant by ID
@@ -127,7 +127,7 @@ namespace AdminModule
 
         /// <returns>Success</returns>
 
-        Task<IActionResult> DeleteSubtenant(string subtenantId);
+        Task<IActionResult> AdminModuleDeleteSubtenantAsync(string subtenantId);
 
     }
 
