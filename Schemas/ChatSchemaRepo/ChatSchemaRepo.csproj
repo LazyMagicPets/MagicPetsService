@@ -1,0 +1,18 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+	<Import Project="User.props" Condition="Exists('User.props')" />	
+	<ItemGroup>
+		<PackageReference Include="LazyMagic.Service.DynamoDBRepo" />
+		<PackageReference Include="LazyMagic.Service.Authorization" />
+		<PackageReference Include="LazyMagic.Service.Shared" />
+		<PackageReference Include="AWSSDK.Extensions.NETCore.Setup" />
+		<PackageReference Include="Amazon.Lambda.AspNetCoreServer" />		
+	</ItemGroup>
+	<Import Project="Projects.g.props" Condition="Exists('Projects.g.props')" />
+	<Import Project="Packages.g.props" Condition="Exists('Packages.g.props')" />
+</Project>

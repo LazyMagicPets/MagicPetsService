@@ -1,0 +1,298 @@
+openapi: 3.0.1
+components:
+  schemas:
+
+    # Session Management Schemas
+    ChatSession:
+      type: object
+      x-lz-genrepo: true
+      required:
+        - sessionId
+        - status
+        - createdAt
+      properties:
+        sessionId:
+          type: string
+          description: Unique identifier for the chat session
+        userId:
+          type: string
+          description: User ID from Cognito authentication
+        status:
+          $ref: '#/components/schemas/ChatSessionStatus'
+        createdAt:
+          type: string
+          format: date-time
+          description: When the session was created
+        lastActivityAt:
+          type: string
+          format: date-time
+          description: Last activity timestamp
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional session metadata
+
+    ChatSessionStatus:
+      type: string
+      enum:
+        - active
+        - processing
+        - completed
+        - error
+        - closed
+      description: Current status of the chat session
+
+    # Message Schemas
+    ChatMessage:
+      type: object
+      x-lz-genrepo: true
+      required:
+        - messageId
+        - sessionId
+        - role
+        - content
+        - timestamp
+      properties:
+        messageId:
+          type: string
+          description: Unique identifier for the message
+        sessionId:
+          type: string
+          description: Session this message belongs to
+        role:
+          $ref: '#/components/schemas/ChatMessageRole'
+        content:
+          type: string
+          description: Message content
+        timestamp:
+          type: string
+          format: date-time
+          description: When the message was created
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Additional message metadata
+
+    ChatMessageRole:
+      type: string
+      enum:
+        - user
+        - assistant
+        - system
+      description: Role of the message sender
+
+    # Request/Response Schemas
+    CreateSessionRequest:
+      type: object
+      required:
+        - initialMessage
+      properties:
+        initialMessage:
+          type: string
+          description: Initial message to start the conversation
+        sessionMetadata:
+          type: object
+          additionalProperties: true
+          description: Optional metadata for the session
+
+    CreateSessionResponse:
+      type: object
+      required:
+        - session
+      properties:
+        session:
+          $ref: '#/components/schemas/ChatSession'
+
+    SendMessageRequest:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          description: Message content to send
+        messageMetadata:
+          type: object
+          additionalProperties: true
+          description: Optional metadata for the message
+
+    SendMessageResponse:
+      type: object
+      required:
+        - message
+        - session
+      properties:
+        message:
+          $ref: '#/components/schemas/ChatMessage'
+        session:
+          $ref: '#/components/schemas/ChatSession'
+
+    GetSessionStatusResponse:
+      type: object
+      required:
+        - session
+        - messageCount
+      properties:
+        session:
+          $ref: '#/components/schemas/ChatSession'
+        messageCount:
+          type: integer
+          description: Total number of messages in the session
+        lastMessage:
+          $ref: '#/components/schemas/ChatMessage'
+
+    # Event Schemas for AppSync Events
+    SessionEvent:
+      type: object
+      required:
+        - eventType
+        - sessionId
+        - timestamp
+      properties:
+        eventType:
+          $ref: '#/components/schemas/SessionEventType'
+        sessionId:
+          type: string
+          description: Session this event relates to
+        timestamp:
+          type: string
+          format: date-time
+          description: When the event occurred
+        data:
+          type: object
+          additionalProperties: true
+          description: Event-specific data
+
+    SessionEventType:
+      type: string
+      enum:
+        - session_created
+        - session_status_changed
+        - message_received
+        - message_processing
+        - message_completed
+        - session_closed
+        - error_occurred
+      description: Type of session event
+
+    MessageEvent:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/SessionEvent'
+      properties:
+        message:
+          $ref: '#/components/schemas/ChatMessage'
+
+    StatusChangeEvent:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/SessionEvent'
+      properties:
+        oldStatus:
+          $ref: '#/components/schemas/ChatSessionStatus'
+        newStatus:
+          $ref: '#/components/schemas/ChatSessionStatus'
+
+    ErrorEvent:
+      type: object
+      allOf:
+        - $ref: '#/components/schemas/SessionEvent'
+      properties:
+        error:
+          type: string
+          description: Error message
+        errorCode:
+          type: string
+          description: Error code for client handling
+
+    # Error Response Schema
+    ChatError:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error type
+        message:
+          type: string
+          description: Human-readable error message
+        sessionId:
+          type: string
+          description: Session ID if error is session-related
+        timestamp:
+          type: string
+          format: date-time
+          description: When the error occurred
+
+    # Health Check Response Schemas
+    HealthCheckResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          $ref: '#/components/schemas/HealthStatus'
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+          description: Service version
+
+    HealthStatus:
+      type: string
+      enum:
+        - healthy
+        - unhealthy
+
+    UnhealthyResponse:
+      type: object
+      required:
+        - status
+        - timestamp
+      properties:
+        status:
+          $ref: '#/components/schemas/HealthStatus'
+        timestamp:
+          type: string
+          format: date-time
+        error:
+          type: string
+          description: Error description
+
+    # Session Messages Response Schema
+    SessionMessagesResponse:
+      type: object
+      required:
+        - messages
+        - pagination
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+
+    PaginationInfo:
+      type: object
+      required:
+        - page
+        - limit
+        - totalMessages
+        - hasMore
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+        totalMessages:
+          type: integer
+          minimum: 0
+        hasMore:
+          type: boolean

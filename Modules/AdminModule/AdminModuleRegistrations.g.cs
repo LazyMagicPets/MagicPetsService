@@ -16,6 +16,7 @@ namespace AdminModule
             services.AddSharedSchemaRepo();
 			services.AddStoreSchemaRepo();
 			services.AddAdminSchemaRepo();
+			services.AddChatSchemaRepo();
             CustomConfigurations(services);
             return services;            
         }

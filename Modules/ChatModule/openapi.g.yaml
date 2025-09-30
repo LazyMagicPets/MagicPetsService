@@ -1,0 +1,710 @@
+openapi: 3.0.1
+paths:
+  /ChatModule/session/create:
+    post:
+      summary: Create new chat session
+      description: Creates a new chat session and starts processing the initial message
+      operationId: ChatModuleCreateSessionAsync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+        required: true
+      responses:
+        201:
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSessionResponse'
+        400:
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+      x-lz-gencall: SessionManager.CreateSessionAsync(callerInfo, body)
+  /ChatModule/health:
+    get:
+      summary: Health check endpoint
+      description: Health check endpoint for App Runner service monitoring
+      operationId: ChatModuleHealthCheckAsync
+      responses:
+        200:
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+        503:
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnhealthyResponse'
+      x-lz-gencall: HealthService.CheckAsync(callerInfo)
+  /ChatModule/session/{sessionId}/message:
+    post:
+      summary: Send message to existing session
+      description: Sends a message to an existing chat session
+      operationId: ChatModuleSendMessageAsync
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        description: ID of the chat session
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+        required: true
+      responses:
+        200:
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendMessageResponse'
+        400:
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        404:
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+      x-lz-gencall: SessionManager.SendMessageAsync(callerInfo, sessionId, body)
+  /ChatModule/session/{sessionId}/status:
+    get:
+      summary: Get session status
+      description: Retrieves the current status and information about a chat session
+      operationId: ChatModuleGetSessionStatusAsync
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        description: ID of the chat session
+        schema:
+          type: string
+      responses:
+        200:
+          description: Session status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSessionStatusResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        404:
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+      x-lz-gencall: SessionManager.GetSessionStatusAsync(callerInfo, sessionId)
+  /ChatModule/session/{sessionId}:
+    delete:
+      summary: Close chat session
+      description: Closes an active chat session and cleans up resources
+      operationId: ChatModuleCloseSessionAsync
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        description: ID of the chat session to close
+        schema:
+          type: string
+      responses:
+        204:
+          description: Session closed successfully
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        404:
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+      x-lz-gencall: SessionManager.CloseSessionAsync(callerInfo, sessionId)
+  /ChatModule/session/{sessionId}/messages:
+    get:
+      summary: Get session message history
+      description: Retrieves the message history for a chat session
+      operationId: ChatModuleGetSessionMessagesAsync
+      parameters:
+      - name: sessionId
+        in: path
+        required: true
+        description: ID of the chat session
+        schema:
+          type: string
+      - name: page
+        in: query
+        description: Page number for pagination
+        schema:
+          type: integer
+          minimum: 1
+      - name: limit
+        in: query
+        description: Number of messages per page
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      responses:
+        200:
+          description: Message history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionMessagesResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        404:
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+      x-lz-gencall: SessionManager.GetSessionMessagesAsync(callerInfo, sessionId, page, limit)
+components:
+  schemas:
+    Preferences:
+      type: object
+      properties:
+        id:
+          type: string
+        theme:
+          type: string
+          enum:
+          - light
+          - dark
+        locale:
+          type: string
+          enum:
+          - en
+          - fr
+          - es
+        petStatus:
+          description: pet status in the store
+          $ref: '#/components/schemas/PetStatus'
+        pets:
+          type: array
+          items:
+            $ref: '#/components/schemas/Pet'
+        pet:
+          $ref: '#/components/schemas/Pet'
+        createUtcTick:
+          type: integer
+          format: int64
+        updateUtcTick:
+          type: integer
+          format: int64
+    Category:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      x-lz-genrepo: true
+    Tag:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      x-lz-genrepo: true
+    Pet:
+      type: object
+      required:
+      - name
+      - photoUrls
+      properties:
+        id:
+          type: string
+        category:
+          type: string
+        name:
+          type: string
+          example: Dog
+        photoUrls:
+          type: array
+          items:
+            type: string
+        tags:
+          type: array
+          items:
+            type: string
+        petStatus:
+          description: pet status in the store
+          default: available
+          $ref: '#/components/schemas/PetStatus'
+        createUtcTick:
+          type: integer
+          format: int64
+        updateUtcTick:
+          type: integer
+          format: int64
+      x-lz-genrepo: true
+    PetStatus:
+      type: string
+      description: pet status in the store
+      enum:
+      - available
+      - pending
+      - sold
+    Order:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+          description: Cognito Identity Id of clerk entering order
+        petId:
+          type: integer
+          format: int64
+        quantity:
+          type: integer
+          format: int32
+        shipDate:
+          type: string
+          format: date-time
+        orderStatus:
+          title: orderStatus
+          description: Order Status
+          $ref: '#/components/schemas/OrderStatus'
+        complete:
+          type: boolean
+          default: false
+        createUtcTick:
+          type: integer
+          format: int64
+        updateUtcTick:
+          type: integer
+          format: int64
+      x-lz-genrepo: true
+    OrderStatus:
+      type: string
+      description: Order Status
+      enum:
+      - placed
+      - approved
+      - delivered
+    Subtenant:
+      type: object
+      x-csharp-type: TenancyConfig
+    TenantUser:
+      type: object
+      properties:
+        id:
+          type: string
+        login:
+          type: string
+          nullable: true
+        name:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+          nullable: true
+        employee:
+          type: boolean
+        admin:
+          type: boolean
+        createUtcTick:
+          type: integer
+          format: int64
+        updateUtcTick:
+          type: integer
+          format: int64
+      x-lz-genrepo: true
+    TenantUserStatus:
+      type: object
+      properties:
+        isAdmin:
+          type: boolean
+      x-lz-genrepo: true
+    Bada:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+      x-lz-genrepo: true
+    Fingerprint:
+      type: object
+      properties:
+        id:
+          type: string
+        fingerprint:
+          type: number
+        browser:
+          type: string
+        browserVersion:
+          type: string
+        os:
+          type: string
+        osVersion:
+          type: string
+        resolution:
+          type: string
+        userAgent:
+          type: string
+        device:
+          type: string
+        deviceType:
+          type: string
+        deviceVendor:
+          type: string
+        language:
+          type: string
+        timeZone:
+          type: string
+        screenPrint:
+          type: string
+        isMobile:
+          type: boolean
+        isChrome:
+          type: boolean
+        isFirefox:
+          type: boolean
+        isSafari:
+          type: boolean
+        isIE:
+          type: boolean
+        createUtcTick:
+          type: integer
+          format: int64
+        updateUtcTick:
+          type: integer
+          format: int64
+    ChatSession:
+      type: object
+      required:
+      - sessionId
+      - status
+      - createdAt
+      properties:
+        sessionId:
+          type: string
+          description: Unique identifier for the chat session
+        userId:
+          type: string
+          description: User ID from Cognito authentication
+        status:
+          $ref: '#/components/schemas/ChatSessionStatus'
+        createdAt:
+          type: string
+          description: When the session was created
+          format: date-time
+        lastActivityAt:
+          type: string
+          description: Last activity timestamp
+          format: date-time
+        metadata:
+          type: object
+          description: Additional session metadata
+      x-lz-genrepo: true
+    ChatSessionStatus:
+      type: string
+      description: Current status of the chat session
+      enum:
+      - active
+      - processing
+      - completed
+      - error
+      - closed
+    ChatMessage:
+      type: object
+      required:
+      - messageId
+      - sessionId
+      - role
+      - content
+      - timestamp
+      properties:
+        messageId:
+          type: string
+          description: Unique identifier for the message
+        sessionId:
+          type: string
+          description: Session this message belongs to
+        role:
+          $ref: '#/components/schemas/ChatMessageRole'
+        content:
+          type: string
+          description: Message content
+        timestamp:
+          type: string
+          description: When the message was created
+          format: date-time
+        metadata:
+          type: object
+          description: Additional message metadata
+      x-lz-genrepo: true
+    ChatMessageRole:
+      type: string
+      description: Role of the message sender
+      enum:
+      - user
+      - assistant
+      - system
+    CreateSessionRequest:
+      type: object
+      required:
+      - initialMessage
+      properties:
+        initialMessage:
+          type: string
+          description: Initial message to start the conversation
+        sessionMetadata:
+          type: object
+          description: Optional metadata for the session
+    CreateSessionResponse:
+      type: object
+      required:
+      - session
+      properties:
+        session:
+          $ref: '#/components/schemas/ChatSession'
+    SendMessageRequest:
+      type: object
+      required:
+      - content
+      properties:
+        content:
+          type: string
+          description: Message content to send
+        messageMetadata:
+          type: object
+          description: Optional metadata for the message
+    SendMessageResponse:
+      type: object
+      required:
+      - message
+      - session
+      properties:
+        message:
+          $ref: '#/components/schemas/ChatMessage'
+        session:
+          $ref: '#/components/schemas/ChatSession'
+    GetSessionStatusResponse:
+      type: object
+      required:
+      - session
+      - messageCount
+      properties:
+        session:
+          $ref: '#/components/schemas/ChatSession'
+        messageCount:
+          type: integer
+          description: Total number of messages in the session
+        lastMessage:
+          $ref: '#/components/schemas/ChatMessage'
+    SessionEvent:
+      type: object
+      required:
+      - eventType
+      - sessionId
+      - timestamp
+      properties:
+        eventType:
+          $ref: '#/components/schemas/SessionEventType'
+        sessionId:
+          type: string
+          description: Session this event relates to
+        timestamp:
+          type: string
+          description: When the event occurred
+          format: date-time
+        data:
+          type: object
+          description: Event-specific data
+    SessionEventType:
+      type: string
+      description: Type of session event
+      enum:
+      - session_created
+      - session_status_changed
+      - message_received
+      - message_processing
+      - message_completed
+      - session_closed
+      - error_occurred
+    MessageEvent:
+      type: object
+      properties:
+        message:
+          $ref: '#/components/schemas/ChatMessage'
+      allOf:
+      - $ref: '#/components/schemas/SessionEvent'
+    StatusChangeEvent:
+      type: object
+      properties:
+        oldStatus:
+          $ref: '#/components/schemas/ChatSessionStatus'
+        newStatus:
+          $ref: '#/components/schemas/ChatSessionStatus'
+      allOf:
+      - $ref: '#/components/schemas/SessionEvent'
+    ErrorEvent:
+      type: object
+      properties:
+        error:
+          type: string
+          description: Error message
+        errorCode:
+          type: string
+          description: Error code for client handling
+      allOf:
+      - $ref: '#/components/schemas/SessionEvent'
+    ChatError:
+      type: object
+      required:
+      - error
+      - message
+      properties:
+        error:
+          type: string
+          description: Error type
+        message:
+          type: string
+          description: Human-readable error message
+        sessionId:
+          type: string
+          description: Session ID if error is session-related
+        timestamp:
+          type: string
+          description: When the error occurred
+          format: date-time
+    HealthCheckResponse:
+      type: object
+      required:
+      - status
+      - timestamp
+      properties:
+        status:
+          $ref: '#/components/schemas/HealthStatus'
+        timestamp:
+          type: string
+          format: date-time
+        version:
+          type: string
+          description: Service version
+    HealthStatus:
+      type: string
+      enum:
+      - healthy
+      - unhealthy
+    UnhealthyResponse:
+      type: object
+      required:
+      - status
+      - timestamp
+      properties:
+        status:
+          $ref: '#/components/schemas/HealthStatus'
+        timestamp:
+          type: string
+          format: date-time
+        error:
+          type: string
+          description: Error description
+    SessionMessagesResponse:
+      type: object
+      required:
+      - messages
+      - pagination
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        pagination:
+          $ref: '#/components/schemas/PaginationInfo'
+    PaginationInfo:
+      type: object
+      required:
+      - page
+      - limit
+      - totalMessages
+      - hasMore
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+        totalMessages:
+          type: integer
+          minimum: 0
+        hasMore:
+          type: boolean

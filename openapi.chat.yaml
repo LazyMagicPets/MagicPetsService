@@ -1,0 +1,242 @@
+openapi: 3.0.1
+paths:
+
+  # Session Management Endpoints
+  '/session/create':
+    post:
+      summary: Create new chat session
+      description: Creates a new chat session and starts processing the initial message
+      operationId: createSession
+      x-lz-gencall: SessionManager.CreateSessionAsync(callerInfo, body)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSessionRequest'
+      responses:
+        '201':
+          description: Session created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateSessionResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+
+  '/session/{sessionId}/message':
+    post:
+      summary: Send message to existing session
+      description: Sends a message to an existing chat session
+      operationId: sendMessage
+      x-lz-gencall: SessionManager.SendMessageAsync(callerInfo, sessionId, body)
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the chat session
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SendMessageRequest'
+      responses:
+        '200':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SendMessageResponse'
+        '400':
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+
+  '/session/{sessionId}/status':
+    get:
+      summary: Get session status
+      description: Retrieves the current status and information about a chat session
+      operationId: getSessionStatus
+      x-lz-gencall: SessionManager.GetSessionStatusAsync(callerInfo, sessionId)
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the chat session
+      responses:
+        '200':
+          description: Session status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSessionStatusResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+
+  '/session/{sessionId}':
+    delete:
+      summary: Close chat session
+      description: Closes an active chat session and cleans up resources
+      operationId: closeSession
+      x-lz-gencall: SessionManager.CloseSessionAsync(callerInfo, sessionId)
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the chat session to close
+      responses:
+        '204':
+          description: Session closed successfully
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+
+  # Health Check Endpoint (required by App Runner)
+  '/health':
+    get:
+      summary: Health check endpoint
+      description: Health check endpoint for App Runner service monitoring
+      operationId: healthCheck
+      x-lz-gencall: HealthService.CheckAsync(callerInfo)
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnhealthyResponse'
+
+  # Session History Endpoints (Optional)
+  '/session/{sessionId}/messages':
+    get:
+      summary: Get session message history
+      description: Retrieves the message history for a chat session
+      operationId: getSessionMessages
+      x-lz-gencall: SessionManager.GetSessionMessagesAsync(callerInfo, sessionId, page, limit)
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the chat session
+        - name: page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+          description: Page number for pagination
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Number of messages per page
+      responses:
+        '200':
+          description: Message history retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SessionMessagesResponse'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        '404':
+          description: Session not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'

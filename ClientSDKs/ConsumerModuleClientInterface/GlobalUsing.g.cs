@@ -9,4 +9,5 @@ global using LazyMagic.Shared;
 global using ConsumerSchema;
 global using SharedSchema;
 global using StoreSchema;
+global using ChatSchema;
 global using ConsumerModule;

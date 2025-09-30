@@ -8,4 +8,5 @@ global using LazyMagic.Shared;
 
 global using SharedSchema;
 global using StoreSchema;
+global using ChatSchema;
 global using StoreModule;

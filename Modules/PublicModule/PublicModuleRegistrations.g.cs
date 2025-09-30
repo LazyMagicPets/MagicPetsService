@@ -16,6 +16,7 @@ namespace PublicModule
             services.AddSharedSchemaRepo();
 			services.AddStoreSchemaRepo();
 			services.AddPublicSchemaRepo();
+			services.AddChatSchemaRepo();
             CustomConfigurations(services);
             return services;            
         }

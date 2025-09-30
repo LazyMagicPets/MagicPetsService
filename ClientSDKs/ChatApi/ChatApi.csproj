@@ -1,0 +1,22 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+	<Import Project="User.props"  Condition="Exists('User.props')" />
+	<Import Project="$(SolutionDir)CommonPackageHandling.targets" Condition="!Exists('ClientSDK.csproj')"/>
+	<ItemGroup>
+		<PackageReference Include="Newtonsoft.Json" />
+		<PackageReference Include="FluentValidation" />
+		<PackageReference Include="LazyMagic.Shared" />
+		<PackageReference Include="DeepCloner" />
+	</ItemGroup>	
+	<Import Project="Projects.g.props"  Condition="Exists('Projects.g.props')"  />
+	<Import Project="Packages.g.props"  Condition="Exists('Packages.g.props')"  />
+	<ItemGroup Condition="'$(IncludeReferencedProjects)' == 'true'">
+		<ProjectReference Include="@(ProjectReference)" PrivateAssets="All" />
+	</ItemGroup>
+
+</Project>

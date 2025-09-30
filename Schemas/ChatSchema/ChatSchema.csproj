@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+	<!-- This file is copied from the ProjectTemplate Schema.csproj file. 
+	     Do not modify in the target project or your changes will be overwritten. 
+		 To add project-specific settings, update the User.props file in the
+		 target project.
+		 -->
+	<PropertyGroup>
+		<TargetFramework>net8.0</TargetFramework>
+		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+	</PropertyGroup>
+	<Import Project="User.props"  Condition="Exists('User.props')" />
+	<Import Project="$(SolutionDir)CommonPackageHandling.targets" Condition="!Exists('ClientSDK.csproj')"/>
+	<ItemGroup>
+	  <Compile Remove="Validators\**" />
+	  <EmbeddedResource Remove="Validators\**" />
+	  <None Remove="Validators\**" />
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Newtonsoft.Json" />
+		<PackageReference Include="FluentValidation" />
+		<PackageReference Include="DeepCloner" />
+		<PackageReference Include="LazyMagic.Shared" />
+	</ItemGroup>
+	<ItemGroup>
+	  <Folder Include="DTOs\" />
+	  <Folder Include="Models\" />
+	</ItemGroup>
+	<Import Project="Projects.g.props"  Condition="Exists('Projects.g.props')"  />
+	<Import Project="Packages.g.props"  Condition="Exists('Packages.g.props')"  />
+</Project>

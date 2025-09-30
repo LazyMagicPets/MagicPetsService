@@ -5,6 +5,7 @@
         <ProjectReference Include="$(SolutionDir)Schemas\SharedSchema\SharedSchema.csproj" />
 <ProjectReference Include="$(SolutionDir)Schemas\StoreSchema\StoreSchema.csproj" />
 <ProjectReference Include="$(SolutionDir)Schemas\PublicSchema\PublicSchema.csproj" />
+<ProjectReference Include="$(SolutionDir)Schemas\ChatSchema\ChatSchema.csproj" />
 
     </ItemGroup>
 </Project>

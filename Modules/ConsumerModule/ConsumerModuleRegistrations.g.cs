@@ -16,6 +16,7 @@ namespace ConsumerModule
             services.AddConsumerSchemaRepo();
 			services.AddSharedSchemaRepo();
 			services.AddStoreSchemaRepo();
+			services.AddChatSchemaRepo();
             CustomConfigurations(services);
             return services;            
         }

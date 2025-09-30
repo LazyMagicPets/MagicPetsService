@@ -16,3 +16,5 @@ global using StoreSchema;
 global using StoreSchemaRepo;
 global using AdminSchema;
 global using AdminSchemaRepo;
+global using ChatSchema;
+global using ChatSchemaRepo;

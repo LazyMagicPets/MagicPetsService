@@ -38,6 +38,29 @@ Directives:
       AwsHttpApiResource: # AWS SAM template resource for the HttpApi
       DotNetHttpApiSDKProject: # Client SDK for the Api
 
+  # APP RUNNER Container Default
+  AppRunnerContainerDefault:
+    Type: Container
+    IsDefault: true
+    Artifacts:
+      DotNetAppRunnerProject: # App Runner project that processes HTTP requests
+
+  # API Default for App Runner (NOT using ApiDefault)
+  ApiAppRunnerDefault:
+    Type: Api
+    IsDefault: true
+    Artifacts:
+      AwsAppRunnerResource: # AWS SAM template resource for App Runner service
+      DotNetHttpApiSDKProject: # Reuse existing HTTP REST client SDK generator
+
+  # API Default for AppSync Events (NOT using ApiDefault)
+  ApiAppSyncEventsDefault:
+    Type: Api
+    IsDefault: true
+    Artifacts:
+      AwsAppSyncEventsResource: # AppSync Events CloudFormation resource
+      DotNetAppSyncEventsSDKProject: # WebSocket client SDK (different from HTTP REST)
+
   # WEBAPP Default
   WebAppDefault:
     Type: WebApp # this directive may be referenced by other WebApp directives
@@ -246,4 +269,41 @@ Directives:
     - AdminApp
     - StoreApp
     - ConsumerApp
+
+# APP RUNNER / CHAT IMPLEMENTATION (Phase 0 Test)
+
+  # Chat Schema (for testing)
+  ChatSchema:
+    Type: Schema
+    Defaults: SchemaDefault
+    OpenApiSpecs:
+    - openapi.chat-schema.yaml
+
+  # Chat Module (for testing)
+  ChatModule:
+    Type: Module
+    Defaults: ModuleDefault
+    OpenApiSpecs:
+    - openapi.chat.yaml
+
+  # App Runner container using new artifacts
+  ChatAppRunner:
+    Type: Container
+    Defaults: AppRunnerContainerDefault
+    Modules:
+    - ChatModule
+
+  # API for App Runner service (uses ApiAppRunnerDefault, not ApiDefault)
+  ChatApi:
+    Type: Api
+    Defaults: ApiAppRunnerDefault
+    Authentication: tenantauth
+    Containers:
+    - ChatAppRunner
+
+  # API for AppSync Events (needs separate default for different SDK)
+  EventsApi:
+    Type: Api
+    Defaults: ApiAppSyncEventsDefault
+    Authentication: tenantauth
 
