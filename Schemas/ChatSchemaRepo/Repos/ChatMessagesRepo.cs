@@ -7,7 +7,7 @@ namespace ChatSchemaRepo;
 public partial interface IChatMessagesRepo : IDocumentRepo<ChatMessages>
 {
     Task<ActionResult<ChatMessage>> AddMessageAsync(ICallerInfo callerInfo, string chatId, ChatMessage message);
-    Task<ActionResult<List<ChatMessage>>> GetMessagesAsync(ICallerInfo callerInfo, string chatId, int? page, int? limit);
+    Task<ActionResult<ICollection<ChatMessage>>> GetMessagesAsync(ICallerInfo callerInfo, string chatId, int? page, int? limit);
 }
 
 // Extend the ChatMessagesRepo class to implement custom message operations
@@ -44,13 +44,13 @@ public partial class ChatMessagesRepo : DYDBRepository<ChatMessages>, IChatMessa
         return new OkObjectResult(userMessage);
     }
 
-    public async Task<ActionResult<List<ChatMessage>>> GetMessagesAsync(ICallerInfo callerInfo, string chatId, int? page, int? limit)
+    public async Task<ActionResult<ICollection<ChatMessage>>> GetMessagesAsync(ICallerInfo callerInfo, string chatId, int? page, int? limit)
     {
         // First try to get from ChatManagerService (for active in-memory chats)
         try
         {
             var messages = await _chatManagerService.GetChatHistoryAsync(callerInfo, chatId, page, limit);
-            return new OkObjectResult(messages);
+            return new OkObjectResult(messages as ICollection<ChatMessage>);
         }
         catch (InvalidOperationException)
         {
@@ -74,7 +74,7 @@ public partial class ChatMessagesRepo : DYDBRepository<ChatMessages>, IChatMessa
                 .Take(pageSize)
                 .ToList();
 
-            return new OkObjectResult(paginatedMessages);
+            return new OkObjectResult(paginatedMessages as ICollection<ChatMessage>);
         }
     }
 }

@@ -23,7 +23,8 @@ public class ChatManagerService : IChatManagerService, IHostedService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly ConcurrentDictionary<string, ConnectionChat> _chats;
     private readonly ConcurrentDictionary<string, Task> _backgroundTasks;
-    private readonly ConcurrentDictionary<string, SemaphoreSlim> _keepAliveSemaphores;
+    private readonly SemaphoreSlim _keepAliveSemaphore;
+    private Task? _keepAliveTask;
     private readonly Timer _cleanupTimer;
     private readonly CancellationTokenSource _cancellationTokenSource;
 
@@ -39,7 +40,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
         _httpClientFactory = httpClientFactory;
         _chats = new ConcurrentDictionary<string, ConnectionChat>();
         _backgroundTasks = new ConcurrentDictionary<string, Task>();
-        _keepAliveSemaphores = new ConcurrentDictionary<string, SemaphoreSlim>();
+        _keepAliveSemaphore = new SemaphoreSlim(0, 1);
         _cancellationTokenSource = new CancellationTokenSource();
 
         // Run cleanup every 5 minutes
@@ -67,21 +68,21 @@ public class ChatManagerService : IChatManagerService, IHostedService
             Context = chat.Metadata != null && chat.Metadata is IDictionary<string, object> metadataDict
                 ? new Dictionary<string, object>(metadataDict)
                 : new Dictionary<string, object>(),
-            History = new List<ChatMessage>()
+            History = new List<ChatMessage>(),
+            CallerInfo = callerInfo // Store for service host resolution
         };
 
         _chats.TryAdd(chatId, connectionChat);
-
-        // Create semaphore for keep-alive request (starts unreleased)
-        var semaphore = new SemaphoreSlim(0, 1);
-        _keepAliveSemaphores.TryAdd(chatId, semaphore);
 
         // Start background processing task
         var backgroundTask = ProcessChatMessagesAsync(connectionChat);
         _backgroundTasks.TryAdd(chatId, backgroundTask);
 
-        // Initiate keep-alive long-polling request
-        _ = InitiateKeepAliveAsync(chatId);
+        // Start keep-alive task if this is the first chat
+        if (_chats.Count == 1 && _keepAliveTask == null)
+        {
+            _keepAliveTask = InitiateKeepAliveAsync();
+        }
 
         _logger.LogInformation("Initialized chat {ChatId} for user {UserId}", chatId, userId);
 
@@ -269,41 +270,68 @@ public class ChatManagerService : IChatManagerService, IHostedService
 
     public SemaphoreSlim? GetKeepAliveSemaphore(string chatId)
     {
-        _keepAliveSemaphores.TryGetValue(chatId, out var semaphore);
-        return semaphore;
+        // Return the shared semaphore if there are active chats
+        return _chats.Count > 0 ? _keepAliveSemaphore : null;
     }
 
     // Private helper methods
 
     /// <summary>
-    /// Initiates a long-polling HTTP request to ourselves to represent this chat as active load.
-    /// This prevents App Runner from scaling down the instance while background processing is active.
+    /// Initiates a single long-polling HTTP request for the entire service.
+    /// This prevents App Runner from scaling down the instance while any chats are active.
+    /// The request waits on a semaphore that is released when the last chat is closed.
+    /// Uses the Host header from CallerInfo to determine the service URL.
     /// </summary>
-    private async Task InitiateKeepAliveAsync(string chatId)
+    private async Task InitiateKeepAliveAsync()
     {
         try
         {
             var httpClient = _httpClientFactory.CreateClient("KeepAlive");
 
-            _logger.LogDebug("Initiating keep-alive request for chat {ChatId}", chatId);
+            // Get service host from any active chat's CallerInfo
+            var serviceHost = GetServiceHost();
+
+            _logger.LogDebug("Initiating keep-alive request for ChatManagerService at {ServiceHost}", serviceHost);
 
             // Long-polling request to our own internal endpoint
-            var response = await httpClient.PostAsync(
-                $"http://localhost:8080/ChatModule/internal/keepalive/{chatId}",
-                null
-            );
+            var url = $"{serviceHost}/ChatModule/internal/keepalive";
+            var response = await httpClient.PostAsync(url, null);
 
-            _logger.LogDebug("Keep-alive request completed for chat {ChatId} with status {StatusCode}",
-                chatId, response.StatusCode);
+            _logger.LogDebug("Keep-alive request completed with status {StatusCode}", response.StatusCode);
         }
         catch (TaskCanceledException)
         {
-            _logger.LogDebug("Keep-alive request cancelled for chat {ChatId}", chatId);
+            _logger.LogDebug("Keep-alive request cancelled");
         }
         catch (Exception ex)
         {
-            _logger.LogWarning(ex, "Keep-alive request failed for chat {ChatId}", chatId);
+            _logger.LogWarning(ex, "Keep-alive request failed");
         }
+        finally
+        {
+            _keepAliveTask = null;
+        }
+    }
+
+    /// <summary>
+    /// Gets the service host URL from active chats' CallerInfo headers.
+    /// Falls back to localhost for local development.
+    /// </summary>
+    private string GetServiceHost()
+    {
+        // Try to get host from any active chat's CallerInfo
+        var firstChat = _chats.Values.FirstOrDefault();
+        if (firstChat?.CallerInfo?.Headers != null &&
+            firstChat.CallerInfo.Headers.TryGetValue("Host", out var host) &&
+            !string.IsNullOrEmpty(host))
+        {
+            // Determine scheme based on host
+            var scheme = host.StartsWith("localhost", StringComparison.OrdinalIgnoreCase) ? "http" : "https";
+            return $"{scheme}://{host}";
+        }
+
+        // Fallback to localhost for local development
+        return "http://localhost:8080";
     }
 
     private async Task ProcessChatMessagesAsync(ConnectionChat chat)
@@ -407,23 +435,25 @@ public class ChatManagerService : IChatManagerService, IHostedService
                 }
             }
 
-            // Release keep-alive semaphore to complete the long-polling request
-            if (_keepAliveSemaphores.TryRemove(chatId, out var semaphore))
+            chat.CancellationToken.Dispose();
+            _logger.LogInformation("Closed chat {ChatId}", chatId);
+
+            // Release keep-alive semaphore if this was the last chat
+            if (_chats.Count == 0)
             {
                 try
                 {
-                    semaphore.Release();
-                    semaphore.Dispose();
-                    _logger.LogDebug("Released keep-alive semaphore for chat {ChatId}", chatId);
+                    if (_keepAliveSemaphore.CurrentCount == 0)
+                    {
+                        _keepAliveSemaphore.Release();
+                        _logger.LogDebug("Released keep-alive semaphore (no active chats)");
+                    }
                 }
                 catch (Exception ex)
                 {
-                    _logger.LogWarning(ex, "Error releasing keep-alive semaphore for chat {ChatId}", chatId);
+                    _logger.LogWarning(ex, "Error releasing keep-alive semaphore");
                 }
             }
-
-            chat.CancellationToken.Dispose();
-            _logger.LogInformation("Closed chat {ChatId}", chatId);
         }
     }
 
@@ -477,6 +507,9 @@ public class ChatManagerService : IChatManagerService, IHostedService
         var allChatIds = _chats.Keys.ToList();
         await Task.WhenAll(allChatIds.Select(CloseChatInternalAsync));
 
+        // Cleanup keep-alive resources
+        _keepAliveSemaphore.Dispose();
+
         _cancellationTokenSource.Dispose();
         _logger.LogInformation("ChatManagerService stopped");
     }
@@ -497,4 +530,5 @@ public class ConnectionChat
     public CancellationTokenSource CancellationToken { get; set; } = null!;
     public Dictionary<string, object> Context { get; set; } = new();
     public List<ChatMessage> History { get; set; } = new();
+    public ICallerInfo? CallerInfo { get; set; } // Stores caller info for service host resolution
 }
