@@ -7,7 +7,7 @@
     <CommonTargetsFile>$(RepoRootDir)CommonPackageHandling.targets</CommonTargetsFile>
   </PropertyGroup>
   <ItemGroup>
-    <PackageVersion Include="Amazon.AspNetCore.Identity.Cognito" Version="3.2.2" />
+    <PackageVersion Include="Amazon.AspNetCore.Identity.Cognito" Version="4.0.0" />
     <PackageVersion Include="Amazon.Lambda.APIGatewayEvents" Version="2.7.1" />
     <PackageVersion Include="Amazon.Lambda.AspNetCoreServer" Version="9.2.0" />
     <PackageVersion Include="Amazon.Lambda.Core" Version="2.5.0" />

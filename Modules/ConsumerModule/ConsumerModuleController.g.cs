@@ -6,8 +6,7 @@ public partial class ConsumerModuleController : ConsumerModuleControllerBase {
 			IPreferencesRepo preferencesRepo,
 			ICategoryRepo categoryRepo,
 			ITagRepo tagRepo,
-			IPetRepo petRepo,
-			IOrderRepo orderRepo
+			IPetRepo petRepo
             ) 
         {
             ConsumerModuleAuthorization = consumerModuleAuthorization;
@@ -15,7 +14,6 @@ public partial class ConsumerModuleController : ConsumerModuleControllerBase {
 			CategoryRepo = categoryRepo;
 			TagRepo = tagRepo;
 			PetRepo = petRepo;
-			OrderRepo = orderRepo;
 
             Init();
         }

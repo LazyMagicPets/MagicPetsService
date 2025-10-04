@@ -4,8 +4,6 @@
     <ItemGroup>
         <ProjectReference Include="$(SolutionDir)Schemas\ConsumerSchemaRepo\ConsumerSchemaRepo.csproj" />
 <ProjectReference Include="$(SolutionDir)Schemas\SharedSchemaRepo\SharedSchemaRepo.csproj" />
-<ProjectReference Include="$(SolutionDir)Schemas\StoreSchemaRepo\StoreSchemaRepo.csproj" />
-<ProjectReference Include="$(SolutionDir)Schemas\ChatSchemaRepo\ChatSchemaRepo.csproj" />
 
     </ItemGroup>
 </Project>

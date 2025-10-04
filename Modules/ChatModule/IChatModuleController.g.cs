@@ -8,16 +8,34 @@ namespace ChatModule
     {
 
         /// <summary>
-        /// Create new chat session
+        /// Create new chat
         /// </summary>
 
         /// <remarks>
-        /// Creates a new chat session and starts processing the initial message
+        /// Creates a new chat and starts processing the initial message
         /// </remarks>
 
-        /// <returns>Session created successfully</returns>
+        /// <returns>Chat created successfully</returns>
 
-        Task<ActionResult<CreateSessionResponse>> ChatModuleCreateSessionAsync(CreateSessionRequest body);
+        Task<ActionResult<CreateChatResponse>> ChatModuleCreateChatAsync(CreateChatRequest body);
+
+        /// <summary>
+        /// List chats
+        /// </summary>
+
+        /// <remarks>
+        /// Lists all chats for the authenticated user with pagination
+        /// </remarks>
+
+        /// <param name="page">Page number for pagination</param>
+
+        /// <param name="limit">Number of chats per page</param>
+
+        /// <param name="status">Filter by chat status</param>
+
+        /// <returns>Chats retrieved successfully</returns>
+
+        Task<ActionResult<ListChatsResponse>> ChatModuleListChatsAsync(int? page = null, int? limit = null, ChatStatus? status = null);
 
         /// <summary>
         /// Health check endpoint
@@ -32,57 +50,86 @@ namespace ChatModule
         Task<ActionResult<HealthCheckResponse>> ChatModuleHealthCheckAsync();
 
         /// <summary>
-        /// Send message to existing session
+        /// Send message to existing chat
         /// </summary>
 
         /// <remarks>
-        /// Sends a message to an existing chat session
+        /// Sends a message to an existing chat
         /// </remarks>
 
-        /// <param name="sessionId">ID of the chat session</param>
+        /// <param name="chatId">ID of the chat</param>
 
 
         /// <returns>Message sent successfully</returns>
 
-        Task<ActionResult<SendMessageResponse>> ChatModuleSendMessageAsync(string sessionId, SendMessageRequest body);
+        Task<ActionResult<SendMessageResponse>> ChatModuleSendMessageAsync(string chatId, SendMessageRequest body);
 
         /// <summary>
-        /// Get session status
+        /// Get chat status
         /// </summary>
 
         /// <remarks>
-        /// Retrieves the current status and information about a chat session
+        /// Retrieves the current status and information about a chat
         /// </remarks>
 
-        /// <param name="sessionId">ID of the chat session</param>
+        /// <param name="chatId">ID of the chat</param>
 
-        /// <returns>Session status retrieved successfully</returns>
+        /// <returns>Chat status retrieved successfully</returns>
 
-        Task<ActionResult<GetSessionStatusResponse>> ChatModuleGetSessionStatusAsync(string sessionId);
+        Task<ActionResult<GetChatStatusResponse>> ChatModuleGetChatStatusAsync(string chatId);
 
         /// <summary>
-        /// Close chat session
+        /// Get chat by ID
         /// </summary>
 
         /// <remarks>
-        /// Closes an active chat session and cleans up resources
+        /// Retrieves a chat by its ID from persistent storage
         /// </remarks>
 
-        /// <param name="sessionId">ID of the chat session to close</param>
+        /// <param name="chatId">ID of the chat</param>
 
-        /// <returns>Session closed successfully</returns>
+        /// <returns>Chat retrieved successfully</returns>
 
-        Task<IActionResult> ChatModuleCloseSessionAsync(string sessionId);
+        Task<ActionResult<GetChatResponse>> ChatModuleGetChatAsync(string chatId);
 
         /// <summary>
-        /// Get session message history
+        /// Update chat
         /// </summary>
 
         /// <remarks>
-        /// Retrieves the message history for a chat session
+        /// Updates chat metadata and status in persistent storage
         /// </remarks>
 
-        /// <param name="sessionId">ID of the chat session</param>
+        /// <param name="chatId">ID of the chat to update</param>
+
+
+        /// <returns>Chat updated successfully</returns>
+
+        Task<ActionResult<UpdateChatResponse>> ChatModuleUpdateChatAsync(string chatId, UpdateChatRequest body);
+
+        /// <summary>
+        /// Close chat
+        /// </summary>
+
+        /// <remarks>
+        /// Closes an active chat and cleans up resources
+        /// </remarks>
+
+        /// <param name="chatId">ID of the chat to close</param>
+
+        /// <returns>Chat closed successfully</returns>
+
+        Task<IActionResult> ChatModuleCloseChatAsync(string chatId);
+
+        /// <summary>
+        /// Get chat message history
+        /// </summary>
+
+        /// <remarks>
+        /// Retrieves the message history for a chat
+        /// </remarks>
+
+        /// <param name="chatId">ID of the chat</param>
 
         /// <param name="page">Page number for pagination</param>
 
@@ -90,7 +137,7 @@ namespace ChatModule
 
         /// <returns>Message history retrieved successfully</returns>
 
-        Task<ActionResult<SessionMessagesResponse>> ChatModuleGetSessionMessagesAsync(string sessionId, int? page = null, int? limit = null);
+        Task<ActionResult<ChatMessagesResponse>> ChatModuleGetChatMessagesAsync(string chatId, int? page = null, int? limit = null);
 
     }
 

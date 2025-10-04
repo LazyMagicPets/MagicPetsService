@@ -6,7 +6,6 @@ public partial class PublicModuleController : PublicModuleControllerBase {
 			ICategoryRepo categoryRepo,
 			ITagRepo tagRepo,
 			IPetRepo petRepo,
-			IOrderRepo orderRepo,
 			IBadaRepo badaRepo,
 			IFingerprintRepo fingerprintRepo
             ) 
@@ -15,7 +14,6 @@ public partial class PublicModuleController : PublicModuleControllerBase {
 			CategoryRepo = categoryRepo;
 			TagRepo = tagRepo;
 			PetRepo = petRepo;
-			OrderRepo = orderRepo;
 			BadaRepo = badaRepo;
 			FingerprintRepo = fingerprintRepo;
 

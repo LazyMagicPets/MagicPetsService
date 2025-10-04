@@ -2,27 +2,39 @@ openapi: 3.0.1
 components:
   schemas:
 
-    # Session Management Schemas
-    ChatSession:
+    # Chat Management Schemas
+    Chat:
       type: object
       x-lz-genrepo: true
       required:
-        - sessionId
+        - chatId
         - status
         - createdAt
       properties:
-        sessionId:
+        id:
           type: string
-          description: Unique identifier for the chat session
+          description: DynamoDB primary key (same as chatId)
+        chatId:
+          type: string
+          description: Unique identifier for the chat
         userId:
           type: string
           description: User ID from Cognito authentication
         status:
-          $ref: '#/components/schemas/ChatSessionStatus'
+          $ref: '#/components/schemas/ChatStatus'
+        summary:
+          type: string
+          description: Brief summary of the chat conversation
+        chatMessagesId:
+          type: string
+          description: Reference to the ChatMessages record containing all messages
+        messageCount:
+          type: integer
+          description: Total number of messages in the chat
         createdAt:
           type: string
           format: date-time
-          description: When the session was created
+          description: When the chat was created
         lastActivityAt:
           type: string
           format: date-time
@@ -30,9 +42,17 @@ components:
         metadata:
           type: object
           additionalProperties: true
-          description: Additional session metadata
+          description: Additional chat metadata
+        createUtcTick:
+          type: integer
+          format: int64
+          description: Creation timestamp in ticks
+        updateUtcTick:
+          type: integer
+          format: int64
+          description: Last update timestamp in ticks
 
-    ChatSessionStatus:
+    ChatStatus:
       type: string
       enum:
         - active
@@ -40,15 +60,14 @@ components:
         - completed
         - error
         - closed
-      description: Current status of the chat session
+      description: Current status of the chat
 
     # Message Schemas
     ChatMessage:
       type: object
-      x-lz-genrepo: true
       required:
         - messageId
-        - sessionId
+        - chatId
         - role
         - content
         - timestamp
@@ -56,9 +75,9 @@ components:
         messageId:
           type: string
           description: Unique identifier for the message
-        sessionId:
+        chatId:
           type: string
-          description: Session this message belongs to
+          description: Chat this message belongs to
         role:
           $ref: '#/components/schemas/ChatMessageRole'
         content:
@@ -73,6 +92,36 @@ components:
           additionalProperties: true
           description: Additional message metadata
 
+    ChatMessages:
+      type: object
+      x-lz-genrepo: true
+      required:
+        - chatMessagesId
+        - chatId
+      properties:
+        id:
+          type: string
+          description: DynamoDB primary key (same as chatMessagesId)
+        chatMessagesId:
+          type: string
+          description: Unique identifier for the messages collection
+        chatId:
+          type: string
+          description: Reference to the parent chat
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+          description: Array of all messages in the chat
+        createUtcTick:
+          type: integer
+          format: int64
+          description: Creation timestamp in ticks
+        updateUtcTick:
+          type: integer
+          format: int64
+          description: Last update timestamp in ticks
+
     ChatMessageRole:
       type: string
       enum:
@@ -82,7 +131,7 @@ components:
       description: Role of the message sender
 
     # Request/Response Schemas
-    CreateSessionRequest:
+    CreateChatRequest:
       type: object
       required:
         - initialMessage
@@ -90,18 +139,18 @@ components:
         initialMessage:
           type: string
           description: Initial message to start the conversation
-        sessionMetadata:
+        chatMetadata:
           type: object
           additionalProperties: true
-          description: Optional metadata for the session
+          description: Optional metadata for the chat
 
-    CreateSessionResponse:
+    CreateChatResponse:
       type: object
       required:
-        - session
+        - chat
       properties:
-        session:
-          $ref: '#/components/schemas/ChatSession'
+        chat:
+          $ref: '#/components/schemas/Chat'
 
     SendMessageRequest:
       type: object
@@ -120,40 +169,99 @@ components:
       type: object
       required:
         - message
-        - session
+        - chat
       properties:
         message:
           $ref: '#/components/schemas/ChatMessage'
-        session:
-          $ref: '#/components/schemas/ChatSession'
+        chat:
+          $ref: '#/components/schemas/Chat'
 
-    GetSessionStatusResponse:
+    GetChatResponse:
       type: object
       required:
-        - session
+        - chat
+      properties:
+        chat:
+          $ref: '#/components/schemas/Chat'
+
+    UpdateChatRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ChatStatus'
+        metadata:
+          type: object
+          additionalProperties: true
+          description: Updated metadata for the chat
+
+    UpdateChatResponse:
+      type: object
+      required:
+        - chat
+      properties:
+        chat:
+          $ref: '#/components/schemas/Chat'
+
+    ListChatsResponse:
+      type: object
+      required:
+        - chats
+        - pagination
+      properties:
+        chats:
+          type: array
+          items:
+            $ref: '#/components/schemas/Chat'
+        pagination:
+          $ref: '#/components/schemas/ChatPaginationInfo'
+
+    ChatPaginationInfo:
+      type: object
+      required:
+        - page
+        - limit
+        - totalChats
+        - hasMore
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+        totalChats:
+          type: integer
+          minimum: 0
+        hasMore:
+          type: boolean
+
+    GetChatStatusResponse:
+      type: object
+      required:
+        - chat
         - messageCount
       properties:
-        session:
-          $ref: '#/components/schemas/ChatSession'
+        chat:
+          $ref: '#/components/schemas/Chat'
         messageCount:
           type: integer
-          description: Total number of messages in the session
+          description: Total number of messages in the chat
         lastMessage:
           $ref: '#/components/schemas/ChatMessage'
 
     # Event Schemas for AppSync Events
-    SessionEvent:
+    ChatEvent:
       type: object
       required:
         - eventType
-        - sessionId
+        - chatId
         - timestamp
       properties:
         eventType:
-          $ref: '#/components/schemas/SessionEventType'
-        sessionId:
+          $ref: '#/components/schemas/ChatEventType'
+        chatId:
           type: string
-          description: Session this event relates to
+          description: Chat this event relates to
         timestamp:
           type: string
           format: date-time
@@ -163,22 +271,22 @@ components:
           additionalProperties: true
           description: Event-specific data
 
-    SessionEventType:
+    ChatEventType:
       type: string
       enum:
-        - session_created
-        - session_status_changed
+        - chat_created
+        - chat_status_changed
         - message_received
         - message_processing
         - message_completed
-        - session_closed
+        - chat_closed
         - error_occurred
-      description: Type of session event
+      description: Type of chat event
 
     MessageEvent:
       type: object
       allOf:
-        - $ref: '#/components/schemas/SessionEvent'
+        - $ref: '#/components/schemas/ChatEvent'
       properties:
         message:
           $ref: '#/components/schemas/ChatMessage'
@@ -186,17 +294,17 @@ components:
     StatusChangeEvent:
       type: object
       allOf:
-        - $ref: '#/components/schemas/SessionEvent'
+        - $ref: '#/components/schemas/ChatEvent'
       properties:
         oldStatus:
-          $ref: '#/components/schemas/ChatSessionStatus'
+          $ref: '#/components/schemas/ChatStatus'
         newStatus:
-          $ref: '#/components/schemas/ChatSessionStatus'
+          $ref: '#/components/schemas/ChatStatus'
 
     ErrorEvent:
       type: object
       allOf:
-        - $ref: '#/components/schemas/SessionEvent'
+        - $ref: '#/components/schemas/ChatEvent'
       properties:
         error:
           type: string
@@ -218,9 +326,9 @@ components:
         message:
           type: string
           description: Human-readable error message
-        sessionId:
+        chatId:
           type: string
-          description: Session ID if error is session-related
+          description: Chat ID if error is chat-related
         timestamp:
           type: string
           format: date-time
@@ -263,8 +371,8 @@ components:
           type: string
           description: Error description
 
-    # Session Messages Response Schema
-    SessionMessagesResponse:
+    # Chat Messages Response Schema
+    ChatMessagesResponse:
       type: object
       required:
         - messages

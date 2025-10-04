@@ -13,9 +13,7 @@ namespace ChatModule
         {
             services.TryAddSingleton<IChatModuleAuthorization, ChatModuleAuthorization>();
             services.TryAddSingleton<IChatModuleController, ChatModuleController>();
-            services.AddSharedSchemaRepo();
-			services.AddStoreSchemaRepo();
-			services.AddChatSchemaRepo();
+            services.AddChatSchemaRepo();
             CustomConfigurations(services);
             return services;            
         }

@@ -20,14 +20,14 @@ namespace ChatSchema
 {
     using System = global::System;
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.0.3.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class StatusChangeEvent : SessionEvent
+    public partial class StatusChangeEvent : ChatEvent
     {
-        private ChatSessionStatus _oldStatus;
-        private ChatSessionStatus _newStatus;
+        private ChatStatus _oldStatus;
+        private ChatStatus _newStatus;
 
         [Newtonsoft.Json.JsonProperty("oldStatus", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
-        public ChatSessionStatus OldStatus
+        public ChatStatus OldStatus
         {
             get { return _oldStatus; }
 
@@ -43,7 +43,7 @@ namespace ChatSchema
 
         [Newtonsoft.Json.JsonProperty("newStatus", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         [Newtonsoft.Json.JsonConverter(typeof(Newtonsoft.Json.Converters.StringEnumConverter))]
-        public ChatSessionStatus NewStatus
+        public ChatStatus NewStatus
         {
             get { return _newStatus; }
 

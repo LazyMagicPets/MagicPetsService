@@ -9,10 +9,15 @@ public partial class AdminModuleController
     // the generated code constructor with this constructor to see what
     // needs to be updated.
 
+    // We extend the constructor to include those repos that are not found 
+    // as transitive dependencies of this moudle. Transitive dependencies are
+    // found by path references to schemas. We have methods in this module 
+    // that use repos that are not found by path references.
+
     [ActivatorUtilitiesConstructor] // force DI to use this constructor
     public AdminModuleController(
         IAdminModuleAuthorization adminModuleAuthorization,
-        ICategoryRepo categoryRepo,
+        ICategoryRepo categoryRepo, 
         ITagRepo tagRepo,
         IPetRepo petRepo,
         IOrderRepo orderRepo,
@@ -32,6 +37,10 @@ public partial class AdminModuleController
     }
 
     public ISubtenantRepo SubtenantRepo { get; set; }
+    public IPetRepo PetRepo { get; set; }
+    public ITagRepo TagRepo { get; set; }
+    public ICategoryRepo CategoryRepo { get; set; }
+    public IOrderRepo OrderRepo { get; set; }
 
     // Implement methods for which the generator does not generate 
     // an implementation. 

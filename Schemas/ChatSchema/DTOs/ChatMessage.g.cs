@@ -23,7 +23,7 @@ namespace ChatSchema
     public partial class ChatMessage : System.ComponentModel.INotifyPropertyChanged
     {
         private string _messageId;
-        private string _sessionId;
+        private string _chatId;
         private ChatMessageRole _role;
         private string _content;
         private System.DateTimeOffset _timestamp;
@@ -48,18 +48,18 @@ namespace ChatSchema
         }
 
         /// <summary>
-        /// Session this message belongs to
+        /// Chat this message belongs to
         /// </summary>
-        [Newtonsoft.Json.JsonProperty("sessionId", Required = Newtonsoft.Json.Required.Always)]
-        public string SessionId
+        [Newtonsoft.Json.JsonProperty("chatId", Required = Newtonsoft.Json.Required.Always)]
+        public string ChatId
         {
-            get { return _sessionId; }
+            get { return _chatId; }
 
             set
             {
-                if (_sessionId != value)
+                if (_chatId != value)
                 {
-                    _sessionId = value;
+                    _chatId = value;
                     RaisePropertyChanged();
                 }
             }

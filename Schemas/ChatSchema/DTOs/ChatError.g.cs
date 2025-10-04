@@ -24,7 +24,7 @@ namespace ChatSchema
     {
         private string _error;
         private string _message;
-        private string _sessionId;
+        private string _chatId;
         private System.DateTimeOffset _timestamp;
 
         /// <summary>
@@ -64,18 +64,18 @@ namespace ChatSchema
         }
 
         /// <summary>
-        /// Session ID if error is session-related
+        /// Chat ID if error is chat-related
         /// </summary>
-        [Newtonsoft.Json.JsonProperty("sessionId", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public string SessionId
+        [Newtonsoft.Json.JsonProperty("chatId", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public string ChatId
         {
-            get { return _sessionId; }
+            get { return _chatId; }
 
             set
             {
-                if (_sessionId != value)
+                if (_chatId != value)
                 {
-                    _sessionId = value;
+                    _chatId = value;
                     RaisePropertyChanged();
                 }
             }

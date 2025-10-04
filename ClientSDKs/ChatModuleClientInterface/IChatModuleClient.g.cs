@@ -9,13 +9,25 @@ namespace ChatModule
     public partial interface IChatModuleClient
     {
         /// <summary>
-        /// Create new chat session
+        /// Create new chat
         /// </summary>
-        /// Creates a new chat session and starts processing the initial message
+        /// Creates a new chat and starts processing the initial message
         /// </remarks>
-        /// <returns>Session created successfully</returns>
+        /// <returns>Chat created successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<CreateSessionResponse> ChatModuleCreateSessionAsync(CreateSessionRequest body);
+        System.Threading.Tasks.Task<CreateChatResponse> ChatModuleCreateChatAsync(CreateChatRequest body);
+
+        /// <summary>
+        /// List chats
+        /// </summary>
+        /// Lists all chats for the authenticated user with pagination
+        /// </remarks>
+        /// <param name="page">Page number for pagination</param>
+        /// <param name="limit">Number of chats per page</param>
+        /// <param name="status">Filter by chat status</param>
+        /// <returns>Chats retrieved successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<ListChatsResponse> ChatModuleListChatsAsync(int? page, int? limit, ChatStatus? status);
 
         /// <summary>
         /// Health check endpoint
@@ -27,45 +39,65 @@ namespace ChatModule
         System.Threading.Tasks.Task<HealthCheckResponse> ChatModuleHealthCheckAsync();
 
         /// <summary>
-        /// Send message to existing session
+        /// Send message to existing chat
         /// </summary>
-        /// Sends a message to an existing chat session
+        /// Sends a message to an existing chat
         /// </remarks>
-        /// <param name="sessionId">ID of the chat session</param>
+        /// <param name="chatId">ID of the chat</param>
         /// <returns>Message sent successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<SendMessageResponse> ChatModuleSendMessageAsync(string sessionId, SendMessageRequest body);
+        System.Threading.Tasks.Task<SendMessageResponse> ChatModuleSendMessageAsync(string chatId, SendMessageRequest body);
 
         /// <summary>
-        /// Get session status
+        /// Get chat status
         /// </summary>
-        /// Retrieves the current status and information about a chat session
+        /// Retrieves the current status and information about a chat
         /// </remarks>
-        /// <param name="sessionId">ID of the chat session</param>
-        /// <returns>Session status retrieved successfully</returns>
+        /// <param name="chatId">ID of the chat</param>
+        /// <returns>Chat status retrieved successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<GetSessionStatusResponse> ChatModuleGetSessionStatusAsync(string sessionId);
+        System.Threading.Tasks.Task<GetChatStatusResponse> ChatModuleGetChatStatusAsync(string chatId);
 
         /// <summary>
-        /// Close chat session
+        /// Get chat by ID
         /// </summary>
-        /// Closes an active chat session and cleans up resources
+        /// Retrieves a chat by its ID from persistent storage
         /// </remarks>
-        /// <param name="sessionId">ID of the chat session to close</param>
-        /// <returns>Session closed successfully</returns>
+        /// <param name="chatId">ID of the chat</param>
+        /// <returns>Chat retrieved successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task ChatModuleCloseSessionAsync(string sessionId);
+        System.Threading.Tasks.Task<GetChatResponse> ChatModuleGetChatAsync(string chatId);
 
         /// <summary>
-        /// Get session message history
+        /// Update chat
         /// </summary>
-        /// Retrieves the message history for a chat session
+        /// Updates chat metadata and status in persistent storage
         /// </remarks>
-        /// <param name="sessionId">ID of the chat session</param>
+        /// <param name="chatId">ID of the chat to update</param>
+        /// <returns>Chat updated successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<UpdateChatResponse> ChatModuleUpdateChatAsync(string chatId, UpdateChatRequest body);
+
+        /// <summary>
+        /// Close chat
+        /// </summary>
+        /// Closes an active chat and cleans up resources
+        /// </remarks>
+        /// <param name="chatId">ID of the chat to close</param>
+        /// <returns>Chat closed successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task ChatModuleCloseChatAsync(string chatId);
+
+        /// <summary>
+        /// Get chat message history
+        /// </summary>
+        /// Retrieves the message history for a chat
+        /// </remarks>
+        /// <param name="chatId">ID of the chat</param>
         /// <param name="page">Page number for pagination</param>
         /// <param name="limit">Number of messages per page</param>
         /// <returns>Message history retrieved successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<SessionMessagesResponse> ChatModuleGetSessionMessagesAsync(string sessionId, int? page, int? limit);
+        System.Threading.Tasks.Task<ChatMessagesResponse> ChatModuleGetChatMessagesAsync(string chatId, int? page, int? limit);
     }
 }

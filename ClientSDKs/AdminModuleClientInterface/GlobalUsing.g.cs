@@ -6,8 +6,5 @@
 
 global using LazyMagic.Shared;
 
-global using SharedSchema;
-global using StoreSchema;
 global using AdminSchema;
-global using ChatSchema;
 global using AdminModule;

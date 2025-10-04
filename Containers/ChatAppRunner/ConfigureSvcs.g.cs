@@ -6,10 +6,5 @@ public partial class Startup
     public void ConfigureSvcs(IServiceCollection services)
     {
         services.AddChatModule();
-		services.AddSingleton<SessionManager>();
-		services.AddSingleton<AppSyncEventPublisher>();
-		services.AddScoped<BedrockChat>();
-		services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer();
-		services.ConfigureCognitoAuthentication();
     }
 }

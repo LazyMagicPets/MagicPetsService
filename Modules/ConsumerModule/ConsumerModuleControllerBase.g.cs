@@ -50,7 +50,6 @@ namespace ConsumerModule
 		public ICategoryRepo CategoryRepo { get; set; }
 		public ITagRepo TagRepo { get; set; }
 		public IPetRepo PetRepo { get; set; }
-		public IOrderRepo OrderRepo { get; set; }
 		protected virtual void Init() { }
     }
 

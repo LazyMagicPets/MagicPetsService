@@ -9,5 +9,6 @@ public partial class Startup
 		services.AddConsumerModule();
 		services.AddStoreModule();
 		services.AddAdminModule();
+		services.AddChatModule();
     }
 }

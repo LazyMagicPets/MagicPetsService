@@ -6,6 +6,7 @@
 <ProjectReference Include="$(SolutionDir)Modules\ConsumerModule\ConsumerModule.csproj" />
 <ProjectReference Include="$(SolutionDir)Modules\StoreModule\StoreModule.csproj" />
 <ProjectReference Include="$(SolutionDir)Modules\AdminModule\AdminModule.csproj" />
+<ProjectReference Include="$(SolutionDir)Modules\ChatModule\ChatModule.csproj" />
 
     </ItemGroup>
 </Project>

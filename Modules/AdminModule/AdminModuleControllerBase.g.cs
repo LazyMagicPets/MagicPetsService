@@ -155,10 +155,6 @@ namespace AdminModule
             throw new NotImplementedException();
         }
 		public IAdminModuleAuthorization AdminModuleAuthorization { get; set; }
-		public ICategoryRepo CategoryRepo { get; set; }
-		public ITagRepo TagRepo { get; set; }
-		public IPetRepo PetRepo { get; set; }
-		public IOrderRepo OrderRepo { get; set; }
 		public ITenantUserRepo TenantUserRepo { get; set; }
 		protected virtual void Init() { }
     }

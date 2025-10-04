@@ -13,10 +13,7 @@ namespace AdminModule
         {
             services.TryAddSingleton<IAdminModuleAuthorization, AdminModuleAuthorization>();
             services.TryAddSingleton<IAdminModuleController, AdminModuleController>();
-            services.AddSharedSchemaRepo();
-			services.AddStoreSchemaRepo();
-			services.AddAdminSchemaRepo();
-			services.AddChatSchemaRepo();
+            services.AddAdminSchemaRepo();
             CustomConfigurations(services);
             return services;            
         }

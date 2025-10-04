@@ -34,6 +34,35 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 builder.Services.AddAWSService<Amazon.AppSync.IAmazonAppSync>();
 builder.Services.AddAWSService<Amazon.BedrockRuntime.IAmazonBedrockRuntime>();
 
+// Add CORS
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.SetIsOriginAllowed(origin =>
+                  origin.StartsWith("https://") || origin.StartsWith("http://"))
+              .WithHeaders(
+                  "Authorization",
+                  "lz-cognito-region",
+                  "lz-cognito-userpool-id")
+              .AllowAnyHeader()
+              .WithMethods(
+                  "GET",
+                  "HEAD",
+                  "PUT",
+                  "OPTIONS",
+                  "POST",
+                  "DELETE")
+              .WithExposedHeaders(
+                  "Date",
+                  "x-api-id",
+                  "lz-cognito-region",
+                  "lz-cognito-userpool-id")
+              .SetPreflightMaxAge(TimeSpan.FromSeconds(600))
+              .DisallowCredentials();
+    });
+});
+
 // Add health checks
 builder.Services.AddHealthChecks();
 
@@ -50,6 +79,8 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseRouting();
+
+app.UseCors();
 
 app.UseAuthentication();
 app.UseAuthorization();

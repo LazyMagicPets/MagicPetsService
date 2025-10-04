@@ -12,9 +12,5 @@ global using Microsoft.AspNetCore.Mvc;
 
 global using SharedSchema;
 global using SharedSchemaRepo;
-global using StoreSchema;
-global using StoreSchemaRepo;
 global using PublicSchema;
 global using PublicSchemaRepo;
-global using ChatSchema;
-global using ChatSchemaRepo;

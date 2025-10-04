@@ -106,7 +106,6 @@ namespace PublicModule
 		public ICategoryRepo CategoryRepo { get; set; }
 		public ITagRepo TagRepo { get; set; }
 		public IPetRepo PetRepo { get; set; }
-		public IOrderRepo OrderRepo { get; set; }
 		public IBadaRepo BadaRepo { get; set; }
 		public IFingerprintRepo FingerprintRepo { get; set; }
 		protected virtual void Init() { }

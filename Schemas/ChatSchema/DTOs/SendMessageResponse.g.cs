@@ -23,7 +23,7 @@ namespace ChatSchema
     public partial class SendMessageResponse : System.ComponentModel.INotifyPropertyChanged
     {
         private ChatMessage _message = new ChatMessage();
-        private ChatSession _session = new ChatSession();
+        private Chat _chat = new Chat();
 
         [Newtonsoft.Json.JsonProperty("message", Required = Newtonsoft.Json.Required.Always)]
         public ChatMessage Message
@@ -40,16 +40,16 @@ namespace ChatSchema
             }
         }
 
-        [Newtonsoft.Json.JsonProperty("session", Required = Newtonsoft.Json.Required.Always)]
-        public ChatSession Session
+        [Newtonsoft.Json.JsonProperty("chat", Required = Newtonsoft.Json.Required.Always)]
+        public Chat Chat
         {
-            get { return _session; }
+            get { return _chat; }
 
             set
             {
-                if (_session != value)
+                if (_chat != value)
                 {
-                    _session = value;
+                    _chat = value;
                     RaisePropertyChanged();
                 }
             }

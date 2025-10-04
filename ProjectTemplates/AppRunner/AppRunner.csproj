@@ -9,12 +9,14 @@
 	</PropertyGroup>
 	<Import Project="User.props"  Condition="Exists('User.props')" />
 	<ItemGroup>
-		<PackageReference Include="AWSSDK.Extensions.NETCore.Setup" />
-		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" />
-		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+		<PackageReference Include="Amazon.AspNetCore.Identity.Cognito" />
 		<PackageReference Include="AWSSDK.AppSync" />
 		<PackageReference Include="AWSSDK.BedrockRuntime" />
+		<PackageReference Include="AWSSDK.Extensions.NETCore.Setup" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" />
 		<PackageReference Include="Newtonsoft.Json" />
+		<PackageReference Include="System.Threading.Channels" />
 	</ItemGroup>
 	<Import Project="Projects.g.props"  Condition="Exists('Projects.g.props')"  />
 	<Import Project="Packages.g.props"  Condition="Exists('Packages.g.props')"  />

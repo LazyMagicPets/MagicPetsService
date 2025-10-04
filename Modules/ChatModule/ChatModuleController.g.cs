@@ -3,17 +3,13 @@ namespace ChatModule;
 public partial class ChatModuleController : ChatModuleControllerBase {
         public ChatModuleController(
             IChatModuleAuthorization chatModuleAuthorization,
-			ICategoryRepo categoryRepo,
-			ITagRepo tagRepo,
-			IPetRepo petRepo,
-			IOrderRepo orderRepo
+			IChatRepo chatRepo,
+			IChatMessagesRepo chatMessagesRepo
             ) 
         {
             ChatModuleAuthorization = chatModuleAuthorization;
-			CategoryRepo = categoryRepo;
-			TagRepo = tagRepo;
-			PetRepo = petRepo;
-			OrderRepo = orderRepo;
+			ChatRepo = chatRepo;
+			ChatMessagesRepo = chatMessagesRepo;
 
             Init();
         }

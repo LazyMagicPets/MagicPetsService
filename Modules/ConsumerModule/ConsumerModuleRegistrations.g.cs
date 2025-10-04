@@ -15,8 +15,6 @@ namespace ConsumerModule
             services.TryAddSingleton<IConsumerModuleController, ConsumerModuleController>();
             services.AddConsumerSchemaRepo();
 			services.AddSharedSchemaRepo();
-			services.AddStoreSchemaRepo();
-			services.AddChatSchemaRepo();
             CustomConfigurations(services);
             return services;            
         }

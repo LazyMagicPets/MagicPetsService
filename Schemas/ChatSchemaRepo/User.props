@@ -1,1 +1,8 @@
-<Project></Project>
+<Project>
+	<ItemGroup>
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
+		<PackageReference Include="Amazon.AspNetCore.Identity.Cognito" />
+		<PackageReference Include="AWSSDK.AppSync" />
+		<PackageReference Include="AWSSDK.BedrockRuntime" />
+	</ItemGroup>
+</Project>

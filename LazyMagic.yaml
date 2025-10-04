@@ -23,7 +23,7 @@ Directives:
     Type: Container
     IsDefault: true # this directive may be referenced by other Container directives
     Artifacts:
-      DotNetApiLambdaProject: # Lambda function that processes the HttpApi request
+      DotNetApiLambdaProject: # Lambda function that processes the HttpApi request 
       AwsApiLambdaResource: # AWS SAM template resource for the Lambda function
         ManagedPolicyArns: 
         # You can further restict this using the Perms stack
@@ -50,9 +50,13 @@ Directives:
     Type: Api
     IsDefault: true
     Artifacts:
-      AwsAppRunnerResource: # AWS SAM template resource for App Runner service
       DotNetHttpApiSDKProject: # Reuse existing HTTP REST client SDK generator
-
+      AwsAppRunnerResource: # AWS SAM template resource for App Runner service
+        ManagedPolicyArns:
+        # You can further restict permissions using the Perms stack but 
+        # generally the admin module has full access to most services.
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        
   # API Default for AppSync Events (NOT using ApiDefault)
   ApiAppSyncEventsDefault:
     Type: Api
@@ -117,6 +121,12 @@ Directives:
     OpenApiSpecs:
     - openapi.public-schema.yaml
 
+  ChatSchema:
+    Type: Schema
+    Defaults: SchemaDefault
+    OpenApiSpecs:
+    - openapi.chat-schema.yaml
+
   # MODULES - libraries handling paths
  
   AdminModule:
@@ -142,6 +152,12 @@ Directives:
     Defaults: ModuleDefault
     OpenApiSpecs:
     - openapi.public.yaml
+
+  ChatModule:
+    Type: Module
+    Defaults: ModuleDefault
+    OpenApiSpecs:
+    - openapi.chat.yaml
 
   # CONTAINERS - executables
  
@@ -184,6 +200,12 @@ Directives:
     Modules:
     - PublicModule
 
+  ChatAppRunner:
+    Type: Container
+    Defaults: AppRunnerContainerDefault
+    Modules:
+    - ChatModule
+
   # APIS - API Gateways that proxy requests to containers
   AdminApi:
     Type: Api
@@ -212,6 +234,18 @@ Directives:
     Containers:
     - PublicLambda
 
+  ChatApi:
+    Type: Api
+    Defaults: ApiAppRunnerDefault
+    Authentication: tenantauth
+    Containers:
+    - ChatAppRunner
+
+  EventsApi:
+    Type: Api
+    Defaults: ApiAppSyncEventsDefault
+    Authentication: tenantauth
+
   # Service
   Service:
     Type: Service
@@ -220,6 +254,8 @@ Directives:
     - StoreApi
     - ConsumerApi
     - PublicApi
+    - ChatApi
+    - EventsApi
     Artifacts:
       AwsServiceStackTemplate:
 
@@ -230,6 +266,7 @@ Directives:
     - StoreApi
     - ConsumerApi
     - PublicApi
+    - ChatApi
     Artifacts:
       DotNetLocalWebApiProject:
 
@@ -270,40 +307,9 @@ Directives:
     - StoreApp
     - ConsumerApp
 
-# APP RUNNER / CHAT IMPLEMENTATION (Phase 0 Test)
 
-  # Chat Schema (for testing)
-  ChatSchema:
-    Type: Schema
-    Defaults: SchemaDefault
-    OpenApiSpecs:
-    - openapi.chat-schema.yaml
 
-  # Chat Module (for testing)
-  ChatModule:
-    Type: Module
-    Defaults: ModuleDefault
-    OpenApiSpecs:
-    - openapi.chat.yaml
 
-  # App Runner container using new artifacts
-  ChatAppRunner:
-    Type: Container
-    Defaults: AppRunnerContainerDefault
-    Modules:
-    - ChatModule
 
-  # API for App Runner service (uses ApiAppRunnerDefault, not ApiDefault)
-  ChatApi:
-    Type: Api
-    Defaults: ApiAppRunnerDefault
-    Authentication: tenantauth
-    Containers:
-    - ChatAppRunner
 
-  # API for AppSync Events (needs separate default for different SDK)
-  EventsApi:
-    Type: Api
-    Defaults: ApiAppSyncEventsDefault
-    Authentication: tenantauth
 

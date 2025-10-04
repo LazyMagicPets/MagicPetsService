@@ -1,23 +1,23 @@
 openapi: 3.0.1
 paths:
-  /ChatModule/session/create:
+  /ChatModule/chat/create:
     post:
-      summary: Create new chat session
-      description: Creates a new chat session and starts processing the initial message
-      operationId: ChatModuleCreateSessionAsync
+      summary: Create new chat
+      description: Creates a new chat and starts processing the initial message
+      operationId: ChatModuleCreateChatAsync
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateSessionRequest'
+              $ref: '#/components/schemas/CreateChatRequest'
         required: true
       responses:
         201:
-          description: Session created successfully
+          description: Chat created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateSessionResponse'
+                $ref: '#/components/schemas/CreateChatResponse'
         400:
           description: Invalid request
           content:
@@ -36,7 +36,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatError'
-      x-lz-gencall: SessionManager.CreateSessionAsync(callerInfo, body)
+      x-lz-gencall: ChatRepo.CreateChatAsync(callerInfo, body)
+  /ChatModule/chat:
+    get:
+      summary: List chats
+      description: Lists all chats for the authenticated user with pagination
+      operationId: ChatModuleListChatsAsync
+      parameters:
+      - name: page
+        in: query
+        description: Page number for pagination
+        schema:
+          type: integer
+          minimum: 1
+      - name: limit
+        in: query
+        description: Number of chats per page
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      - name: status
+        in: query
+        description: Filter by chat status
+        schema:
+          $ref: '#/components/schemas/ChatStatus'
+      responses:
+        200:
+          description: Chats retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListChatsResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+      x-lz-gencall: ChatRepo.ListChatsAsync(callerInfo, page, limit, status)
   /ChatModule/health:
     get:
       summary: Health check endpoint
@@ -56,16 +100,16 @@ paths:
               schema:
                 $ref: '#/components/schemas/UnhealthyResponse'
       x-lz-gencall: HealthService.CheckAsync(callerInfo)
-  '/ChatModule/session/{sessionId}/message':
+  '/ChatModule/chat/{chatId}/message':
     post:
-      summary: Send message to existing session
-      description: Sends a message to an existing chat session
+      summary: Send message to existing chat
+      description: Sends a message to an existing chat
       operationId: ChatModuleSendMessageAsync
       parameters:
-      - name: sessionId
+      - name: chatId
         in: path
         required: true
-        description: ID of the chat session
+        description: ID of the chat
         schema:
           type: string
       requestBody:
@@ -94,7 +138,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ChatError'
         404:
-          description: Session not found
+          description: Chat not found
           content:
             application/json:
               schema:
@@ -105,26 +149,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatError'
-      x-lz-gencall: SessionManager.SendMessageAsync(callerInfo, sessionId, body)
-  '/ChatModule/session/{sessionId}/status':
+      x-lz-gencall: ChatRepo.SendMessageAsync(callerInfo, chatId, body)
+  '/ChatModule/chat/{chatId}/status':
     get:
-      summary: Get session status
-      description: Retrieves the current status and information about a chat session
-      operationId: ChatModuleGetSessionStatusAsync
+      summary: Get chat status
+      description: Retrieves the current status and information about a chat
+      operationId: ChatModuleGetChatStatusAsync
       parameters:
-      - name: sessionId
+      - name: chatId
         in: path
         required: true
-        description: ID of the chat session
+        description: ID of the chat
         schema:
           type: string
       responses:
         200:
-          description: Session status retrieved successfully
+          description: Chat status retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetSessionStatusResponse'
+                $ref: '#/components/schemas/GetChatStatusResponse'
         401:
           description: Unauthorized
           content:
@@ -132,7 +176,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ChatError'
         404:
-          description: Session not found
+          description: Chat not found
           content:
             application/json:
               schema:
@@ -143,22 +187,108 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatError'
-      x-lz-gencall: SessionManager.GetSessionStatusAsync(callerInfo, sessionId)
-  '/ChatModule/session/{sessionId}':
-    delete:
-      summary: Close chat session
-      description: Closes an active chat session and cleans up resources
-      operationId: ChatModuleCloseSessionAsync
+      x-lz-gencall: ChatRepo.GetChatStatusAsync(callerInfo, chatId)
+  '/ChatModule/chat/{chatId}':
+    get:
+      summary: Get chat by ID
+      description: Retrieves a chat by its ID from persistent storage
+      operationId: ChatModuleGetChatAsync
       parameters:
-      - name: sessionId
+      - name: chatId
         in: path
         required: true
-        description: ID of the chat session to close
+        description: ID of the chat
+        schema:
+          type: string
+      responses:
+        200:
+          description: Chat retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetChatResponse'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        404:
+          description: Chat not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+      x-lz-gencall: ChatRepo.GetChatAsync(callerInfo, chatId)
+    put:
+      summary: Update chat
+      description: Updates chat metadata and status in persistent storage
+      operationId: ChatModuleUpdateChatAsync
+      parameters:
+      - name: chatId
+        in: path
+        required: true
+        description: ID of the chat to update
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateChatRequest'
+        required: true
+      responses:
+        200:
+          description: Chat updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateChatResponse'
+        400:
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        404:
+          description: Chat not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        500:
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+      x-lz-gencall: ChatRepo.UpdateChatAsync(callerInfo, chatId, body)
+    delete:
+      summary: Close chat
+      description: Closes an active chat and cleans up resources
+      operationId: ChatModuleCloseChatAsync
+      parameters:
+      - name: chatId
+        in: path
+        required: true
+        description: ID of the chat to close
         schema:
           type: string
       responses:
         204:
-          description: Session closed successfully
+          description: Chat closed successfully
         401:
           description: Unauthorized
           content:
@@ -166,7 +296,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ChatError'
         404:
-          description: Session not found
+          description: Chat not found
           content:
             application/json:
               schema:
@@ -177,17 +307,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatError'
-      x-lz-gencall: SessionManager.CloseSessionAsync(callerInfo, sessionId)
-  '/ChatModule/session/{sessionId}/messages':
+      x-lz-gencall: ChatRepo.CloseChatAsync(callerInfo, chatId)
+  '/ChatModule/chat/{chatId}/messages':
     get:
-      summary: Get session message history
-      description: Retrieves the message history for a chat session
-      operationId: ChatModuleGetSessionMessagesAsync
+      summary: Get chat message history
+      description: Retrieves the message history for a chat
+      operationId: ChatModuleGetChatMessagesAsync
       parameters:
-      - name: sessionId
+      - name: chatId
         in: path
         required: true
-        description: ID of the chat session
+        description: ID of the chat
         schema:
           type: string
       - name: page
@@ -209,7 +339,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/SessionMessagesResponse'
+                $ref: '#/components/schemas/ChatMessagesResponse'
         401:
           description: Unauthorized
           content:
@@ -217,7 +347,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ChatError'
         404:
-          description: Session not found
+          description: Chat not found
           content:
             application/json:
               schema:
@@ -228,7 +358,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatError'
-      x-lz-gencall: SessionManager.GetSessionMessagesAsync(callerInfo, sessionId, page, limit)
+      x-lz-gencall: ChatRepo.GetChatMessagesAsync(callerInfo, chatId, page, limit)
 components:
   schemas:
     Preferences:
@@ -445,24 +575,36 @@ components:
         updateUtcTick:
           type: integer
           format: int64
-    ChatSession:
+    Chat:
       type: object
       required:
-      - sessionId
+      - chatId
       - status
       - createdAt
       properties:
-        sessionId:
+        id:
           type: string
-          description: Unique identifier for the chat session
+          description: DynamoDB primary key (same as chatId)
+        chatId:
+          type: string
+          description: Unique identifier for the chat
         userId:
           type: string
           description: User ID from Cognito authentication
         status:
-          $ref: '#/components/schemas/ChatSessionStatus'
+          $ref: '#/components/schemas/ChatStatus'
+        summary:
+          type: string
+          description: Brief summary of the chat conversation
+        chatMessagesId:
+          type: string
+          description: Reference to the ChatMessages record containing all messages
+        messageCount:
+          type: integer
+          description: Total number of messages in the chat
         createdAt:
           type: string
-          description: When the session was created
+          description: When the chat was created
           format: date-time
         lastActivityAt:
           type: string
@@ -470,11 +612,19 @@ components:
           format: date-time
         metadata:
           type: object
-          description: Additional session metadata
+          description: Additional chat metadata
+        createUtcTick:
+          type: integer
+          description: Creation timestamp in ticks
+          format: int64
+        updateUtcTick:
+          type: integer
+          description: Last update timestamp in ticks
+          format: int64
       x-lz-genrepo: true
-    ChatSessionStatus:
+    ChatStatus:
       type: string
-      description: Current status of the chat session
+      description: Current status of the chat
       enum:
       - active
       - processing
@@ -485,7 +635,7 @@ components:
       type: object
       required:
       - messageId
-      - sessionId
+      - chatId
       - role
       - content
       - timestamp
@@ -493,9 +643,9 @@ components:
         messageId:
           type: string
           description: Unique identifier for the message
-        sessionId:
+        chatId:
           type: string
-          description: Session this message belongs to
+          description: Chat this message belongs to
         role:
           $ref: '#/components/schemas/ChatMessageRole'
         content:
@@ -508,6 +658,34 @@ components:
         metadata:
           type: object
           description: Additional message metadata
+    ChatMessages:
+      type: object
+      required:
+      - chatMessagesId
+      - chatId
+      properties:
+        id:
+          type: string
+          description: DynamoDB primary key (same as chatMessagesId)
+        chatMessagesId:
+          type: string
+          description: Unique identifier for the messages collection
+        chatId:
+          type: string
+          description: Reference to the parent chat
+        messages:
+          type: array
+          description: Array of all messages in the chat
+          items:
+            $ref: '#/components/schemas/ChatMessage'
+        createUtcTick:
+          type: integer
+          description: Creation timestamp in ticks
+          format: int64
+        updateUtcTick:
+          type: integer
+          description: Last update timestamp in ticks
+          format: int64
       x-lz-genrepo: true
     ChatMessageRole:
       type: string
@@ -516,7 +694,7 @@ components:
       - user
       - assistant
       - system
-    CreateSessionRequest:
+    CreateChatRequest:
       type: object
       required:
       - initialMessage
@@ -524,16 +702,16 @@ components:
         initialMessage:
           type: string
           description: Initial message to start the conversation
-        sessionMetadata:
+        chatMetadata:
           type: object
-          description: Optional metadata for the session
-    CreateSessionResponse:
+          description: Optional metadata for the chat
+    CreateChatResponse:
       type: object
       required:
-      - session
+      - chat
       properties:
-        session:
-          $ref: '#/components/schemas/ChatSession'
+        chat:
+          $ref: '#/components/schemas/Chat'
     SendMessageRequest:
       type: object
       required:
@@ -549,37 +727,90 @@ components:
       type: object
       required:
       - message
-      - session
+      - chat
       properties:
         message:
           $ref: '#/components/schemas/ChatMessage'
-        session:
-          $ref: '#/components/schemas/ChatSession'
-    GetSessionStatusResponse:
+        chat:
+          $ref: '#/components/schemas/Chat'
+    GetChatResponse:
       type: object
       required:
-      - session
+      - chat
+      properties:
+        chat:
+          $ref: '#/components/schemas/Chat'
+    UpdateChatRequest:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/ChatStatus'
+        metadata:
+          type: object
+          description: Updated metadata for the chat
+    UpdateChatResponse:
+      type: object
+      required:
+      - chat
+      properties:
+        chat:
+          $ref: '#/components/schemas/Chat'
+    ListChatsResponse:
+      type: object
+      required:
+      - chats
+      - pagination
+      properties:
+        chats:
+          type: array
+          items:
+            $ref: '#/components/schemas/Chat'
+        pagination:
+          $ref: '#/components/schemas/ChatPaginationInfo'
+    ChatPaginationInfo:
+      type: object
+      required:
+      - page
+      - limit
+      - totalChats
+      - hasMore
+      properties:
+        page:
+          type: integer
+          minimum: 1
+        limit:
+          type: integer
+          minimum: 1
+        totalChats:
+          type: integer
+          minimum: 0
+        hasMore:
+          type: boolean
+    GetChatStatusResponse:
+      type: object
+      required:
+      - chat
       - messageCount
       properties:
-        session:
-          $ref: '#/components/schemas/ChatSession'
+        chat:
+          $ref: '#/components/schemas/Chat'
         messageCount:
           type: integer
-          description: Total number of messages in the session
+          description: Total number of messages in the chat
         lastMessage:
           $ref: '#/components/schemas/ChatMessage'
-    SessionEvent:
+    ChatEvent:
       type: object
       required:
       - eventType
-      - sessionId
+      - chatId
       - timestamp
       properties:
         eventType:
-          $ref: '#/components/schemas/SessionEventType'
-        sessionId:
+          $ref: '#/components/schemas/ChatEventType'
+        chatId:
           type: string
-          description: Session this event relates to
+          description: Chat this event relates to
         timestamp:
           type: string
           description: When the event occurred
@@ -587,16 +818,16 @@ components:
         data:
           type: object
           description: Event-specific data
-    SessionEventType:
+    ChatEventType:
       type: string
-      description: Type of session event
+      description: Type of chat event
       enum:
-      - session_created
-      - session_status_changed
+      - chat_created
+      - chat_status_changed
       - message_received
       - message_processing
       - message_completed
-      - session_closed
+      - chat_closed
       - error_occurred
     MessageEvent:
       type: object
@@ -604,16 +835,16 @@ components:
         message:
           $ref: '#/components/schemas/ChatMessage'
       allOf:
-      - $ref: '#/components/schemas/SessionEvent'
+      - $ref: '#/components/schemas/ChatEvent'
     StatusChangeEvent:
       type: object
       properties:
         oldStatus:
-          $ref: '#/components/schemas/ChatSessionStatus'
+          $ref: '#/components/schemas/ChatStatus'
         newStatus:
-          $ref: '#/components/schemas/ChatSessionStatus'
+          $ref: '#/components/schemas/ChatStatus'
       allOf:
-      - $ref: '#/components/schemas/SessionEvent'
+      - $ref: '#/components/schemas/ChatEvent'
     ErrorEvent:
       type: object
       properties:
@@ -624,7 +855,7 @@ components:
           type: string
           description: Error code for client handling
       allOf:
-      - $ref: '#/components/schemas/SessionEvent'
+      - $ref: '#/components/schemas/ChatEvent'
     ChatError:
       type: object
       required:
@@ -637,9 +868,9 @@ components:
         message:
           type: string
           description: Human-readable error message
-        sessionId:
+        chatId:
           type: string
-          description: Session ID if error is session-related
+          description: Chat ID if error is chat-related
         timestamp:
           type: string
           description: When the error occurred
@@ -677,7 +908,7 @@ components:
         error:
           type: string
           description: Error description
-    SessionMessagesResponse:
+    ChatMessagesResponse:
       type: object
       required:
       - messages
