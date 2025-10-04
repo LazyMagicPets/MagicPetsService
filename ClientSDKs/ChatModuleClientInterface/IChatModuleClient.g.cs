@@ -11,93 +11,80 @@ namespace ChatModule
         /// <summary>
         /// Create new chat
         /// </summary>
-        /// Creates a new chat and starts processing the initial message
+        /// Creates a new chat session
         /// </remarks>
         /// <returns>Chat created successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<CreateChatResponse> ChatModuleCreateChatAsync(CreateChatRequest body);
+        System.Threading.Tasks.Task<Chat> ChatModuleAddChatAsync(Chat body);
 
         /// <summary>
         /// List chats
         /// </summary>
-        /// Lists all chats for the authenticated user with pagination
+        /// Lists all chats for the authenticated user
         /// </remarks>
-        /// <param name="page">Page number for pagination</param>
-        /// <param name="limit">Number of chats per page</param>
-        /// <param name="status">Filter by chat status</param>
         /// <returns>Chats retrieved successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<ListChatsResponse> ChatModuleListChatsAsync(int? page, int? limit, ChatStatus? status);
+        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Chat>> ChatModuleListChatsAsync();
 
         /// <summary>
         /// Health check endpoint
         /// </summary>
-        /// Health check endpoint for App Runner service monitoring
+        /// Health check endpoint for service monitoring
         /// </remarks>
         /// <returns>Service is healthy</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<HealthCheckResponse> ChatModuleHealthCheckAsync();
 
         /// <summary>
-        /// Send message to existing chat
-        /// </summary>
-        /// Sends a message to an existing chat
-        /// </remarks>
-        /// <param name="chatId">ID of the chat</param>
-        /// <returns>Message sent successfully</returns>
-        /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<SendMessageResponse> ChatModuleSendMessageAsync(string chatId, SendMessageRequest body);
-
-        /// <summary>
-        /// Get chat status
-        /// </summary>
-        /// Retrieves the current status and information about a chat
-        /// </remarks>
-        /// <param name="chatId">ID of the chat</param>
-        /// <returns>Chat status retrieved successfully</returns>
-        /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<GetChatStatusResponse> ChatModuleGetChatStatusAsync(string chatId);
-
-        /// <summary>
         /// Get chat by ID
         /// </summary>
-        /// Retrieves a chat by its ID from persistent storage
+        /// Retrieves a chat by its ID
         /// </remarks>
         /// <param name="chatId">ID of the chat</param>
         /// <returns>Chat retrieved successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<GetChatResponse> ChatModuleGetChatAsync(string chatId);
+        System.Threading.Tasks.Task<Chat> ChatModuleGetChatByIdAsync(string chatId);
 
         /// <summary>
         /// Update chat
         /// </summary>
-        /// Updates chat metadata and status in persistent storage
+        /// Updates an existing chat
         /// </remarks>
         /// <param name="chatId">ID of the chat to update</param>
         /// <returns>Chat updated successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<UpdateChatResponse> ChatModuleUpdateChatAsync(string chatId, UpdateChatRequest body);
+        System.Threading.Tasks.Task<Chat> ChatModuleUpdateChatAsync(string chatId, Chat body);
 
         /// <summary>
-        /// Close chat
+        /// Delete chat
         /// </summary>
-        /// Closes an active chat and cleans up resources
+        /// Deletes a chat and cleans up resources
         /// </remarks>
-        /// <param name="chatId">ID of the chat to close</param>
-        /// <returns>Chat closed successfully</returns>
+        /// <param name="chatId">ID of the chat to delete</param>
+        /// <returns>Chat deleted successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task ChatModuleCloseChatAsync(string chatId);
+        System.Threading.Tasks.Task ChatModuleDeleteChatAsync(string chatId);
 
         /// <summary>
-        /// Get chat message history
+        /// Send message to chat
         /// </summary>
-        /// Retrieves the message history for a chat
+        /// Sends a new message to an existing chat
+        /// </remarks>
+        /// <param name="chatId">ID of the chat</param>
+        /// <returns>Message sent successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<ChatMessage> ChatModuleAddChatMessageAsync(string chatId, ChatMessage body);
+
+        /// <summary>
+        /// Get chat messages
+        /// </summary>
+        /// Retrieves message history for a chat
         /// </remarks>
         /// <param name="chatId">ID of the chat</param>
         /// <param name="page">Page number for pagination</param>
         /// <param name="limit">Number of messages per page</param>
-        /// <returns>Message history retrieved successfully</returns>
+        /// <returns>Messages retrieved successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<ChatMessagesResponse> ChatModuleGetChatMessagesAsync(string chatId, int? page, int? limit);
+        System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ChatMessage>> ChatModuleGetChatMessagesAsync(string chatId, int? page, int? limit);
     }
 }

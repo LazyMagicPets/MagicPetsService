@@ -12,37 +12,31 @@ namespace ChatModule
         /// </summary>
 
         /// <remarks>
-        /// Creates a new chat and starts processing the initial message
+        /// Creates a new chat session
         /// </remarks>
 
         /// <returns>Chat created successfully</returns>
 
-        Task<ActionResult<CreateChatResponse>> ChatModuleCreateChatAsync(CreateChatRequest body);
+        Task<ActionResult<Chat>> ChatModuleAddChatAsync(Chat body);
 
         /// <summary>
         /// List chats
         /// </summary>
 
         /// <remarks>
-        /// Lists all chats for the authenticated user with pagination
+        /// Lists all chats for the authenticated user
         /// </remarks>
-
-        /// <param name="page">Page number for pagination</param>
-
-        /// <param name="limit">Number of chats per page</param>
-
-        /// <param name="status">Filter by chat status</param>
 
         /// <returns>Chats retrieved successfully</returns>
 
-        Task<ActionResult<ListChatsResponse>> ChatModuleListChatsAsync(int? page = null, int? limit = null, ChatStatus? status = null);
+        Task<ActionResult<System.Collections.Generic.ICollection<Chat>>> ChatModuleListChatsAsync();
 
         /// <summary>
         /// Health check endpoint
         /// </summary>
 
         /// <remarks>
-        /// Health check endpoint for App Runner service monitoring
+        /// Health check endpoint for service monitoring
         /// </remarks>
 
         /// <returns>Service is healthy</returns>
@@ -50,54 +44,25 @@ namespace ChatModule
         Task<ActionResult<HealthCheckResponse>> ChatModuleHealthCheckAsync();
 
         /// <summary>
-        /// Send message to existing chat
-        /// </summary>
-
-        /// <remarks>
-        /// Sends a message to an existing chat
-        /// </remarks>
-
-        /// <param name="chatId">ID of the chat</param>
-
-
-        /// <returns>Message sent successfully</returns>
-
-        Task<ActionResult<SendMessageResponse>> ChatModuleSendMessageAsync(string chatId, SendMessageRequest body);
-
-        /// <summary>
-        /// Get chat status
-        /// </summary>
-
-        /// <remarks>
-        /// Retrieves the current status and information about a chat
-        /// </remarks>
-
-        /// <param name="chatId">ID of the chat</param>
-
-        /// <returns>Chat status retrieved successfully</returns>
-
-        Task<ActionResult<GetChatStatusResponse>> ChatModuleGetChatStatusAsync(string chatId);
-
-        /// <summary>
         /// Get chat by ID
         /// </summary>
 
         /// <remarks>
-        /// Retrieves a chat by its ID from persistent storage
+        /// Retrieves a chat by its ID
         /// </remarks>
 
         /// <param name="chatId">ID of the chat</param>
 
         /// <returns>Chat retrieved successfully</returns>
 
-        Task<ActionResult<GetChatResponse>> ChatModuleGetChatAsync(string chatId);
+        Task<ActionResult<Chat>> ChatModuleGetChatByIdAsync(string chatId);
 
         /// <summary>
         /// Update chat
         /// </summary>
 
         /// <remarks>
-        /// Updates chat metadata and status in persistent storage
+        /// Updates an existing chat
         /// </remarks>
 
         /// <param name="chatId">ID of the chat to update</param>
@@ -105,28 +70,43 @@ namespace ChatModule
 
         /// <returns>Chat updated successfully</returns>
 
-        Task<ActionResult<UpdateChatResponse>> ChatModuleUpdateChatAsync(string chatId, UpdateChatRequest body);
+        Task<ActionResult<Chat>> ChatModuleUpdateChatAsync(string chatId, Chat body);
 
         /// <summary>
-        /// Close chat
+        /// Delete chat
         /// </summary>
 
         /// <remarks>
-        /// Closes an active chat and cleans up resources
+        /// Deletes a chat and cleans up resources
         /// </remarks>
 
-        /// <param name="chatId">ID of the chat to close</param>
+        /// <param name="chatId">ID of the chat to delete</param>
 
-        /// <returns>Chat closed successfully</returns>
+        /// <returns>Chat deleted successfully</returns>
 
-        Task<IActionResult> ChatModuleCloseChatAsync(string chatId);
+        Task<IActionResult> ChatModuleDeleteChatAsync(string chatId);
 
         /// <summary>
-        /// Get chat message history
+        /// Send message to chat
         /// </summary>
 
         /// <remarks>
-        /// Retrieves the message history for a chat
+        /// Sends a new message to an existing chat
+        /// </remarks>
+
+        /// <param name="chatId">ID of the chat</param>
+
+
+        /// <returns>Message sent successfully</returns>
+
+        Task<ActionResult<ChatMessage>> ChatModuleAddChatMessageAsync(string chatId, ChatMessage body);
+
+        /// <summary>
+        /// Get chat messages
+        /// </summary>
+
+        /// <remarks>
+        /// Retrieves message history for a chat
         /// </remarks>
 
         /// <param name="chatId">ID of the chat</param>
@@ -135,9 +115,9 @@ namespace ChatModule
 
         /// <param name="limit">Number of messages per page</param>
 
-        /// <returns>Message history retrieved successfully</returns>
+        /// <returns>Messages retrieved successfully</returns>
 
-        Task<ActionResult<ChatMessagesResponse>> ChatModuleGetChatMessagesAsync(string chatId, int? page = null, int? limit = null);
+        Task<ActionResult<System.Collections.Generic.ICollection<ChatMessage>>> ChatModuleGetChatMessagesAsync(string chatId, int? page = null, int? limit = null);
 
     }
 

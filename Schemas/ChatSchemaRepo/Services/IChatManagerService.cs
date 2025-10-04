@@ -1,55 +1,44 @@
 using LazyMagic;
-using Microsoft.AspNetCore.Mvc;
 
 namespace ChatSchemaRepo;
 
 /// <summary>
-/// Interface for ChatManagerService - manages chat lifecycle, in-memory state, and background processing.
+/// Interface for chat management service that handles in-memory chat state and background processing
 /// </summary>
 public interface IChatManagerService
 {
     /// <summary>
-    /// Creates a new chat and starts background processing.
+    /// Initialize a new chat (sets up in-memory state, background tasks, generates IDs)
     /// </summary>
-    Task<CreateChatResponse> CreateChatAsync(ICallerInfo callerInfo, CreateChatRequest body);
+    Task<Chat> InitializeChatAsync(ICallerInfo callerInfo, Chat chat);
 
     /// <summary>
-    /// Sends a message to an existing chat.
+    /// Process a user message (queues for LLM processing, returns immediately)
     /// </summary>
-    Task<SendMessageResponse> SendMessageAsync(ICallerInfo callerInfo, string chatId, SendMessageRequest body);
+    Task<ChatMessage> ProcessUserMessageAsync(ICallerInfo callerInfo, string chatId, ChatMessage message);
 
     /// <summary>
-    /// Retrieves the current status of a chat.
+    /// Get chat by ID from in-memory store
     /// </summary>
-    Task<GetChatStatusResponse> GetChatStatusAsync(ICallerInfo callerInfo, string chatId);
+    Task<Chat> GetChatByIdAsync(ICallerInfo callerInfo, string chatId);
 
     /// <summary>
-    /// Retrieves a chat by its ID.
+    /// Get chat message history (from in-memory store)
     /// </summary>
-    Task<GetChatResponse> GetChatAsync(ICallerInfo callerInfo, string chatId);
+    Task<List<ChatMessage>> GetChatHistoryAsync(ICallerInfo callerInfo, string chatId, int? page, int? limit);
 
     /// <summary>
-    /// Updates chat metadata and status.
+    /// Update chat metadata and status
     /// </summary>
-    Task<UpdateChatResponse> UpdateChatAsync(ICallerInfo callerInfo, string chatId, UpdateChatRequest body);
+    Task<Chat> UpdateChatAsync(ICallerInfo callerInfo, Chat chat);
 
     /// <summary>
-    /// Lists chats for the authenticated user with pagination.
+    /// Close chat and cleanup resources
     /// </summary>
-    Task<ListChatsResponse> ListChatsAsync(ICallerInfo callerInfo, int? page, int? limit, ChatStatus? status);
+    Task CloseChatAsync(ICallerInfo callerInfo, string chatId);
 
     /// <summary>
-    /// Retrieves paginated message history for a chat.
-    /// </summary>
-    Task<ChatMessagesResponse> GetChatMessagesAsync(ICallerInfo callerInfo, string chatId, int? page, int? limit);
-
-    /// <summary>
-    /// Closes a chat and releases resources.
-    /// </summary>
-    Task<IActionResult> CloseChatAsync(ICallerInfo callerInfo, string chatId);
-
-    /// <summary>
-    /// Gets the keep-alive semaphore for a chat (used by internal keep-alive endpoint).
+    /// Get semaphore for keep-alive requests (for long-polling pattern)
     /// </summary>
     SemaphoreSlim? GetKeepAliveSemaphore(string chatId);
 }

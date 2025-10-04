@@ -29,36 +29,33 @@ namespace ChatModule
         /// Create new chat
         /// </summary>
         /// <remarks>
-        /// Creates a new chat and starts processing the initial message
+        /// Creates a new chat session
         /// </remarks>
         /// <returns>Chat created successfully</returns>
-        [HttpPost, Route("ChatModule/chat/create")]
-        public virtual async Task<ActionResult<CreateChatResponse>> ChatModuleCreateChatAsync([FromBody] CreateChatRequest body)
+        [HttpPost, Route("ChatModule/chat")]
+        public virtual async Task<ActionResult<Chat>> ChatModuleAddChatAsync([FromBody] Chat body)
         {
             var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatRepo.CreateChatAsync(callerInfo, body);
+            return await ChatRepo.CreateAsync(callerInfo, body);
         }
         /// <summary>
         /// List chats
         /// </summary>
         /// <remarks>
-        /// Lists all chats for the authenticated user with pagination
+        /// Lists all chats for the authenticated user
         /// </remarks>
-        /// <param name="page">Page number for pagination</param>
-        /// <param name="limit">Number of chats per page</param>
-        /// <param name="status">Filter by chat status</param>
         /// <returns>Chats retrieved successfully</returns>
         [HttpGet, Route("ChatModule/chat")]
-        public virtual async Task<ActionResult<ListChatsResponse>> ChatModuleListChatsAsync([FromQuery] int? page = null, [FromQuery] int? limit = null, [FromQuery] ChatStatus? status = null)
+        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Chat>>> ChatModuleListChatsAsync()
         {
             var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatRepo.ListChatsAsync(callerInfo, page, limit, status);
+            return await ChatRepo.ListAsync(callerInfo);
         }
         /// <summary>
         /// Health check endpoint
         /// </summary>
         /// <remarks>
-        /// Health check endpoint for App Runner service monitoring
+        /// Health check endpoint for service monitoring
         /// </remarks>
         /// <returns>Service is healthy</returns>
         [HttpGet, Route("ChatModule/health")]
@@ -68,90 +65,76 @@ namespace ChatModule
             return await HealthService.CheckAsync(callerInfo);
         }
         /// <summary>
-        /// Send message to existing chat
-        /// </summary>
-        /// <remarks>
-        /// Sends a message to an existing chat
-        /// </remarks>
-        /// <param name="chatId">ID of the chat</param>
-        /// <returns>Message sent successfully</returns>
-        [HttpPost, Route("ChatModule/chat/{chatId}/message")]
-        public virtual async Task<ActionResult<SendMessageResponse>> ChatModuleSendMessageAsync(string chatId, [FromBody] SendMessageRequest body)
-        {
-            var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatRepo.SendMessageAsync(callerInfo, chatId, body);
-        }
-        /// <summary>
-        /// Get chat status
-        /// </summary>
-        /// <remarks>
-        /// Retrieves the current status and information about a chat
-        /// </remarks>
-        /// <param name="chatId">ID of the chat</param>
-        /// <returns>Chat status retrieved successfully</returns>
-        [HttpGet, Route("ChatModule/chat/{chatId}/status")]
-        public virtual async Task<ActionResult<GetChatStatusResponse>> ChatModuleGetChatStatusAsync(string chatId)
-        {
-            var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatRepo.GetChatStatusAsync(callerInfo, chatId);
-        }
-        /// <summary>
         /// Get chat by ID
         /// </summary>
         /// <remarks>
-        /// Retrieves a chat by its ID from persistent storage
+        /// Retrieves a chat by its ID
         /// </remarks>
         /// <param name="chatId">ID of the chat</param>
         /// <returns>Chat retrieved successfully</returns>
         [HttpGet, Route("ChatModule/chat/{chatId}")]
-        public virtual async Task<ActionResult<GetChatResponse>> ChatModuleGetChatAsync(string chatId)
+        public virtual async Task<ActionResult<Chat>> ChatModuleGetChatByIdAsync(string chatId)
         {
             var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatRepo.GetChatAsync(callerInfo, chatId);
+            return await ChatRepo.ReadAsync(callerInfo, chatId);
         }
         /// <summary>
         /// Update chat
         /// </summary>
         /// <remarks>
-        /// Updates chat metadata and status in persistent storage
+        /// Updates an existing chat
         /// </remarks>
         /// <param name="chatId">ID of the chat to update</param>
         /// <returns>Chat updated successfully</returns>
         [HttpPut, Route("ChatModule/chat/{chatId}")]
-        public virtual async Task<ActionResult<UpdateChatResponse>> ChatModuleUpdateChatAsync(string chatId, [FromBody] UpdateChatRequest body)
+        public virtual async Task<ActionResult<Chat>> ChatModuleUpdateChatAsync(string chatId, [FromBody] Chat body)
         {
             var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatRepo.UpdateChatAsync(callerInfo, chatId, body);
+            return await ChatRepo.UpdateAsync(callerInfo, body);
         }
         /// <summary>
-        /// Close chat
+        /// Delete chat
         /// </summary>
         /// <remarks>
-        /// Closes an active chat and cleans up resources
+        /// Deletes a chat and cleans up resources
         /// </remarks>
-        /// <param name="chatId">ID of the chat to close</param>
-        /// <returns>Chat closed successfully</returns>
+        /// <param name="chatId">ID of the chat to delete</param>
+        /// <returns>Chat deleted successfully</returns>
         [HttpDelete, Route("ChatModule/chat/{chatId}")]
-        public virtual async Task<IActionResult> ChatModuleCloseChatAsync(string chatId)
+        public virtual async Task<IActionResult> ChatModuleDeleteChatAsync(string chatId)
         {
             var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatRepo.CloseChatAsync(callerInfo, chatId);
+            return await ChatRepo.DeleteAsync(callerInfo, chatId);
         }
         /// <summary>
-        /// Get chat message history
+        /// Send message to chat
         /// </summary>
         /// <remarks>
-        /// Retrieves the message history for a chat
+        /// Sends a new message to an existing chat
+        /// </remarks>
+        /// <param name="chatId">ID of the chat</param>
+        /// <returns>Message sent successfully</returns>
+        [HttpPost, Route("ChatModule/chat/{chatId}/messages")]
+        public virtual async Task<ActionResult<ChatMessage>> ChatModuleAddChatMessageAsync(string chatId, [FromBody] ChatMessage body)
+        {
+            var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            return await ChatMessagesRepo.AddMessageAsync(callerInfo, chatId, body);
+        }
+        /// <summary>
+        /// Get chat messages
+        /// </summary>
+        /// <remarks>
+        /// Retrieves message history for a chat
         /// </remarks>
         /// <param name="chatId">ID of the chat</param>
         /// <param name="page">Page number for pagination</param>
         /// <param name="limit">Number of messages per page</param>
-        /// <returns>Message history retrieved successfully</returns>
+        /// <returns>Messages retrieved successfully</returns>
         [HttpGet, Route("ChatModule/chat/{chatId}/messages")]
-        public virtual async Task<ActionResult<ChatMessagesResponse>> ChatModuleGetChatMessagesAsync(string chatId, [FromQuery] int? page = null, [FromQuery] int? limit = null)
+        public virtual async Task<ActionResult<System.Collections.Generic.ICollection<ChatMessage>>> ChatModuleGetChatMessagesAsync(string chatId, [FromQuery] int? page = null, [FromQuery] int? limit = null)
         {
             var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatRepo.GetChatMessagesAsync(callerInfo, chatId, page, limit);
+            return await ChatMessagesRepo.GetMessagesAsync(callerInfo, chatId, page, limit);
         }
 		public IChatModuleAuthorization ChatModuleAuthorization { get; set; }
 		public IChatRepo ChatRepo { get; set; }

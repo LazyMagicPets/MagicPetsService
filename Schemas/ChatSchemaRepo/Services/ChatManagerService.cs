@@ -5,7 +5,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
 using LazyMagic;
@@ -47,13 +46,15 @@ public class ChatManagerService : IChatManagerService, IHostedService
         _cleanupTimer = new Timer(CleanupExpiredChats, null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
     }
 
-    public async Task<CreateChatResponse> CreateChatAsync(ICallerInfo callerInfo, CreateChatRequest body)
+    public async Task<Chat> InitializeChatAsync(ICallerInfo callerInfo, Chat chat)
     {
-        var chatId = Guid.NewGuid().ToString();
-        var chatMessagesId = Guid.NewGuid().ToString();
+        // Generate IDs if not provided
+        var chatId = chat.ChatId ?? Guid.NewGuid().ToString();
+        var chatMessagesId = chat.ChatMessagesId ?? Guid.NewGuid().ToString();
         var userId = callerInfo?.LzUserId ?? "unknown";
 
-        var chat = new ConnectionChat
+        // Create in-memory chat state
+        var connectionChat = new ConnectionChat
         {
             ChatId = chatId,
             ChatMessagesId = chatMessagesId,
@@ -63,111 +64,94 @@ public class ChatManagerService : IChatManagerService, IHostedService
             LastActivityAt = DateTime.UtcNow,
             MessageQueue = Channel.CreateUnbounded<ChatMessage>(),
             CancellationToken = CancellationTokenSource.CreateLinkedTokenSource(_cancellationTokenSource.Token),
-            Context = new Dictionary<string, object>(),
+            Context = chat.Metadata != null && chat.Metadata is IDictionary<string, object> metadataDict
+                ? new Dictionary<string, object>(metadataDict)
+                : new Dictionary<string, object>(),
             History = new List<ChatMessage>()
         };
 
-        _chats.TryAdd(chatId, chat);
+        _chats.TryAdd(chatId, connectionChat);
 
         // Create semaphore for keep-alive request (starts unreleased)
         var semaphore = new SemaphoreSlim(0, 1);
         _keepAliveSemaphores.TryAdd(chatId, semaphore);
 
-        // Start background processing task for this session
-        var backgroundTask = ProcessChatMessagesAsync(chat);
+        // Start background processing task
+        var backgroundTask = ProcessChatMessagesAsync(connectionChat);
         _backgroundTasks.TryAdd(chatId, backgroundTask);
 
-        // Initiate keep-alive long-polling request to represent this chat as active load
+        // Initiate keep-alive long-polling request
         _ = InitiateKeepAliveAsync(chatId);
 
-        _logger.LogInformation("Created session {ChatId} for user {UserId}", chatId, userId);
+        _logger.LogInformation("Initialized chat {ChatId} for user {UserId}", chatId, userId);
 
         var now = DateTime.UtcNow;
         var nowTicks = now.Ticks;
 
-        return new CreateChatResponse
+        // Return enriched Chat object
+        return new Chat
         {
-            Chat = new Chat
-            {
-                Id = chatId,
-                ChatId = chatId,
-                ChatMessagesId = chatMessagesId,
-                UserId = userId,
-                Status = ChatStatus.Active,
-                Summary = null, // Will be updated after first exchange
-                MessageCount = 0,
-                CreatedAt = chat.CreatedAt,
-                LastActivityAt = chat.LastActivityAt,
-                CreateUtcTick = nowTicks,
-                UpdateUtcTick = nowTicks
-            }
+            Id = chatId,
+            ChatId = chatId,
+            ChatMessagesId = chatMessagesId,
+            UserId = userId,
+            Status = ChatStatus.Active,
+            Summary = null,
+            MessageCount = 0,
+            CreatedAt = connectionChat.CreatedAt,
+            LastActivityAt = connectionChat.LastActivityAt,
+            Metadata = connectionChat.Context,
+            CreateUtcTick = nowTicks,
+            UpdateUtcTick = nowTicks
         };
     }
 
-    public async Task<SendMessageResponse> SendMessageAsync(ICallerInfo callerInfo, string chatId, SendMessageRequest body)
+    public async Task<ChatMessage> ProcessUserMessageAsync(ICallerInfo callerInfo, string chatId, ChatMessage message)
     {
         if (!_chats.TryGetValue(chatId, out var chat))
         {
             throw new InvalidOperationException($"Chat {chatId} not found");
         }
 
-        // Verify session ownership
+        // Verify ownership
         var userId = callerInfo?.LzUserId ?? "unknown";
         if (chat.UserId != userId)
         {
             throw new UnauthorizedAccessException($"User {userId} does not own chat {chatId}");
         }
 
-        // Create user message
-        var messageId = Guid.NewGuid().ToString();
-        var now = DateTime.UtcNow;
-        var userMessage = new ChatMessage
+        // Enrich message with IDs and timestamp
+        var enrichedMessage = new ChatMessage
         {
-            MessageId = messageId,
+            MessageId = message.MessageId ?? Guid.NewGuid().ToString(),
             ChatId = chatId,
             Role = ChatMessageRole.User,
-            Content = body.Content,
-            Timestamp = now
+            Content = message.Content,
+            Timestamp = DateTime.UtcNow,
+            Metadata = message.Metadata
         };
 
-        // Add to session history
-        chat.History.Add(userMessage);
+        // Add to history
+        chat.History.Add(enrichedMessage);
         chat.LastActivityAt = DateTime.UtcNow;
         chat.Status = ChatStatus.Processing;
 
-        // Queue message for background processing
-        await chat.MessageQueue.Writer.WriteAsync(userMessage, chat.CancellationToken.Token);
+        // Queue for background processing
+        await chat.MessageQueue.Writer.WriteAsync(enrichedMessage, chat.CancellationToken.Token);
 
         _logger.LogInformation("Queued message for chat {ChatId}", chatId);
 
-        return new SendMessageResponse
-        {
-            Message = userMessage,
-            Chat = new Chat
-            {
-                Id = chatId,
-                ChatId = chatId,
-                ChatMessagesId = chat.ChatMessagesId,
-                UserId = userId,
-                Status = ChatStatus.Processing,
-                Summary = GenerateSummary(chat.History),
-                MessageCount = chat.History.Count,
-                CreatedAt = chat.CreatedAt,
-                LastActivityAt = chat.LastActivityAt,
-                CreateUtcTick = chat.CreatedAt.Ticks,
-                UpdateUtcTick = DateTime.UtcNow.Ticks
-            }
-        };
+        return enrichedMessage;
     }
 
-    public async Task<GetChatStatusResponse> GetChatStatusAsync(ICallerInfo callerInfo, string chatId)
+    public async Task<Chat> GetChatByIdAsync(ICallerInfo callerInfo, string chatId)
     {
         if (!_chats.TryGetValue(chatId, out var chat))
         {
             throw new InvalidOperationException($"Chat {chatId} not found");
         }
 
-        // Verify session ownership
+        // Verify ownership
         var userId = callerInfo?.LzUserId ?? "unknown";
         if (chat.UserId != userId)
         {
@@ -176,52 +160,31 @@ public class ChatManagerService : IChatManagerService, IHostedService
 
         await Task.Delay(0); // Keep async
 
-        return new GetChatStatusResponse
+        return new Chat
         {
-            Chat = new Chat
-            {
-                Id = chatId,
-                ChatId = chatId,
-                ChatMessagesId = chat.ChatMessagesId,
-                UserId = userId,
-                Status = chat.Status,
-                Summary = GenerateSummary(chat.History),
-                MessageCount = chat.History.Count,
-                CreatedAt = chat.CreatedAt,
-                LastActivityAt = chat.LastActivityAt,
-                CreateUtcTick = chat.CreatedAt.Ticks,
-                UpdateUtcTick = chat.LastActivityAt.Ticks
-            },
-            MessageCount = chat.History.Count
+            Id = chatId,
+            ChatId = chatId,
+            ChatMessagesId = chat.ChatMessagesId,
+            UserId = userId,
+            Status = chat.Status,
+            Summary = GenerateSummary(chat.History),
+            MessageCount = chat.History.Count,
+            CreatedAt = chat.CreatedAt,
+            LastActivityAt = chat.LastActivityAt,
+            Metadata = chat.Context,
+            CreateUtcTick = chat.CreatedAt.Ticks,
+            UpdateUtcTick = chat.LastActivityAt.Ticks
         };
     }
 
-    public async Task<IActionResult> CloseChatAsync(ICallerInfo callerInfo, string chatId)
-    {
-        if (!_chats.TryGetValue(chatId, out var chat))
-        {
-            return new NotFoundResult();
-        }
-
-        // Verify session ownership
-        var userId = callerInfo?.LzUserId ?? "unknown";
-        if (chat.UserId != userId)
-        {
-            return new ForbidResult();
-        }
-
-        await CloseChatInternalAsync(chatId);
-        return new NoContentResult();
-    }
-
-    public async Task<ChatMessagesResponse> GetChatMessagesAsync(ICallerInfo callerInfo, string chatId, int? page, int? limit)
+    public async Task<List<ChatMessage>> GetChatHistoryAsync(ICallerInfo callerInfo, string chatId, int? page, int? limit)
     {
         if (!_chats.TryGetValue(chatId, out var chat))
         {
             throw new InvalidOperationException($"Chat {chatId} not found");
         }
 
-        // Verify session ownership
+        // Verify ownership
         var userId = callerInfo?.LzUserId ?? "unknown";
         if (chat.UserId != userId)
         {
@@ -229,172 +192,88 @@ public class ChatManagerService : IChatManagerService, IHostedService
         }
 
         var pageNumber = page ?? 1;
-        var pageSize = Math.Min(limit ?? 50, 100); // Cap at 100 messages per page
+        var pageSize = Math.Min(limit ?? 50, 100);
         var skip = (pageNumber - 1) * pageSize;
 
-        var messages = chat.History
+        await Task.Delay(0); // Keep async
+
+        return chat.History
             .OrderBy(m => m.Timestamp)
             .Skip(skip)
             .Take(pageSize)
             .ToList();
+    }
+
+    public async Task<Chat> UpdateChatAsync(ICallerInfo callerInfo, Chat chat)
+    {
+        if (!_chats.TryGetValue(chat.ChatId!, out var connectionChat))
+        {
+            throw new InvalidOperationException($"Chat {chat.ChatId} not found");
+        }
+
+        // Verify ownership
+        var userId = callerInfo?.LzUserId ?? "unknown";
+        if (connectionChat.UserId != userId)
+        {
+            throw new UnauthorizedAccessException($"User {userId} does not own chat {chat.ChatId}");
+        }
+
+        // Update in-memory state
+        connectionChat.Status = chat.Status;
+
+        if (chat.Metadata != null && chat.Metadata is IDictionary<string, object> metadata)
+        {
+            foreach (var kvp in metadata)
+            {
+                connectionChat.Context[kvp.Key] = kvp.Value;
+            }
+        }
+
+        connectionChat.LastActivityAt = DateTime.UtcNow;
 
         await Task.Delay(0); // Keep async
 
-        return new ChatMessagesResponse
+        return new Chat
         {
-            Messages = messages,
-            Pagination = new PaginationInfo
-            {
-                Page = pageNumber,
-                Limit = pageSize,
-                TotalMessages = chat.History.Count,
-                HasMore = chat.History.Count > skip + pageSize
-            }
+            Id = chat.ChatId,
+            ChatId = chat.ChatId,
+            ChatMessagesId = connectionChat.ChatMessagesId,
+            UserId = userId,
+            Status = connectionChat.Status,
+            Summary = GenerateSummary(connectionChat.History),
+            MessageCount = connectionChat.History.Count,
+            CreatedAt = connectionChat.CreatedAt,
+            LastActivityAt = connectionChat.LastActivityAt,
+            Metadata = connectionChat.Context,
+            CreateUtcTick = connectionChat.CreatedAt.Ticks,
+            UpdateUtcTick = DateTime.UtcNow.Ticks
         };
     }
 
-    public async Task<GetChatResponse> GetChatAsync(ICallerInfo callerInfo, string chatId)
+    public async Task CloseChatAsync(ICallerInfo callerInfo, string chatId)
     {
         if (!_chats.TryGetValue(chatId, out var chat))
         {
             throw new InvalidOperationException($"Chat {chatId} not found");
         }
 
-        // Verify session ownership
+        // Verify ownership
         var userId = callerInfo?.LzUserId ?? "unknown";
         if (chat.UserId != userId)
         {
             throw new UnauthorizedAccessException($"User {userId} does not own chat {chatId}");
         }
 
-        await Task.Delay(0); // Keep async
-
-        return new GetChatResponse
-        {
-            Chat = new Chat
-            {
-                Id = chatId,
-                ChatId = chatId,
-                ChatMessagesId = chat.ChatMessagesId,
-                UserId = userId,
-                Status = chat.Status,
-                Summary = GenerateSummary(chat.History),
-                MessageCount = chat.History.Count,
-                CreatedAt = chat.CreatedAt,
-                LastActivityAt = chat.LastActivityAt,
-                Metadata = chat.Context.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
-                CreateUtcTick = chat.CreatedAt.Ticks,
-                UpdateUtcTick = chat.LastActivityAt.Ticks
-            }
-        };
+        await CloseChatInternalAsync(chatId);
     }
 
-    public async Task<UpdateChatResponse> UpdateChatAsync(ICallerInfo callerInfo, string chatId, UpdateChatRequest body)
-    {
-        if (!_chats.TryGetValue(chatId, out var chat))
-        {
-            throw new InvalidOperationException($"Chat {chatId} not found");
-        }
-
-        // Verify session ownership
-        var userId = callerInfo?.LzUserId ?? "unknown";
-        if (chat.UserId != userId)
-        {
-            throw new UnauthorizedAccessException($"User {userId} does not own chat {chatId}");
-        }
-
-        // Update status (note: Status is non-nullable enum in DTO, defaults to Active if not sent in JSON)
-        // TODO: Consider making UpdateChatRequest.Status nullable in schema to distinguish "not provided" from "Active"
-        chat.Status = body.Status;
-
-        // Update metadata if provided
-        if (body.Metadata != null && body.Metadata is System.Collections.Generic.IDictionary<string, object> metadataDict)
-        {
-            foreach (var kvp in metadataDict)
-            {
-                chat.Context[kvp.Key] = kvp.Value;
-            }
-        }
-
-        chat.LastActivityAt = DateTime.UtcNow;
-
-        await Task.Delay(0); // Keep async
-
-        return new UpdateChatResponse
-        {
-            Chat = new Chat
-            {
-                Id = chatId,
-                ChatId = chatId,
-                ChatMessagesId = chat.ChatMessagesId,
-                UserId = userId,
-                Status = chat.Status,
-                Summary = GenerateSummary(chat.History),
-                MessageCount = chat.History.Count,
-                CreatedAt = chat.CreatedAt,
-                LastActivityAt = chat.LastActivityAt,
-                Metadata = chat.Context.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
-                CreateUtcTick = chat.CreatedAt.Ticks,
-                UpdateUtcTick = DateTime.UtcNow.Ticks
-            }
-        };
-    }
-
-    public async Task<ListChatsResponse> ListChatsAsync(ICallerInfo callerInfo, int? page, int? limit, ChatStatus? status)
-    {
-        var userId = callerInfo?.LzUserId ?? "unknown";
-        var pageNumber = page ?? 1;
-        var pageSize = Math.Min(limit ?? 50, 100); // Cap at 100 chats per page
-        var skip = (pageNumber - 1) * pageSize;
-
-        // Get all chats for this user
-        var userChats = _chats.Values
-            .Where(c => c.UserId == userId)
-            .Where(c => !status.HasValue || c.Status == status.Value)
-            .OrderByDescending(c => c.LastActivityAt)
-            .ToList();
-
-        var totalChats = userChats.Count;
-        var chats = userChats
-            .Skip(skip)
-            .Take(pageSize)
-            .Select(c => new Chat
-            {
-                Id = c.ChatId,
-                ChatId = c.ChatId,
-                UserId = c.UserId,
-                Status = c.Status,
-                CreatedAt = c.CreatedAt,
-                LastActivityAt = c.LastActivityAt,
-                Metadata = c.Context.ToDictionary(kvp => kvp.Key, kvp => kvp.Value),
-                CreateUtcTick = c.CreatedAt.Ticks,
-                UpdateUtcTick = c.LastActivityAt.Ticks
-            })
-            .ToList();
-
-        await Task.Delay(0); // Keep async
-
-        return new ListChatsResponse
-        {
-            Chats = chats,
-            Pagination = new ChatPaginationInfo
-            {
-                Page = pageNumber,
-                Limit = pageSize,
-                TotalChats = totalChats,
-                HasMore = totalChats > skip + pageSize
-            }
-        };
-    }
-
-    /// <summary>
-    /// Gets the keep-alive semaphore for a chat (used by internal keep-alive endpoint).
-    /// </summary>
     public SemaphoreSlim? GetKeepAliveSemaphore(string chatId)
     {
         _keepAliveSemaphores.TryGetValue(chatId, out var semaphore);
         return semaphore;
     }
+
+    // Private helper methods
 
     /// <summary>
     /// Initiates a long-polling HTTP request to ourselves to represent this chat as active load.
@@ -449,19 +328,17 @@ public class ChatManagerService : IChatManagerService, IHostedService
                         Data = message
                     });
 
-                    // Process with Bedrock LLM
+                    // Process with LLM
                     var assistantResponse = await _llmClient.GenerateResponseAsync(chat.History);
 
                     // Create assistant message
-                    var assistantMessageId = Guid.NewGuid().ToString();
-                    var assistantTimestamp = DateTime.UtcNow;
                     var assistantMessage = new ChatMessage
                     {
-                        MessageId = assistantMessageId,
+                        MessageId = Guid.NewGuid().ToString(),
                         ChatId = chat.ChatId,
                         Role = ChatMessageRole.Assistant,
                         Content = assistantResponse,
-                        Timestamp = assistantTimestamp
+                        Timestamp = DateTime.UtcNow
                     };
 
                     // Add to session history
@@ -550,7 +427,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
         }
     }
 
-    private void CleanupExpiredChats(object state)
+    private void CleanupExpiredChats(object? state)
     {
         var expiredChats = _chats
             .Where(kvp => DateTime.UtcNow - kvp.Value.LastActivityAt > TimeSpan.FromMinutes(30))
@@ -568,30 +445,6 @@ public class ChatManagerService : IChatManagerService, IHostedService
         }
     }
 
-    public Task StartAsync(CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("SessionManager started");
-        return Task.CompletedTask;
-    }
-
-    public async Task StopAsync(CancellationToken cancellationToken)
-    {
-        _logger.LogInformation("SessionManager stopping...");
-
-        _cancellationTokenSource.Cancel();
-        _cleanupTimer?.Dispose();
-
-        // Close all sessions
-        var allChatIds = _chats.Keys.ToList();
-        await Task.WhenAll(allChatIds.Select(CloseChatInternalAsync));
-
-        _cancellationTokenSource.Dispose();
-        _logger.LogInformation("SessionManager stopped");
-    }
-
-    /// <summary>
-    /// Generate a brief summary of the conversation
-    /// </summary>
     private string? GenerateSummary(List<ChatMessage> messages)
     {
         if (messages == null || messages.Count == 0)
@@ -605,6 +458,27 @@ public class ChatManagerService : IChatManagerService, IHostedService
         // Truncate to 100 characters for summary
         var content = firstUserMessage.Content ?? string.Empty;
         return content.Length > 100 ? content.Substring(0, 97) + "..." : content;
+    }
+
+    public Task StartAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("ChatManagerService started");
+        return Task.CompletedTask;
+    }
+
+    public async Task StopAsync(CancellationToken cancellationToken)
+    {
+        _logger.LogInformation("ChatManagerService stopping...");
+
+        _cancellationTokenSource.Cancel();
+        _cleanupTimer?.Dispose();
+
+        // Close all chats
+        var allChatIds = _chats.Keys.ToList();
+        await Task.WhenAll(allChatIds.Select(CloseChatInternalAsync));
+
+        _cancellationTokenSource.Dispose();
+        _logger.LogInformation("ChatManagerService stopped");
     }
 }
 

@@ -1,26 +1,26 @@
 openapi: 3.0.1
 paths:
 
-  # Chat Management Endpoints
-  '/chat/create':
+  # Standard CRUD Endpoints for Chat
+  '/chat':
     post:
       summary: Create new chat
-      description: Creates a new chat and starts processing the initial message
-      operationId: createChat
-      x-lz-gencall: ChatRepo.CreateChatAsync(callerInfo, body)
+      description: Creates a new chat session
+      operationId: addChat
+      x-lz-gencall: ChatRepo.CreateAsync(callerInfo, body)
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateChatRequest'
+              $ref: '#/components/schemas/Chat'
       responses:
-        '201':
+        '200':
           description: Chat created successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/CreateChatResponse'
+                $ref: '#/components/schemas/Chat'
         '400':
           description: Invalid request
           content:
@@ -33,98 +33,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatError'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChatError'
 
-  '/chat/{chatId}/message':
-    post:
-      summary: Send message to existing chat
-      description: Sends a message to an existing chat
-      operationId: sendMessage
-      x-lz-gencall: ChatRepo.SendMessageAsync(callerInfo, chatId, body)
-      parameters:
-        - name: chatId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the chat
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/SendMessageRequest'
-      responses:
-        '200':
-          description: Message sent successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SendMessageResponse'
-        '400':
-          description: Invalid request
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChatError'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChatError'
-        '404':
-          description: Chat not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChatError'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChatError'
-
-  '/chat/{chatId}/status':
     get:
-      summary: Get chat status
-      description: Retrieves the current status and information about a chat
-      operationId: getChatStatus
-      x-lz-gencall: ChatRepo.GetChatStatusAsync(callerInfo, chatId)
-      parameters:
-        - name: chatId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the chat
+      summary: List chats
+      description: Lists all chats for the authenticated user
+      operationId: listChats
+      x-lz-gencall: ChatRepo.ListAsync(callerInfo)
       responses:
         '200':
-          description: Chat status retrieved successfully
+          description: Chats retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetChatStatusResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Chat'
         '401':
           description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChatError'
-        '404':
-          description: Chat not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChatError'
-        '500':
-          description: Internal server error
           content:
             application/json:
               schema:
@@ -133,9 +58,9 @@ paths:
   '/chat/{chatId}':
     get:
       summary: Get chat by ID
-      description: Retrieves a chat by its ID from persistent storage
-      operationId: getChat
-      x-lz-gencall: ChatRepo.GetChatAsync(callerInfo, chatId)
+      description: Retrieves a chat by its ID
+      operationId: getChatById
+      x-lz-gencall: ChatRepo.ReadAsync(callerInfo, chatId)
       parameters:
         - name: chatId
           in: path
@@ -149,7 +74,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/GetChatResponse'
+                $ref: '#/components/schemas/Chat'
         '401':
           description: Unauthorized
           content:
@@ -162,18 +87,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatError'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChatError'
 
     put:
       summary: Update chat
-      description: Updates chat metadata and status in persistent storage
+      description: Updates an existing chat
       operationId: updateChat
-      x-lz-gencall: ChatRepo.UpdateChatAsync(callerInfo, chatId, body)
+      x-lz-gencall: ChatRepo.UpdateAsync(callerInfo, body)
       parameters:
         - name: chatId
           in: path
@@ -186,14 +105,14 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateChatRequest'
+              $ref: '#/components/schemas/Chat'
       responses:
         '200':
           description: Chat updated successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/UpdateChatResponse'
+                $ref: '#/components/schemas/Chat'
         '400':
           description: Invalid request
           content:
@@ -212,28 +131,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatError'
-        '500':
-          description: Internal server error
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChatError'
 
     delete:
-      summary: Close chat
-      description: Closes an active chat and cleans up resources
-      operationId: closeChat
-      x-lz-gencall: ChatRepo.CloseChatAsync(callerInfo, chatId)
+      summary: Delete chat
+      description: Deletes a chat and cleans up resources
+      operationId: deleteChat
+      x-lz-gencall: ChatRepo.DeleteAsync(callerInfo, chatId)
       parameters:
         - name: chatId
           in: path
           required: true
           schema:
             type: string
-          description: ID of the chat to close
+          description: ID of the chat to delete
       responses:
-        '204':
-          description: Chat closed successfully
+        '200':
+          description: Chat deleted successfully
         '401':
           description: Unauthorized
           content:
@@ -246,89 +159,58 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatError'
-        '500':
-          description: Internal server error
+
+  # ChatMessages CRUD Endpoints
+  '/chat/{chatId}/messages':
+    post:
+      summary: Send message to chat
+      description: Sends a new message to an existing chat
+      operationId: addChatMessage
+      x-lz-gencall: ChatMessagesRepo.AddMessageAsync(callerInfo, chatId, body)
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the chat
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatMessage'
+      responses:
+        '200':
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessage'
+        '400':
+          description: Invalid request
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatError'
-
-  '/chat':
-    get:
-      summary: List chats
-      description: Lists all chats for the authenticated user with pagination
-      operationId: listChats
-      x-lz-gencall: ChatRepo.ListChatsAsync(callerInfo, page, limit, status)
-      parameters:
-        - name: page
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-          description: Page number for pagination
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            minimum: 1
-            maximum: 100
-          description: Number of chats per page
-        - name: status
-          in: query
-          required: false
-          schema:
-            $ref: '#/components/schemas/ChatStatus'
-          description: Filter by chat status
-      responses:
-        '200':
-          description: Chats retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ListChatsResponse'
         '401':
           description: Unauthorized
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatError'
-        '500':
-          description: Internal server error
+        '404':
+          description: Chat not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatError'
 
-  # Health Check Endpoint (required by App Runner)
-  '/health':
     get:
-      summary: Health check endpoint
-      description: Health check endpoint for App Runner service monitoring
-      operationId: healthCheck
-      x-lz-gencall: HealthService.CheckAsync(callerInfo)
-      responses:
-        '200':
-          description: Service is healthy
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HealthCheckResponse'
-        '503':
-          description: Service is unhealthy
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UnhealthyResponse'
-
-  # Chat History Endpoints
-  '/chat/{chatId}/messages':
-    get:
-      summary: Get chat message history
-      description: Retrieves the message history for a chat
+      summary: Get chat messages
+      description: Retrieves message history for a chat
       operationId: getChatMessages
-      x-lz-gencall: ChatRepo.GetChatMessagesAsync(callerInfo, chatId, page, limit)
+      x-lz-gencall: ChatMessagesRepo.GetMessagesAsync(callerInfo, chatId, page, limit)
       parameters:
         - name: chatId
           in: path
@@ -353,11 +235,13 @@ paths:
           description: Number of messages per page
       responses:
         '200':
-          description: Message history retrieved successfully
+          description: Messages retrieved successfully
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChatMessagesResponse'
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatMessage'
         '401':
           description: Unauthorized
           content:
@@ -370,9 +254,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatError'
-        '500':
-          description: Internal server error
+
+  # Health Check Endpoint
+  '/health':
+    get:
+      summary: Health check endpoint
+      description: Health check endpoint for service monitoring
+      operationId: healthCheck
+      x-lz-gencall: HealthService.CheckAsync(callerInfo)
+      responses:
+        '200':
+          description: Service is healthy
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/ChatError'
+                $ref: '#/components/schemas/HealthCheckResponse'
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnhealthyResponse'
