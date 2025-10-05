@@ -240,6 +240,11 @@ Directives:
     Authentication: tenantauth
     Containers:
     - ChatAppRunner
+    Artifacts:
+      AwsAppRunnerResource:
+        ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
 
   EventsApi:
     Type: Api

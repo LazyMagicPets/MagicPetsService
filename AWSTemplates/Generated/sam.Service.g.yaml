@@ -1055,6 +1055,7 @@ Resources:
             Action: sts:AssumeRole
       ManagedPolicyArns:
       - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+      - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
 
   ChatApiAccessRole:
     Type: AWS::IAM::Role
