@@ -3,6 +3,13 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ChatSchemaRepo;
 
+// Extend the IChatRepo interface to add custom message operations
+public partial interface IChatRepo : IDocumentRepo<Chat>
+{
+    Task<ActionResult<ChatMessage>> CreateMessageAsync(ICallerInfo callerInfo, string chatId, ChatMessage message);
+    Task<ActionResult<ICollection<ChatMessage>>> ReadMessagesAsync(ICallerInfo callerInfo, string chatId, int? page, int? limit);
+}
+
 // Extend the ChatRepo class to override base CRUD methods with chat-specific logic
 public partial class ChatRepo : DYDBRepository<Chat>, IChatRepo
 {
@@ -103,5 +110,37 @@ public partial class ChatRepo : DYDBRepository<Chat>, IChatRepo
     {
         // Return all chats from DynamoDB (includes both active and inactive)
         return await base.ListAsync(callerInfo, limit);
+    }
+
+    /// <summary>
+    /// Creates a new message in a chat - queues with ChatManagerService and persists to DynamoDB
+    /// </summary>
+    public async Task<ActionResult<ChatMessage>> CreateMessageAsync(ICallerInfo callerInfo, string chatId, ChatMessage message)
+    {
+        // Queue message with ChatManagerService for background processing
+        var userMessage = await _chatManagerService.ProcessUserMessageAsync(callerInfo, chatId, message);
+
+        // Persist user message to DynamoDB via ChatMessagesRepo (which implements IMessagePersistence)
+        await ((IMessagePersistence)_chatMessagesRepo).AppendMessageAsync(chatId, userMessage);
+
+        return new OkObjectResult(userMessage);
+    }
+
+    /// <summary>
+    /// Reads messages from a chat - first checks in-memory, then falls back to DynamoDB
+    /// </summary>
+    public async Task<ActionResult<ICollection<ChatMessage>>> ReadMessagesAsync(ICallerInfo callerInfo, string chatId, int? page, int? limit)
+    {
+        // First try to get from ChatManagerService (for active in-memory chats)
+        try
+        {
+            var messages = await _chatManagerService.GetChatHistoryAsync(callerInfo, chatId, page, limit);
+            return new OkObjectResult(messages as ICollection<ChatMessage>);
+        }
+        catch (InvalidOperationException)
+        {
+            // Chat not in memory, retrieve from DynamoDB
+            return await _chatMessagesRepo.ReadMessagesAsync(callerInfo, chatId, page, limit);
+        }
     }
 }

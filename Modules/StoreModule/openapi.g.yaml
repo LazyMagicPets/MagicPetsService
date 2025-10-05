@@ -518,6 +518,7 @@ components:
       - chat_status_changed
       - message_received
       - message_processing
+      - message_streaming
       - message_completed
       - chat_closed
       - error_occurred

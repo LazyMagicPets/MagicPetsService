@@ -166,7 +166,7 @@ paths:
       summary: Send message to chat
       description: Sends a new message to an existing chat
       operationId: addChatMessage
-      x-lz-gencall: ChatMessagesRepo.AddMessageAsync(callerInfo, chatId, body)
+      x-lz-gencall: ChatRepo.CreateMessageAsync(callerInfo, chatId, body)
       parameters:
         - name: chatId
           in: path
@@ -210,7 +210,7 @@ paths:
       summary: Get chat messages
       description: Retrieves message history for a chat
       operationId: getChatMessages
-      x-lz-gencall: ChatMessagesRepo.GetMessagesAsync(callerInfo, chatId, page, limit)
+      x-lz-gencall: ChatRepo.ReadMessagesAsync(callerInfo, chatId, page, limit)
       parameters:
         - name: chatId
           in: path

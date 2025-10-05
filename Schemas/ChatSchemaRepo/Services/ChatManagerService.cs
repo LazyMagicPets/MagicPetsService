@@ -21,6 +21,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
     private readonly ILlmClient _llmClient;
     private readonly AppSyncEventPublisher _eventPublisher;
     private readonly IHttpClientFactory _httpClientFactory;
+    private readonly IMessagePersistence _messagePersistence;
     private readonly ConcurrentDictionary<string, ConnectionChat> _chats;
     private readonly ConcurrentDictionary<string, Task> _backgroundTasks;
     private readonly SemaphoreSlim _keepAliveSemaphore;
@@ -32,12 +33,14 @@ public class ChatManagerService : IChatManagerService, IHostedService
         ILogger<ChatManagerService> logger,
         ILlmClient llmClient,
         AppSyncEventPublisher eventPublisher,
-        IHttpClientFactory httpClientFactory)
+        IHttpClientFactory httpClientFactory,
+        IMessagePersistence messagePersistence)
     {
         _logger = logger;
         _llmClient = llmClient;
         _eventPublisher = eventPublisher;
         _httpClientFactory = httpClientFactory;
+        _messagePersistence = messagePersistence;
         _chats = new ConcurrentDictionary<string, ConnectionChat>();
         _backgroundTasks = new ConcurrentDictionary<string, Task>();
         _keepAliveSemaphore = new SemaphoreSlim(0, 1);
@@ -88,6 +91,8 @@ public class ChatManagerService : IChatManagerService, IHostedService
 
         var now = DateTime.UtcNow;
         var nowTicks = now.Ticks;
+
+        await Task.Delay(0); // Keep async
 
         // Return enriched Chat object
         return new Chat
@@ -356,17 +361,48 @@ public class ChatManagerService : IChatManagerService, IHostedService
                         Data = message
                     });
 
-                    // Process with LLM
-                    var assistantResponse = await _llmClient.GenerateResponseAsync(chat.History);
+                    // Process with LLM using streaming
+                    var assistantMessageId = Guid.NewGuid().ToString();
+                    var streamStartTime = DateTime.UtcNow;
+                    var fullResponse = new System.Text.StringBuilder();
 
-                    // Create assistant message
+                    // Publish streaming start event
+                    await _eventPublisher.PublishChatEventAsync(chat.ChatId, new ChatEvent
+                    {
+                        EventType = ChatEventType.Message_processing,
+                        ChatId = chat.ChatId,
+                        Timestamp = streamStartTime,
+                        Data = new { MessageId = assistantMessageId }
+                    });
+
+                    // Stream the response
+                    await foreach (var textChunk in _llmClient.GenerateResponseStreamAsync(chat.History, chat.CancellationToken.Token))
+                    {
+                        fullResponse.Append(textChunk);
+
+                        // Publish streaming chunk event
+                        await _eventPublisher.PublishChatEventAsync(chat.ChatId, new ChatEvent
+                        {
+                            EventType = ChatEventType.Message_streaming,
+                            ChatId = chat.ChatId,
+                            Timestamp = DateTime.UtcNow,
+                            Data = new
+                            {
+                                MessageId = assistantMessageId,
+                                Chunk = textChunk,
+                                FullContent = fullResponse.ToString()
+                            }
+                        });
+                    }
+
+                    // Create complete assistant message
                     var assistantMessage = new ChatMessage
                     {
-                        MessageId = Guid.NewGuid().ToString(),
+                        MessageId = assistantMessageId,
                         ChatId = chat.ChatId,
                         Role = ChatMessageRole.Assistant,
-                        Content = assistantResponse,
-                        Timestamp = DateTime.UtcNow
+                        Content = fullResponse.ToString(),
+                        Timestamp = streamStartTime
                     };
 
                     // Add to session history
@@ -374,7 +410,10 @@ public class ChatManagerService : IChatManagerService, IHostedService
                     chat.LastActivityAt = DateTime.UtcNow;
                     chat.Status = ChatStatus.Active;
 
-                    // Publish assistant response event
+                    // Persist assistant message to DynamoDB
+                    await PersistAssistantMessageAsync(chat.ChatId, assistantMessage);
+
+                    // Publish assistant response completed event
                     await _eventPublisher.PublishChatEventAsync(chat.ChatId, new ChatEvent
                     {
                         EventType = ChatEventType.Message_completed,
@@ -383,7 +422,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
                         Data = assistantMessage
                     });
 
-                    _logger.LogInformation("Processed message for chat {ChatId}", chat.ChatId);
+                    _logger.LogInformation("Processed streaming message for chat {ChatId}, total length: {Length}", chat.ChatId, fullResponse.Length);
                 }
                 catch (Exception ex)
                 {
@@ -512,6 +551,24 @@ public class ChatManagerService : IChatManagerService, IHostedService
 
         _cancellationTokenSource.Dispose();
         _logger.LogInformation("ChatManagerService stopped");
+    }
+
+    /// <summary>
+    /// Persists an assistant message to the ChatMessages table via the repository layer
+    /// </summary>
+    private async Task PersistAssistantMessageAsync(string chatId, ChatMessage assistantMessage)
+    {
+        try
+        {
+            await _messagePersistence.AppendMessageAsync(chatId, assistantMessage);
+
+            _logger.LogDebug("Persisted assistant message {MessageId} to DynamoDB for chat {ChatId}", assistantMessage.MessageId, chatId);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Failed to persist assistant message to DynamoDB for chat {ChatId}", chatId);
+            // Don't throw - we don't want to break the chat flow if persistence fails
+        }
     }
 }
 

@@ -14,4 +14,10 @@ public interface ILlmClient
     /// Generate a response for a single user message
     /// </summary>
     Task<string> GenerateResponseAsync(string userMessage);
+
+    /// <summary>
+    /// Generate a streaming response based on conversation history.
+    /// Yields text chunks as they arrive from the LLM.
+    /// </summary>
+    IAsyncEnumerable<string> GenerateResponseStreamAsync(List<ChatMessage> conversationHistory, CancellationToken cancellationToken = default);
 }

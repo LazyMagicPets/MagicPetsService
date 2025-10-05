@@ -39,14 +39,17 @@ namespace ChatSchema
         [System.Runtime.Serialization.EnumMember(Value = @"message_processing")]
         Message_processing = 3,
 
+        [System.Runtime.Serialization.EnumMember(Value = @"message_streaming")]
+        Message_streaming = 4,
+
         [System.Runtime.Serialization.EnumMember(Value = @"message_completed")]
-        Message_completed = 4,
+        Message_completed = 5,
 
         [System.Runtime.Serialization.EnumMember(Value = @"chat_closed")]
-        Chat_closed = 5,
+        Chat_closed = 6,
 
         [System.Runtime.Serialization.EnumMember(Value = @"error_occurred")]
-        Error_occurred = 6,
+        Error_occurred = 7,
 
     }
 

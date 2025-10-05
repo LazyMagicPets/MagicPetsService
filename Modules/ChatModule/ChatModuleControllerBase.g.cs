@@ -118,7 +118,7 @@ namespace ChatModule
         public virtual async Task<ActionResult<ChatMessage>> ChatModuleAddChatMessageAsync(string chatId, [FromBody] ChatMessage body)
         {
             var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatMessagesRepo.AddMessageAsync(callerInfo, chatId, body);
+            return await ChatRepo.CreateMessageAsync(callerInfo, chatId, body);
         }
         /// <summary>
         /// Get chat messages
@@ -134,7 +134,7 @@ namespace ChatModule
         public virtual async Task<ActionResult<System.Collections.Generic.ICollection<ChatMessage>>> ChatModuleGetChatMessagesAsync(string chatId, [FromQuery] int? page = null, [FromQuery] int? limit = null)
         {
             var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatMessagesRepo.GetMessagesAsync(callerInfo, chatId, page, limit);
+            return await ChatRepo.ReadMessagesAsync(callerInfo, chatId, page, limit);
         }
 		public IChatModuleAuthorization ChatModuleAuthorization { get; set; }
 		public IChatRepo ChatRepo { get; set; }

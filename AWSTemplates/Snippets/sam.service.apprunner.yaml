@@ -48,8 +48,8 @@
     Type: AWS::AppRunner::AutoScalingConfiguration
     Properties:
       AutoScalingConfigurationName: !Sub "${AWS::StackName}-__AppRunnerServiceName__-AS"
-      MaxConcurrency: 150  # Increased to account for keep-alive requests (~100) + user API requests (~50)
-      MaxSize: 2
+      MaxConcurrency: 150  # This represents the max requests for this architecture
+      MaxSize: 1
       MinSize: 1
 
   # ECR repository is created by Deploy-DockerAws command before stack deployment

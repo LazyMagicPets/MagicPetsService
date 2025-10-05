@@ -66,19 +66,22 @@ ChatModule/                           (Controller Layer - Routing only)
 
 ChatSchemaRepo/                       (Repository & Service Layer - All business logic)
   ├── Repos/
-  │   └── ChatRepo.cs                - Partial class with custom API methods
+  │   ├── ChatRepo.cs                - CRUD operations with in-memory delegation
+  │   └── ChatMessagesRepo.cs        - Message operations (create, read)
   ├── Services/
   │   ├── ChatManagerService.cs      - In-memory state + background processing
+  │   ├── IChatManagerService.cs     - Service interface
   │   ├── BedrockChat.cs             - AWS Bedrock LLM integration
+  │   ├── ILlmClient.cs              - LLM abstraction interface
   │   └── AppSyncEventPublisher.cs   - Real-time event publishing
   └── ServiceRepoExtensions.cs       - DI registration for services
 
 ChatSchema/                           (DTOs & Models)
   └── DTOs/
       ├── Chat.g.cs                  - Chat entity (IItem for DynamoDB)
-      ├── ChatMessage.g.cs           - Message entity
-      ├── ChatStatus.g.cs            - Enum
-      └── *Request/*Response.g.cs    - API DTOs
+      ├── ChatMessages.g.cs          - ChatMessages entity (separate table)
+      ├── ChatMessage.g.cs           - Message object (in Messages array)
+      └── ChatStatus.g.cs            - Enum
 ```
 
 **Key Design Principle:**
@@ -125,24 +128,24 @@ ChatModule follows the standard **Repository Pattern** architecture used through
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                      Client Application                      │
+│                      Client Application                     │
 └─────────────────┬──────────────────────┬────────────────────┘
                   │                      │
                   │ HTTPS (443)          │ AppSync Events
                   │                      │
 ┌─────────────────▼──────────────────────▼────────────────────┐
-│              Application Load Balancer (ALB)                  │
-│  • Sticky sessions: AWSALB cookie (30 min TTL)               │
-│  • Health checks: /ChatModule/health                         │
-│  • Custom domain + ACM certificate                           │
-│  • WAF integration available                                 │
-│  • Security Groups: HTTPS from 0.0.0.0/0                     │
-└─────────────────┬────────────────────────────────────────────┘
+│              Application Load Balancer (ALB)                │
+│  • Sticky sessions: AWSALB cookie (30 min TTL)              │
+│  • Health checks: /ChatModule/health                        │
+│  • Custom domain + ACM certificate                          │
+│  • WAF integration available                                │
+│  • Security Groups: HTTPS from 0.0.0.0/0                    │
+└─────────────────┬───────────────────────────────────────────┘
                   │
                   │ Target Group (type: ip, stickiness: enabled)
                   │
 ┌─────────────────▼────────────────────────────────────────────┐
-│                    ECS Fargate Service                        │
+│                    ECS Fargate Service                       │
 │  ┌──────────────────────┐  ┌──────────────────────┐          │
 │  │  Fargate Task 1      │  │  Fargate Task 2      │          │
 │  │  (Private Subnet A)  │  │  (Private Subnet B)  │  ...     │
@@ -154,11 +157,11 @@ ChatModule follows the standard **Repository Pattern** architecture used through
 │  │  │ • 2 GB RAM     │  │  │  │ • 2 GB RAM     │  │          │
 │  │  │ • In-memory OK │  │  │  │ • In-memory OK │  │          │
 │  │  └────────────────┘  │  │  └────────────────┘  │          │
-│  │  IP: 10.0.1.50      │  │  IP: 10.0.2.50      │          │
+│  │  IP: 10.0.1.50      │  │  IP: 10.0.2.50      │            │
 │  └──────────────────────┘  └──────────────────────┘          │
 │  • Auto-scaling: 2-10 tasks based on CPU                     │
-│  • Multi-AZ deployment                                        │
-└───────────────────────────────────────────────────────────────┘
+│  • Multi-AZ deployment                                       │
+└──────────────────────────────────────────────────────────────┘
 ```
 
 **Characteristics:**
@@ -174,40 +177,40 @@ Both deployment modes use the **same ChatAppRunner container** with clean layere
 
 ```
 ┌─────────────────▼──────────────────────▼────────────────────┐
-│                   ChatAppRunner Container                     │
-│  ┌────────────────────────────────────────────────────────┐  │
-│  │           ChatModuleController (Controller Layer)       │  │
-│  │  /chat/create  /chat/{id}/message  /chat/{id}/status  │  │
-│  │  /chat  /chat/{id}/messages  /chat/{id}               │  │
-│  │  /internal/keepalive/{id} (load representation)        │  │
-│  └─────────────┬──────────────────────────────────────────┘  │
-│                │                                              │
-│  ┌─────────────▼──────────────────────────────────────────┐  │
-│  │       ChatRepo (ChatSchemaRepo - Repository Layer)      │  │
-│  │  • CreateChatAsync, SendMessageAsync, GetChatAsync     │  │
-│  │  • UpdateChatAsync, ListChatsAsync, CloseChatAsync     │  │
-│  │  • Delegates to ChatManagerService for business logic  │  │
-│  └─────────────┬──────────────────────────────────────────┘  │
-│                │                                              │
-│  ┌─────────────▼──────────────────────────────────────────┐  │
-│  │    ChatManagerService (ChatSchemaRepo - Service Layer)  │  │
-│  │  • In-Memory Chat State (ConcurrentDictionary)         │  │
-│  │  • Message Queue (Channel<ChatMessage>)                │  │
-│  │  • Background Processing Task per Chat                 │  │
-│  │  • Keep-Alive Semaphores (Load Representation)         │  │
-│  │  • Automatic Cleanup (30 min timeout)                  │  │
-│  └────┬──────────────────────┬──────────────────┬─────────┘  │
-│       │                      │                  │             │
-│       │ Process Messages     │ Self-Request     │ Publish     │
-│       │                      │ Keep-Alive       │ Events      │
-│  ┌────▼────────────────┐  ┌──▼─────────────┐ ┌─▼──────────┐  │
-│  │ BedrockChat Service │  │ HttpClient     │ │  AppSync   │  │
-│  │ (ChatSchemaRepo)    │  │ • POST /keep.. │ │  Publisher │  │
-│  │ • Invoke Bedrock    │  │ • Blocks on    │ │  (ChatRepo)│  │
-│  │ • Streaming Support │  │   Semaphore    │ │  • Events  │  │
-│  └──────────┬──────────┘  │                │ └─┬──────────┘  │
-│             │              └────────────────┘   │             │
-└─────────────┼─────────────────────────────────┼─────────────┘
+│                   ChatAppRunner Container                   │
+│  ┌────────────────────────────────────────────────────────┐ │
+│  │           ChatModuleController (Controller Layer)      │ │
+│  │  /chat/create  /chat/{id}/message  /chat/{id}/status   │ │
+│  │  /chat  /chat/{id}/messages  /chat/{id}                │ │
+│  │  /internal/keepalive/{id} (load representation)        │ │
+│  └─────────────┬──────────────────────────────────────────┘ │
+│                │                                            │
+│  ┌─────────────▼──────────────────────────────────────────┐ │
+│  │       ChatRepo (ChatSchemaRepo - Repository Layer)     │ │
+│  │  • CreateChatAsync, SendMessageAsync, GetChatAsync     │ │
+│  │  • UpdateChatAsync, ListChatsAsync, CloseChatAsync     │ │
+│  │  • Delegates to ChatManagerService for business logic  │ │
+│  └─────────────┬──────────────────────────────────────────┘ │
+│                │                                            │
+│  ┌─────────────▼──────────────────────────────────────────┐ │
+│  │    ChatManagerService (ChatSchemaRepo - Service Layer) │ │
+│  │  • In-Memory Chat State (ConcurrentDictionary)         │ │
+│  │  • Message Queue (Channel<ChatMessage>)                │ │
+│  │  • Background Processing Task per Chat                 │ │
+│  │  • Keep-Alive Semaphores (Load Representation)         │ │
+│  │  • Automatic Cleanup (30 min timeout)                  │ │
+│  └────┬──────────────────────┬──────────────────┬─────────┘ │
+│       │                      │                  │           │
+│       │ Process Messages     │ Self-Request     │ Publish   │
+│       │                      │ Keep-Alive       │ Events    │
+│  ┌────▼────────────────┐  ┌──▼─────────────┐ ┌─▼──────────┐ │
+│  │ BedrockChat Service │  │ HttpClient     │ │  AppSync   │ │
+│  │ (ChatSchemaRepo)    │  │ • POST /keep.. │ │  Publisher │ │
+│  │ • Invoke Bedrock    │  │ • Blocks on    │ │  (ChatRepo)│ │
+│  │ • Streaming Support │  │   Semaphore    │ │  • Events  │ │
+│  └──────────┬──────────┘  │                │ └─┬──────────┘ │
+│             │             └────────────────┘   │            │
+└─────────────┼──────────────────────────────────┼────────────┘
               │                                  │
     ┌─────────▼─────────┐          ┌────────────▼─────────────┐
     │  Amazon Bedrock   │          │    AWS AppSync Events    │
@@ -226,15 +229,15 @@ Both deployment modes use the **same ChatAppRunner container** with clean layere
 ### 1. ChatRepo (Repository Layer)
 
 **Location**: `ChatSchemaRepo/Repos/ChatRepo.cs`
-**Type**: Partial class extending auto-generated `ChatRepo`
-**Lifetime**: Transient (injected into controllers)
+**Type**: Partial class extending `DYDBRepository<Chat>`
+**Lifetime**: Scoped (injected into controllers)
 
-Entry point for all chat operations, following the standard repository pattern:
+Entry point for all chat CRUD operations, following the standard repository pattern:
 
-- **Custom API Methods**: CreateChatAsync, SendMessageAsync, GetChatStatusAsync, GetChatAsync, UpdateChatAsync, ListChatsAsync, CloseChatAsync, GetChatMessagesAsync
-- **Delegation**: All methods delegate to `ChatManagerService` for business logic
-- **Persistence Ready**: Extends `DYDBRepository<Chat>` for future DynamoDB integration
-- **Clean Separation**: Isolates business logic from controller layer
+- **Overridden Methods**: CreateAsync, ReadAsync, UpdateAsync, DeleteAsync, ListAsync
+- **Hybrid Architecture**: Delegates to `IChatManagerService` for in-memory operations, calls base methods for DynamoDB persistence
+- **DynamoDB Integration**: Persists Chat and ChatMessages entities to DynamoDB
+- **Clean Separation**: Orchestrates between in-memory state and persistent storage
 
 ### 2. ChatManagerService (Service Layer)
 
@@ -252,30 +255,40 @@ Core service that manages chat lifecycle and background processing:
 - **Keep-Alive Management**: Maintains semaphores for load representation
 
 **Key Methods**:
-- `CreateChatAsync(callerInfo, request)` - Creates new chat and starts background processor
-- `SendMessageAsync(callerInfo, chatId, request)` - Queues user message for processing
-- `GetChatStatusAsync(callerInfo, chatId)` - Returns current chat state
-- `GetChatAsync(callerInfo, chatId)` - Retrieves chat by ID
-- `UpdateChatAsync(callerInfo, chatId, request)` - Updates chat metadata/status
-- `ListChatsAsync(callerInfo, page, limit, status)` - Lists user's chats with pagination
-- `GetChatMessagesAsync(callerInfo, chatId, page, limit)` - Paginated message history
+- `InitializeChatAsync(callerInfo, chat)` - Creates new in-memory chat and starts background processor
+- `ProcessUserMessageAsync(callerInfo, chatId, message)` - Queues user message for processing, returns immediately
+- `GetChatByIdAsync(callerInfo, chatId)` - Retrieves chat from in-memory state
+- `GetChatHistoryAsync(callerInfo, chatId, page, limit)` - Returns paginated message history from in-memory state
+- `UpdateChatAsync(callerInfo, chat)` - Updates in-memory chat state
 - `CloseChatAsync(callerInfo, chatId)` - Cleanly shuts down chat and background task
+- `GetKeepAliveSemaphore(chatId)` - Returns semaphore for keep-alive endpoint (deprecated - now uses single service-wide semaphore)
 
-### 3. BedrockChat (Service Layer)
+### 3. ChatMessagesRepo (Repository Layer)
+
+**Location**: `ChatSchemaRepo/Repos/ChatMessagesRepo.cs`
+**Type**: Partial class extending `DYDBRepository<ChatMessages>`
+**Lifetime**: Scoped (injected into controllers)
+
+Handles message-specific operations:
+
+- **AddMessageAsync**: Adds user message to chat, delegates to ChatManagerService for processing, persists to DynamoDB
+- **GetMessagesAsync**: Returns paginated messages from in-memory (if chat is active) or DynamoDB (if inactive)
+- **Hybrid Retrieval**: Attempts in-memory first, falls back to DynamoDB if chat not active
+
+### 4. BedrockChat (Service Layer)
 
 **Location**: `ChatSchemaRepo/Services/BedrockChat.cs`
-
-**Interface**: `IBedrockChat`
+**Interface**: `ILlmClient`
 **Lifetime**: Singleton
 
 Handles AI processing via Amazon Bedrock:
 
 - **Model**: Claude 3 Sonnet (`anthropic.claude-3-sonnet-20240229-v1:0`)
-- **Standard Processing**: `ProcessMessageAsync()` - Single request/response
-- **Streaming Processing**: `ProcessMessageStreamAsync()` - Chunked responses with events
+- **Interface**: Implements `ILlmClient` for swappable LLM providers
+- **Methods**: `GenerateResponseAsync(conversationHistory)`, `GenerateResponseAsync(userMessage)`
 - **Error Handling**: Returns friendly error messages on failure
 
-### 4. AppSyncEventPublisher (Service Layer)
+### 5. AppSyncEventPublisher (Service Layer)
 
 **Location**: `ChatSchemaRepo/Services/AppSyncEventPublisher.cs`
 **Lifetime**: Singleton
@@ -292,107 +305,117 @@ Publishes real-time events to connected clients:
   - `chat_closed`
   - `error_occurred`
 
-### 5. CognitoAuthenticationMiddleware
+### 6. ChatModuleAuthorization
 
-Custom middleware for Cognito JWT validation:
+**Location**: `ChatModule/ChatModuleAuthorization.cs`
+**Type**: Partial class extending generated base
 
-- Validates JWT tokens from Cognito User Pools
-- Extracts user identity (`sub` claim → `LzUserId`)
-- Enforces authentication on protected endpoints
+Custom authorization handling:
+
+- **GetLzHeaders**: Captures the `Host` header from incoming requests for keep-alive URL construction
+- **HasPermissionAsync**: Authorization logic (currently allows all authenticated users)
 - Integrates with LazyMagic `ICallerInfo` pattern
 
 ## API Endpoints
 
-All endpoints are prefixed with `/ChatModule/`.
+All endpoints follow standard REST CRUD patterns and are prefixed with `/ChatModule/`.
 
-### POST /chat/create
+### POST /chat
 
-Creates a new chat and starts processing the initial message.
+Creates a new chat session.
 
-**Request**:
+**Request Body** (Chat object):
 ```json
 {
-  "initialMessage": "Hello, how can you help me today?",
-  "chatMetadata": {
-    "source": "web",
-    "language": "en"
-  }
-}
-```
-
-**Response** (201 Created):
-```json
-{
-  "chat": {
-    "chatId": "uuid",
-    "userId": "cognito-user-id",
-    "status": "processing",
-    "createdAt": "2025-10-03T12:00:00Z",
-    "lastActivityAt": "2025-10-03T12:00:00Z"
-  }
-}
-```
-
-### POST /chat/{chatId}/message
-
-Sends a message to an existing chat.
-
-**Request**:
-```json
-{
-  "content": "Tell me more about that.",
-  "messageMetadata": {}
+  "userId": "user-123",
+  "status": "active",
+  "summary": "Initial chat session"
 }
 ```
 
 **Response** (200 OK):
 ```json
 {
-  "message": {
-    "messageId": "uuid",
-    "chatId": "chat-uuid",
-    "role": "user",
-    "content": "Tell me more about that.",
-    "timestamp": "2025-10-03T12:01:00Z"
-  },
-  "chat": {
-    "chatId": "chat-uuid",
-    "userId": "cognito-user-id",
-    "status": "processing",
-    "createdAt": "2025-10-03T12:00:00Z",
-    "lastActivityAt": "2025-10-03T12:01:00Z"
-  }
+  "id": "chat-uuid",
+  "chatId": "chat-uuid",
+  "userId": "user-123",
+  "status": "active",
+  "summary": "Initial chat session",
+  "chatMessagesId": "chat-uuid",
+  "messageCount": 0,
+  "createUtcTick": 638123456789012345,
+  "updateUtcTick": 638123456789012345
 }
 ```
 
-### GET /chat/{chatId}/status
+### GET /chat/{chatId}
 
-Gets the current status of a chat.
+Retrieves a specific chat by ID.
+
+**Response** (200 OK): Returns Chat object (same structure as POST response)
+
+### PUT /chat/{chatId}
+
+Updates an existing chat.
+
+**Request Body**: Chat object with updated fields
+
+**Response** (200 OK): Returns updated Chat object
+
+### DELETE /chat/{chatId}
+
+Closes a chat and releases resources (also deletes associated ChatMessages).
+
+**Response**: 200 OK
+
+### GET /chat
+
+Lists all chats for the authenticated user.
+
+**Query Parameters**:
+- `limit` (optional): Number of chats to return
 
 **Response** (200 OK):
 ```json
-{
-  "chat": {
-    "chatId": "chat-uuid",
-    "userId": "cognito-user-id",
+[
+  {
+    "id": "chat-1",
+    "chatId": "chat-1",
+    "userId": "user-123",
     "status": "active",
-    "createdAt": "2025-10-03T12:00:00Z",
-    "lastActivityAt": "2025-10-03T12:05:00Z"
+    "summary": "Chat about pets",
+    "messageCount": 5,
+    ...
   },
-  "messageCount": 12,
-  "lastMessage": {
-    "messageId": "uuid",
-    "chatId": "chat-uuid",
-    "role": "assistant",
-    "content": "I can help with...",
-    "timestamp": "2025-10-03T12:05:00Z"
+  {
+    "id": "chat-2",
+    "chatId": "chat-2",
+    "userId": "user-123",
+    "status": "closed",
+    "summary": "Previous conversation",
+    "messageCount": 12,
+    ...
   }
+]
+```
+
+### POST /chat/{chatId}/messages
+
+Adds a message to a chat and queues it for AI processing.
+
+**Request Body** (ChatMessage object):
+```json
+{
+  "role": "user",
+  "content": "Tell me about magic pets"
 }
 ```
+
+**Response** (200 OK): Returns the ChatMessage object with generated messageId and timestamp
 
 ### GET /chat/{chatId}/messages
 
-Retrieves paginated message history.
+Retrieves paginated message history for a chat.
 
 **Query Parameters**:
 - `page` (optional): Page number (default: 1)
@@ -400,37 +423,21 @@ Retrieves paginated message history.
 
 **Response** (200 OK):
 ```json
-{
-  "messages": [
-    {
-      "messageId": "uuid",
-      "chatId": "chat-uuid",
-      "role": "user",
-      "content": "Hello",
-      "timestamp": "2025-10-03T12:00:00Z"
-    },
-    {
-      "messageId": "uuid",
-      "chatId": "chat-uuid",
-      "role": "assistant",
-      "content": "Hi! How can I help?",
-      "timestamp": "2025-10-03T12:00:05Z"
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "limit": 50,
-    "totalMessages": 2,
-    "hasMore": false
+[
+  {
+    "messageId": "uuid-1",
+    "role": "user",
+    "content": "Hello",
+    "timestamp": "2025-10-04T12:00:00Z"
+  },
+  {
+    "messageId": "uuid-2",
+    "role": "assistant",
+    "content": "Hi! How can I help?",
+    "timestamp": "2025-10-04T12:00:05Z"
   }
-}
+]
 ```
-
-### DELETE /chat/{chatId}
-
-Closes a chat and releases resources.
-
-**Response**: 204 No Content
 
 ### GET /health
 
@@ -449,56 +456,68 @@ Health check endpoint for AWS App Runner monitoring.
 
 ### Chat Lifecycle
 
-1. **Creation**:
+1. **Creation** (POST /chat):
    ```
-   Client → POST /chat/create
+   Client → POST /chat (Chat object)
    ↓
-   ChatModuleController.ChatModuleCreateChatAsync()
+   ChatModuleController.AddChatAsync()
    ↓
-   ChatRepo.CreateChatAsync()
+   ChatRepo.CreateAsync(callerInfo, chat)
    ↓
-   ChatManagerService.CreateChatAsync()
+   ChatManagerService.InitializeChatAsync(callerInfo, chat)
    ↓
    Creates ConnectionChat with:
    - Unique chatId
    - Message queue (Channel)
    - Background processing task
-   - Keep-alive semaphore
+   - CallerInfo (including Host header)
    ↓
-   Starts ProcessChatMessagesAsync() task
+   Starts ProcessChatMessagesAsync() background task
    ↓
-   Initiates keep-alive long-polling request
+   If first chat: Initiates single keep-alive long-polling request
    ↓
-   Returns chat info to client
+   Returns initialized Chat object
+   ↓
+   ChatRepo persists Chat to DynamoDB (via base.CreateAsync)
+   ↓
+   ChatRepo creates empty ChatMessages record in DynamoDB
    ```
 
-2. **Message Processing**:
+2. **Message Processing** (POST /chat/{chatId}/messages):
    ```
-   Client → POST /chat/{id}/message
+   Client → POST /chat/{chatId}/messages (ChatMessage object)
    ↓
-   ChatModuleController.ChatModuleSendMessageAsync()
+   ChatModuleController.AddChatMessageAsync()
    ↓
-   ChatRepo.SendMessageAsync()
+   ChatMessagesRepo.AddMessageAsync(callerInfo, chatId, message)
    ↓
-   ChatManagerService.SendMessageAsync()
+   ChatManagerService.ProcessUserMessageAsync(callerInfo, chatId, message)
    ↓
-   Adds user message to chat.History
+   Adds user message to in-memory chat.History
    ↓
-   Queues message in chat.MessageQueue
+   Queues message in chat.MessageQueue (Channel)
    ↓
-   Returns immediately (async processing)
+   Returns user message immediately (async processing)
+   ↓
+   ChatMessagesRepo loads ChatMessages from DynamoDB
+   ↓
+   Appends message to Messages array
+   ↓
+   Persists updated ChatMessages to DynamoDB
 
-   Background Task:
+   Background Task (ProcessChatMessagesAsync):
    ↓
-   ProcessChatMessagesAsync() reads from queue
+   Reads message from chat.MessageQueue
    ↓
    AppSyncEventPublisher.PublishChatEventAsync("message_received")
    ↓
-   BedrockChat.GenerateResponseAsync(chat.History)
+   ILlmClient.GenerateResponseAsync(chat.History)  // Bedrock call
    ↓
-   Creates assistant message
+   Creates assistant ChatMessage
    ↓
-   Adds to chat.History
+   Adds to in-memory chat.History
+   ↓
+   Updates Chat.Summary if needed
    ↓
    AppSyncEventPublisher.PublishChatEventAsync("message_completed")
    ```
@@ -513,7 +532,7 @@ Health check endpoint for AWS App Runner monitoring.
    ↓
    Publishes to AppSync Events API
    ↓
-   Connected clients receive real-time update
+   Connected clients receive real-time update via WebSocket
    ```
 
 4. **Cleanup**:
@@ -527,8 +546,10 @@ Health check endpoint for AWS App Runner monitoring.
    For each expired chat:
      - Cancel background task
      - Complete message queue
-     - Remove from dictionary
+     - Remove from _chats dictionary
      - Dispose resources
+   ↓
+   If last chat closed: Release keep-alive semaphore
    ```
 
 ## Load Representation Strategy
@@ -542,37 +563,44 @@ AWS App Runner scales instances based solely on **concurrent HTTP requests**. Wh
 3. App Runner sees: **0 concurrent requests** = Instance appears idle
 4. App Runner may scale down and **terminate the instance**, killing active background tasks
 
-### The Solution: Keep-Alive Long-Polling
+### The Solution: Single Keep-Alive Long-Polling
 
-ChatModule implements a **self-requesting keep-alive pattern** where each active chat maintains a corresponding long-polling HTTP request:
+ChatModule implements a **single service-wide keep-alive pattern** that maintains one long-polling HTTP request when any chats are active:
 
 ```
-Active Chat Lifecycle:
-1. POST /chat/create → Creates chat → Returns immediately
-2. ChatManagerService creates SemaphoreSlim(0, 1) for this chat
-3. ChatManagerService initiates POST /internal/keepalive/{chatId} (fire-and-forget)
+Service Lifecycle:
+1. First POST /chat → Creates chat → Returns immediately
+2. ChatManagerService initiates single keep-alive task (if not already running)
+3. Keep-alive task calls POST /ChatModule/internal/keepalive
 4. Internal endpoint calls semaphore.WaitAsync() → BLOCKS REQUEST
-5. Background task processes messages while keep-alive request is held open
-6. Client closes chat → CloseChatAsync() releases semaphore
-7. Keep-alive request completes → HTTP request count decrements
+5. Background tasks process messages while keep-alive request is held open
+6. Last chat closes → CloseChatAsync() releases semaphore
+7. Keep-alive request completes → HTTP request count decrements to 0
+8. Service ready to scale down if idle
 
-Result: 1 Active Chat = 1 Concurrent HTTP Request
+Result: 1+ Active Chats = 1 Keep-Alive Request (plus normal user API traffic)
 ```
 
 ### Implementation Details
 
 **ChatManagerService**:
-- `_keepAliveSemaphores`: `ConcurrentDictionary<string, SemaphoreSlim>`
-- `CreateChatAsync()`: Creates semaphore (unreleased), starts keep-alive POST
-- `InitiateKeepAliveAsync()`: POSTs to `http://localhost:8080/ChatModule/internal/keepalive/{chatId}`
-- `CloseChatInternalAsync()`: Releases semaphore, completing keep-alive request
-- `GetKeepAliveSemaphore()`: Exposes semaphore to internal endpoint
+- `_keepAliveSemaphore`: Single `SemaphoreSlim(0, 1)` for entire service
+- `_keepAliveTask`: Single background Task for all chats
+- `InitializeChatAsync()`: Starts keep-alive task if first chat (_chats.Count == 1)
+- `InitiateKeepAliveAsync()`: POSTs to `https://{Host}/ChatModule/internal/keepalive`
+- `CloseChatAsync()`: Releases semaphore if last chat (_chats.Count == 0)
+- `GetServiceHost()`: Reads Host from CallerInfo.Headers, falls back to localhost:8080
 
-**InternalController** (`/ChatModule/internal/keepalive/{chatId}`):
-- Retrieves semaphore for chatId
-- Calls `await semaphore.WaitAsync(cancellationToken)`
-- Blocks HTTP request until chat closes or request is cancelled
-- Returns 200 OK when chat closes normally
+**Host Header Resolution**:
+- `ChatModuleAuthorization.GetLzHeaders()`: Captures `Host` header from HttpRequest
+- Stored in `CallerInfo.Headers["Host"]`
+- `GetServiceHost()` constructs URL: `http://localhost:8080` or `https://{domain}`
+- No infrastructure configuration needed (Host header is standard HTTP/1.1)
+
+**InternalController** (`/ChatModule/internal/keepalive`):
+- Calls `await _chatManagerService.GetKeepAliveSemaphore().WaitAsync(cancellationToken)`
+- Blocks HTTP request until last chat closes
+- Returns 200 OK when service has no active chats
 
 **HttpClient Configuration**:
 - Named client: "KeepAlive"
@@ -581,31 +609,33 @@ Result: 1 Active Chat = 1 Concurrent HTTP Request
 
 ### Load Representation
 
-This pattern accurately represents instance load to App Runner:
+This pattern efficiently represents instance load to App Runner:
 
 | Active Chats | Keep-Alive Requests | User API Requests | Total Concurrent Requests |
 |--------------|---------------------|-------------------|---------------------------|
 | 0            | 0                   | 0                 | 0                         |
-| 50           | 50                  | ~10-20            | ~60-70                    |
-| 100          | 100                 | ~20-40            | ~120-140                  |
+| 1            | 1                   | ~2-5              | ~3-6                      |
+| 50           | 1                   | ~10-20            | ~11-21                    |
+| 100          | 1                   | ~20-40            | ~21-41                    |
 
 **MaxConcurrency Calculation**:
-- Keep-alive requests: Up to 100 (one per active chat)
-- User API requests: ~50 peak (create, send, status, messages, close)
-- **Total MaxConcurrency: 150** (configured in App Runner)
+- Keep-alive request: 1 (constant when chats exist)
+- User API requests: ~50 peak (POST /chat, POST /messages, GET /messages, etc.)
+- **Total MaxConcurrency: 60** (updated - much lower than previous per-chat approach)
 
 ### Benefits
 
-✅ **Accurate Load Tracking**: Each background task = 1 concurrent request
-✅ **Prevents Premature Scale-Down**: Instance won't terminate while processing
-✅ **Natural Scaling Trigger**: More chats = higher request count = scale-up
+✅ **Prevents Premature Scale-Down**: Instance won't terminate while any chats are active
+✅ **Efficient**: Single keep-alive request instead of N requests (one per chat)
+✅ **Minimal Overhead**: Only 1 HTTP connection used for keep-alive
 ✅ **No External Dependencies**: Self-contained, uses standard HTTP
+✅ **Dynamic Host Resolution**: Uses standard Host header, no infrastructure setup needed
 ✅ **Works with App Runner Model**: Legitimate use of request-based scaling
 
 ### Trade-offs
 
-⚠️ **Connection Pool Usage**: Each keep-alive uses a connection (minimal overhead with HTTP/2)
-⚠️ **MaxConcurrency Headroom**: Must account for keep-alive requests in capacity planning
+⚠️ **Not Proportional Load**: 1 chat or 100 chats = same keep-alive overhead (but this is acceptable)
+⚠️ **MaxConcurrency Planning**: Must still account for user API traffic
 ⚠️ **Not True Custom Metrics**: Better solutions exist (ECS Fargate with CloudWatch custom metrics)
 ⚠️ **Still Instance-Local**: Doesn't solve multi-instance state sharing
 
@@ -825,7 +855,7 @@ InstanceConfiguration:
   InstanceRoleArn: !GetAtt ChatAppRunnerInstanceRole.Arn
 
 AutoScalingConfiguration:
-  MaxConcurrency: 150  # Updated to account for keep-alive requests
+  MaxConcurrency: 60   # Updated for single keep-alive approach (1 keep-alive + ~50 user requests)
   MaxSize: 1           # Fixed single instance for Simple Mode
   MinSize: 1
 ```
@@ -894,12 +924,13 @@ import { ChatApi } from '@/api/chat';
 const chatApi = new ChatApi(baseUrl, httpClient);
 
 // Create new chat
-const createResponse = await chatApi.chatModuleCreateChatAsync({
-  initialMessage: "Hello!",
-  chatMetadata: { source: "web" }
+const chat = await chatApi.CreateChatAsync({
+  userId: currentUserId,
+  status: "active",
+  summary: "New conversation"
 });
 
-const chatId = createResponse.chat.chatId;
+const chatId = chat.chatId;
 
 // Subscribe to real-time events
 eventClient.subscribe(`chat/${chatId}`, (event) => {
@@ -910,19 +941,20 @@ eventClient.subscribe(`chat/${chatId}`, (event) => {
 });
 
 // Send message
-await chatApi.chatModuleSendMessageAsync(chatId, {
+const message = await chatApi.createChatMessageAsync(chatId, {
+  role: "user",
   content: "Tell me more about MagicPets"
 });
 
 // Get message history
-const history = await chatApi.chatModuleGetChatMessagesAsync(
+const messages = await chatApi.getChatMessagesAsync(
   chatId,
   1,  // page
   50  // limit
 );
 
 // Close chat when done
-await chatApi.chatModuleCloseChatAsync(chatId);
+await chatApi.deleteChatAsync(chatId);
 ```
 
 ### Client SDK (C# / Blazor)
@@ -931,57 +963,66 @@ await chatApi.chatModuleCloseChatAsync(chatId);
 var chatApi = serviceProvider.GetRequiredService<IChatApi>();
 
 // Create chat
-var createResponse = await chatApi.ChatModuleCreateChatAsync(
-    new CreateChatRequest
-    {
-        InitialMessage = "Hello!",
-        ChatMetadata = new { source = "blazor" }
-    });
+var chat = await chatApi.AddChatAsync(new Chat
+{
+    UserId = currentUserId,
+    Status = ChatStatus.Active,
+    Summary = "New conversation"
+});
 
-var chatId = createResponse.Chat.ChatId;
+var chatId = chat.ChatId;
 
 // Send message
-var sendResponse = await chatApi.ChatModuleSendMessageAsync(
+var message = await chatApi.AddChatMessageAsync(
     chatId,
-    new SendMessageRequest { Content = "Tell me more" });
+    new ChatMessage
+    {
+        Role = "user",
+        Content = "Tell me more"
+    });
 
-// Get status
-var status = await chatApi.ChatModuleGetChatStatusAsync(chatId);
-Console.WriteLine($"Chat has {status.MessageCount} messages");
+// Get chat details
+var chatDetails = await chatApi.GetChatAsync(chatId);
+Console.WriteLine($"Chat has {chatDetails.MessageCount} messages");
 
 // Get messages
-var messages = await chatApi.ChatModuleGetChatMessagesAsync(
+var messages = await chatApi.GetChatMessagesAsync(
     chatId,
     page: 1,
     limit: 50);
 
 // Close
-await chatApi.ChatModuleCloseChatAsync(chatId);
+await chatApi.DeleteChatAsync(chatId);
 ```
 
 ## Limitations and Considerations
 
-### In-Memory State
+### Hybrid In-Memory + DynamoDB State
 
-- **Not Persistent**: Chat state is lost if container restarts
-- **Not Shared**: Each App Runner instance has independent state
-- **Session Affinity Required**: Clients must route to same instance (use sticky sessions)
-- **Scalability**: Memory usage grows with active chats (mitigated by 30-min cleanup)
+- **In-Memory for Active Chats**: Active chats use in-memory state for fast processing
+- **DynamoDB for Persistence**: All chats and messages persisted to DynamoDB
+- **Automatic Rehydration**: Inactive chats retrieved from DynamoDB when accessed
+- **Scalability**: Memory usage grows with active chats only (mitigated by 30-min cleanup)
+- **Container Restarts**: Chat history preserved in DynamoDB, in-memory state rebuilt on demand
 
 ### Keep-Alive Load Representation
 
-- **Solved**: Keep-alive long-polling prevents premature scale-down (see "Load Representation Strategy" section)
-- **MaxConcurrency**: Set to 150 to account for ~100 keep-alive requests + ~50 user API requests
-- **Connection Overhead**: Each active chat maintains one HTTP connection (minimal with HTTP/2)
-- **Timeout Management**: Keep-alive requests timeout at 60 minutes, longer than 30-min chat timeout
+- **Solved**: Single keep-alive long-polling prevents premature scale-down
+- **MaxConcurrency**: Set to 60 (1 keep-alive + ~50 user API requests)
+- **Minimal Overhead**: Only 1 HTTP connection used regardless of chat count
+- **Dynamic Host Resolution**: Uses standard Host header, no infrastructure configuration needed
+- **Timeout Management**: Keep-alive request timeout at 60 minutes, longer than 30-min chat timeout
 
 ### Recommendations
 
-For production deployments requiring persistence:
-- Consider DynamoDB for chat/message storage
-- Implement session rehydration on container startup
-- Use ElastiCache/Redis for distributed session state
-- Add database write-through cache pattern
+✅ **DynamoDB Persistence**: Already implemented - all chats and messages persisted automatically
+✅ **Hybrid Architecture**: Fast in-memory processing for active chats, persistent storage for inactive chats
+✅ **Auto-Rehydration**: Chats automatically loaded from DynamoDB when accessed
+
+For high-availability production deployments:
+- Consider Production Mode (ECS Fargate + ALB) for multi-AZ deployment
+- Use ElastiCache/Redis for shared session state across multiple instances
+- Implement real-time event delivery via AppSync subscriptions
 
 ### Performance
 
@@ -991,14 +1032,18 @@ For production deployments requiring persistence:
 
 ## Future Enhancements
 
-- [ ] **Persistent storage**: Chat and ChatMessage entities already implement `IItem` interface, ready for DynamoDB persistence via `ChatRepo` base methods
+- [x] **Persistent storage**: ✅ Implemented - DynamoDB persistence for Chat and ChatMessages
+- [x] **Standard CRUD API**: ✅ Implemented - REST endpoints following repository pattern
+- [x] **LLM Abstraction**: ✅ Implemented - ILlmClient interface for swappable providers
+- [x] **Single Keep-Alive**: ✅ Implemented - Service-wide keep-alive optimization
+- [x] **Dynamic Host Resolution**: ✅ Implemented - Uses standard Host header
 - [ ] **Streaming responses**: Real-time token delivery via AppSync Events
-- [ ] **Chat history search**: Full-text search across message content
-- [ ] **Multi-model support**: GPT-4, Claude Opus, Gemini, etc.
+- [ ] **Chat history search**: Full-text search across message content using DynamoDB queries
+- [ ] **Multi-model support**: GPT-4, Claude Opus, Gemini via ILlmClient implementations
 - [ ] **Rate limiting**: Per-user throttling and quotas
 - [ ] **Analytics**: Usage metrics, conversation analytics, user insights
 - [ ] **Context window management**: Intelligent truncation and summarization
-- [ ] **Conversation summarization**: Auto-summarize long conversations
+- [ ] **Conversation summarization**: Auto-summarize long conversations into Chat.Summary
 
 ## Troubleshooting
 

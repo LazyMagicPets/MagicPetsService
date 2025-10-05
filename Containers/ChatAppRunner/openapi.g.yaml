@@ -215,7 +215,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatError'
-      x-lz-gencall: ChatMessagesRepo.AddMessageAsync(callerInfo, chatId, body)
+      x-lz-gencall: ChatRepo.CreateMessageAsync(callerInfo, chatId, body)
     get:
       summary: Get chat messages
       description: Retrieves message history for a chat
@@ -261,7 +261,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ChatError'
-      x-lz-gencall: ChatMessagesRepo.GetMessagesAsync(callerInfo, chatId, page, limit)
+      x-lz-gencall: ChatRepo.ReadMessagesAsync(callerInfo, chatId, page, limit)
 components:
   schemas:
     Preferences:
@@ -624,6 +624,7 @@ components:
       - chat_status_changed
       - message_received
       - message_processing
+      - message_streaming
       - message_completed
       - chat_closed
       - error_occurred
