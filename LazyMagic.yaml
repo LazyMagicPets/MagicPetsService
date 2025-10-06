@@ -43,14 +43,14 @@ Directives:
     Type: Container
     IsDefault: true
     Artifacts:
-      DotNetAppRunnerProject: # App Runner project that processes HTTP requests
+      AspDotNetProject: # Simple ASP.NET Core Web API project
 
   # API Default for App Runner (NOT using ApiDefault)
   ApiAppRunnerDefault:
     Type: Api
     IsDefault: true
     Artifacts:
-      DotNetHttpApiSDKProject: # Reuse existing HTTP REST client SDK generator
+      AspDotNetApiSDKProject: # Reuse existing HTTP REST client SDK generator
       AwsAppRunnerResource: # AWS SAM template resource for App Runner service
         ManagedPolicyArns:
         # You can further restict permissions using the Perms stack but 
@@ -179,67 +179,42 @@ Directives:
         - arn:aws:iam::aws:policy/CloudFrontFullAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
-  StoreLambda:
-    Type: Container
-    Defaults: AwsApiLambdaContainerDefault
-    Modules:
-    - PublicModule
-    - ConsumerModule    
-    - StoreModule
 
-  ConsumerLambda:
-    Type: Container
-    Defaults: AwsApiLambdaContainerDefault
-    Modules:
-    - PublicModule
-    - ConsumerModule
-
-  PublicLambda:
-    Type: Container
-    Defaults: AwsApiLambdaContainerDefault
-    Modules:
-    - PublicModule
-
-  ChatAppRunner:
+  AspNetContainer:
     Type: Container
     Defaults: AppRunnerContainerDefault
     Modules:
     - ChatModule
+    - PublicModule
+    - ConsumerModule    
+    - StoreModule
 
-  # APIS - API Gateways that proxy requests to containers
-  AdminApi:
+  # APIS 
+  AdminApi: # ApiGateway HTTP API fronting the AdminLambda
     Type: Api
     Defaults: ApiDefault
     Authentication: tenantauth
     Containers:
     - AdminLambda
 
-  StoreApi:
-    Type: Api
-    Defaults: ApiDefault
-    Authentication: tenantauth
-    Containers:
-    - StoreLambda
-
-  ConsumerApi:
-    Type: Api
-    Defaults: ApiDefault
-    Authentication: consumerauth
-    Containers:
-    - ConsumerLambda
-
-  PublicApi:
-    Type: Api
-    Defaults: ApiDefault
-    Containers:
-    - PublicLambda
-
-  ChatApi:
+  TenantApi: # Direct Asp.Net Core host running in App Runner
     Type: Api
     Defaults: ApiAppRunnerDefault
     Authentication: tenantauth
     Containers:
-    - ChatAppRunner
+    - AspNetContainer
+    Artifacts:
+      AwsAppRunnerResource:
+        ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+        - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
+
+  ConsumerApi: # Direct Asp.Net Core host running in App Runner
+    Type: Api
+    Defaults: ApiAppRunnerDefault
+    Authentication: consumerauth
+    Containers:
+    - AspNetContainer
     Artifacts:
       AwsAppRunnerResource:
         ManagedPolicyArns:
@@ -254,12 +229,10 @@ Directives:
   # Service
   Service:
     Type: Service
-    Apis: # remember that each Api has it's own ClientSDK
+    Apis:
     - AdminApi
-    - StoreApi
-    - ConsumerApi
-    - PublicApi
-    - ChatApi
+    - TenantApi
+    - ConsumerApi 
     - EventsApi
     Artifacts:
       AwsServiceStackTemplate:
@@ -268,10 +241,7 @@ Directives:
     Type: Service
     Apis:
     - AdminApi
-    - StoreApi
-    - ConsumerApi
-    - PublicApi
-    - ChatApi
+    - TenantApi
     Artifacts:
       DotNetLocalWebApiProject:
 
@@ -294,7 +264,7 @@ Directives:
     Defaults: WebAppDefault
     Path: store 
     Apis:
-    - StoreApi
+    - TenantApi
 
   ConsumerApp:
     Type: WebApp

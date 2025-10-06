@@ -21,8 +21,8 @@ public static partial class ChatSchemaRepoExtensions
         // Register chat business logic services
         services.TryAddSingleton<AppSyncEventPublisher>();
 
-        // Register IMessagePersistence to resolve to ChatMessagesRepo
-        services.AddScoped<IMessagePersistence>(sp => (IMessagePersistence)sp.GetRequiredService<IChatMessagesRepo>());
+        // Register IMessagePersistence as singleton wrapper that creates transient ChatMessagesRepo instances
+        services.AddSingleton<IMessagePersistence>(sp => new MessagePersistenceWrapper(sp));
 
         // Register ChatManagerService as both IChatManagerService and itself
         services.TryAddSingleton<ChatManagerService>();

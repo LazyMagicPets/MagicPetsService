@@ -1,5 +1,0 @@
-<Project>
-  <!-- Package references moved to main .csproj file -->
-  <ItemGroup>
-  </ItemGroup>
-</Project>
