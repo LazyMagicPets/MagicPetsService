@@ -113,7 +113,7 @@ Resources:
         import cf from 'cloudfront';
         const kvsARN = "${KeyValueStoreArnParameter}";
         const kvs = cf.kvs(); 
-        const debug = false;
+        let debug = false;
 
         async function handler(event) {
             try {
@@ -134,17 +134,16 @@ Resources:
                         logMessage += '?querystring object: ' + JSON.stringify(request.querystring) + '\n';
                     }
                 }
-        
+
                 // Helper function for error responses
                 const err = (code, msg) => ({statusCode: code, statusDescription: code === 404 ? 'Not Found' : 'Error', body: msg});
 
                 // Get config from KVS
                 let config = await GetConfig(headers.host.value);
                 const configJson = JSON.stringify(config);  
-
                 // Handle preflight requests
                 if (config.env === 'dev' && request.method === 'OPTIONS' && origin && 
-                    origin.startsWith('http://localhost:') && headers['access-control-request-method']) {
+                    origin.startsWith('https://localhost:') && headers['access-control-request-method']) {
                     return {
                         statusCode: 204,
                         statusDescription: 'No Content',
@@ -157,12 +156,10 @@ Resources:
                         }
                     };
                 }
-
                 // Set up keys
                 const systemKey = config.systemKey;
                 const tenantKey = config.tenantKey || '';
                 const subtenantKey = config.subtenantKey || '';
-
                 // Find matching behavior
                 let behavior = null;
                 let redirectPath = null;
@@ -189,7 +186,6 @@ Resources:
                         }            
                     }
                 }   
-
                 if(!behavior) return err(404, 'No path match');
 
                 // Process behavior
@@ -203,9 +199,9 @@ Resources:
 
                 switch(assetType) {
                     case "api":
-                        assetName = behavior[2] + '.execute-api.' + behavior[3] + awsSuffix;
+                        assetName = behavior[2].replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '');
                         removePrefix = true;
-                        originPath = "/" + config.env;
+                        originPath =  (assetName.includes("execute-api")) ? "/" + config.env : "";
                         headers['lz-config'] = {value: configJson};
                         headers['lz-tenantid'] = {value: headers.host.value}; 
                         const authheader = headers['authorization'] && headers['authorization'].value;
@@ -244,7 +240,6 @@ Resources:
                             }
                         break;
                 }
-
                 // Perform replacements in assetName
                 assetName = assetName
                     .replaceAll('{sts}', config.sts)
@@ -262,7 +257,12 @@ Resources:
                     headers['referrer'] = {value: originalDomain + '/sets'};
                 }
 
-                if(debug && assetType == 'webapp' && appPath === "/baseapp/") {
+                cf.updateRequestOrigin({
+                    "domainName": assetName,
+                    "originPath": originPath
+                });
+
+                if(debug ) {
                     logMessage += "\n originalDomain: " +  originalDomain
                                + "\n originalUri: " + originalUri
                                + "\n appPath: " + appPath
@@ -274,11 +274,6 @@ Resources:
                     console.log(logMessage);
                 }
 
-                cf.updateRequestOrigin({
-                    "domainName": assetName,
-                    "originPath": originPath
-                });
-
                 return request;
             } catch (e) {
                 console.log('Unhandled error: ' + (e.message || e));
@@ -286,20 +281,31 @@ Resources:
             }
 
             async function GetConfig(host) {
+                console.log("GetConfig:" + host );
                 try {
-                    const configJson = await kvs.get(host);
-                    if (!configJson) throw Error("Missing Config");
-                    let config = JSON.parse(configJson);
-                    if (!config || (!config.behaviors && !config.redirecthost)) throw new Error("Bad Config");
-                    return config;
+                    let behaviors = [];
+                    let cfg = null;
+                    let key = host;
+                    while (key) {
+                        const json = await kvs.get(key);
+                        if (!json || json === '') {
+                            if (!cfg) throw Error("Missing Config");
+                            break;
+                        }
+                        const c = JSON.parse(json);
+                        if (!cfg) cfg = c;
+                        if (c.behaviors) behaviors = behaviors.concat(c.behaviors);
+                        key = c.more || null;
+                    }
+                    if (!cfg || (!behaviors.length && !cfg.redirecthost)) throw Error("Bad Config");
+                    cfg.behaviors = behaviors;
+                    return cfg;
                 } catch (e) {
                     console.log(e.message);
                     throw e;
-                }        
+                }
             }
         }
-
-
 
 
   CloudFrontFunctionLoggingRole:

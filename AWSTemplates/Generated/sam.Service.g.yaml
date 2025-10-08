@@ -677,17 +677,17 @@ Outputs:
   AdminLambdaExecutionRoleName:
     Value: !Ref AdminLambdaExecutionRole
 
-  AdminApiId:
-    Value: !Ref AdminApi
+  AdminApi:
+    Value: !Sub 'https://${AdminApi}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentParameter}'
 
-  TenantApiId:
-    Value: !Ref TenantApi
+  TenantApi:
+    Value: !Join ['', ['https://', !GetAtt TenantApi.ServiceUrl]]
 
-  ConsumerApiId:
-    Value: !Ref ConsumerApi
+  ConsumerApi:
+    Value: !Join ['', ['https://', !GetAtt ConsumerApi.ServiceUrl]]
 
-  EventsApiId:
-    Value: !Ref EventsApi
+  EventsApi:
+    Value: !Join ['', ['https://', !GetAtt EventsApi.Dns.Http]]
 
 
     

@@ -95,6 +95,9 @@ Resources:
               - GET 
               - POST
               - OPTIONS 
+              - PUT
+              - DELETE
+              - HEAD
           AccessControlAllowOrigins:
             Items: 
             - "*" # We control allowed origins using cloud front functions

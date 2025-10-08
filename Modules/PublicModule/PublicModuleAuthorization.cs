@@ -18,6 +18,7 @@ namespace PublicModule
         }
         protected override async Task<List<string>> GetUserPermissionsAsync(string lzUserId, string userName, string table)
         {
+            Console.WriteLine("PublicModuleAuthorization.GetUserPermissionsAsync called");
             await Task.Delay(0);
             // Since default methods can't access instance state, we call the helper method that can.
             return new List<string>();
