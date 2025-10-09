@@ -84,10 +84,9 @@ namespace ChatModule
         /// <remarks>
         /// Updates an existing chat
         /// </remarks>
-        /// <param name="chatId">ID of the chat to update</param>
         /// <returns>Chat updated successfully</returns>
         [HttpPut, Route("ChatModule/chat/{chatId}")]
-        public virtual async Task<ActionResult<Chat>> ChatModuleUpdateChatAsync(string chatId, [FromBody] Chat body)
+        public virtual async Task<ActionResult<Chat>> ChatModuleUpdateChatAsync([FromBody] Chat body)
         {
             var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
             return await ChatRepo.UpdateAsync(callerInfo, body);

@@ -93,13 +93,6 @@ paths:
       description: Updates an existing chat
       operationId: updateChat
       x-lz-gencall: ChatRepo.UpdateAsync(callerInfo, body)
-      parameters:
-        - name: chatId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the chat to update
       requestBody:
         required: true
         content:

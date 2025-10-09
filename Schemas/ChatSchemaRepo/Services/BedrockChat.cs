@@ -1,7 +1,6 @@
 using Amazon.BedrockRuntime;
 using Amazon.BedrockRuntime.Model;
 using System.Runtime.CompilerServices;
-using System.Text.Json;
 
 namespace ChatSchemaRepo;
 
@@ -9,7 +8,8 @@ public class BedrockChat : ILlmClient
 {
     private readonly IAmazonBedrockRuntime _bedrockClient;
     private readonly ILogger<BedrockChat> _logger;
-    private const string ModelId = "anthropic.claude-3-sonnet-20240229-v1:0";
+    // Use inference profile for Nova models - this is required for on-demand throughput
+    private const string ModelId = "us.amazon.nova-pro-v1:0";
 
     public BedrockChat(IAmazonBedrockRuntime bedrockClient, ILogger<BedrockChat> logger)
     {
@@ -23,61 +23,48 @@ public class BedrockChat : ILlmClient
         {
             _logger.LogInformation("Generating response for conversation with {MessageCount} messages", conversationHistory?.Count ?? 0);
 
-            // Prepare the conversation context from all messages in history
-            var messages = new List<object>();
-
-            if (conversationHistory?.Any() == true)
-            {
-                foreach (var msg in conversationHistory)
-                {
-                    messages.Add(new
-                    {
-                        role = msg.Role.ToString().ToLowerInvariant(),
-                        content = msg.Content
-                    });
-                }
-            }
-
-            // Ensure we have at least one message
-            if (!messages.Any())
+            if (conversationHistory?.Any() != true)
             {
                 _logger.LogWarning("No messages in conversation history");
                 return "I'm sorry, but I don't see any messages to respond to.";
             }
 
-            // Prepare the request payload for Claude
-            var requestPayload = new
+            // Convert ChatMessage history to Bedrock Converse API format
+            var messages = new List<Message>();
+            foreach (var msg in conversationHistory)
             {
-                anthropic_version = "bedrock-2023-05-31",
-                max_tokens = 4000,
-                messages = messages,
-                temperature = 0.7,
-                top_p = 0.9
-            };
+                messages.Add(new Message
+                {
+                    Role = msg.Role == ChatMessageRole.User ? ConversationRole.User : ConversationRole.Assistant,
+                    Content = new List<ContentBlock>
+                    {
+                        new ContentBlock { Text = msg.Content }
+                    }
+                });
+            }
 
-            var jsonPayload = JsonSerializer.Serialize(requestPayload);
-
-            var request = new InvokeModelRequest
+            var request = new ConverseRequest
             {
                 ModelId = ModelId,
-                Body = new MemoryStream(System.Text.Encoding.UTF8.GetBytes(jsonPayload)),
-                ContentType = "application/json"
+                Messages = messages,
+                InferenceConfig = new InferenceConfiguration
+                {
+                    MaxTokens = 4000,
+                    Temperature = 0.7f,
+                    TopP = 0.9f
+                }
             };
 
-            var response = await _bedrockClient.InvokeModelAsync(request);
+            var response = await _bedrockClient.ConverseAsync(request);
 
-            var responseBody = System.Text.Encoding.UTF8.GetString(response.Body.ToArray());
-            var responseJson = JsonSerializer.Deserialize<JsonElement>(responseBody);
-
-            if (responseJson.TryGetProperty("content", out var contentArray) &&
-                contentArray.GetArrayLength() > 0)
+            // Extract text from response
+            if (response?.Output?.Message?.Content?.Count > 0)
             {
-                var firstContent = contentArray[0];
-                if (firstContent.TryGetProperty("text", out var textElement))
+                var contentBlock = response.Output.Message.Content[0];
+                if (!string.IsNullOrEmpty(contentBlock.Text))
                 {
-                    var assistantResponse = textElement.GetString();
                     _logger.LogInformation("Successfully generated response from Bedrock");
-                    return assistantResponse ?? "I apologize, but I couldn't generate a response at this time.";
+                    return contentBlock.Text;
                 }
             }
 

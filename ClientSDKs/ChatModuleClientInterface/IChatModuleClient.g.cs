@@ -50,10 +50,9 @@ namespace ChatModule
         /// </summary>
         /// Updates an existing chat
         /// </remarks>
-        /// <param name="chatId">ID of the chat to update</param>
         /// <returns>Chat updated successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<Chat> ChatModuleUpdateChatAsync(string chatId, Chat body);
+        System.Threading.Tasks.Task<Chat> ChatModuleUpdateChatAsync(Chat body);
 
         /// <summary>
         /// Delete chat

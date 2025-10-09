@@ -65,12 +65,9 @@ namespace ChatModule
         /// Updates an existing chat
         /// </remarks>
 
-        /// <param name="chatId">ID of the chat to update</param>
-
-
         /// <returns>Chat updated successfully</returns>
 
-        Task<ActionResult<Chat>> ChatModuleUpdateChatAsync(string chatId, Chat body);
+        Task<ActionResult<Chat>> ChatModuleUpdateChatAsync(Chat body);
 
         /// <summary>
         /// Delete chat

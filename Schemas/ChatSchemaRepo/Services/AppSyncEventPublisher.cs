@@ -4,7 +4,7 @@ using System.Text.Json;
 
 namespace ChatSchemaRepo;
 
-public class AppSyncEventPublisher
+public class AppSyncEventPublisher : IAppSyncEventPublisher
 {
     private readonly IAmazonAppSync _appSyncClient;
     private readonly ILogger<AppSyncEventPublisher> _logger;

@@ -19,7 +19,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
 {
     private readonly ILogger<ChatManagerService> _logger;
     private readonly ILlmClient _llmClient;
-    private readonly AppSyncEventPublisher _eventPublisher;
+    private readonly IAppSyncEventPublisher _eventPublisher;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IMessagePersistence _messagePersistence;
     private readonly ConcurrentDictionary<string, ConnectionChat> _chats;
@@ -32,7 +32,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
     public ChatManagerService(
         ILogger<ChatManagerService> logger,
         ILlmClient llmClient,
-        AppSyncEventPublisher eventPublisher,
+        IAppSyncEventPublisher eventPublisher,
         IHttpClientFactory httpClientFactory,
         IMessagePersistence messagePersistence)
     {
@@ -410,9 +410,6 @@ public class ChatManagerService : IChatManagerService, IHostedService
                     chat.LastActivityAt = DateTime.UtcNow;
                     chat.Status = ChatStatus.Active;
 
-                    // Persist assistant message to DynamoDB
-                    await PersistAssistantMessageAsync(chat.ChatId, assistantMessage);
-
                     // Publish assistant response completed event
                     await _eventPublisher.PublishChatEventAsync(chat.ChatId, new ChatEvent
                     {
@@ -473,6 +470,9 @@ public class ChatManagerService : IChatManagerService, IHostedService
                     _logger.LogError(ex, "Error completing background task for chat {ChatId}", chatId);
                 }
             }
+
+            // Persist all messages to DynamoDB before closing
+            await PersistChatHistoryAsync(chatId, chat.History);
 
             chat.CancellationToken.Dispose();
             _logger.LogInformation("Closed chat {ChatId}", chatId);
@@ -554,20 +554,29 @@ public class ChatManagerService : IChatManagerService, IHostedService
     }
 
     /// <summary>
-    /// Persists an assistant message to the ChatMessages table via the repository layer
+    /// Persists all messages in chat history to the ChatMessages table when chat closes
     /// </summary>
-    private async Task PersistAssistantMessageAsync(string chatId, ChatMessage assistantMessage)
+    private async Task PersistChatHistoryAsync(string chatId, List<ChatMessage> history)
     {
+        if (history == null || history.Count == 0)
+        {
+            _logger.LogDebug("No messages to persist for chat {ChatId}", chatId);
+            return;
+        }
+
         try
         {
-            await _messagePersistence.AppendMessageAsync(chatId, assistantMessage);
+            foreach (var message in history)
+            {
+                await _messagePersistence.AppendMessageAsync(chatId, message);
+            }
 
-            _logger.LogDebug("Persisted assistant message {MessageId} to DynamoDB for chat {ChatId}", assistantMessage.MessageId, chatId);
+            _logger.LogInformation("Persisted {MessageCount} messages to DynamoDB for chat {ChatId}", history.Count, chatId);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to persist assistant message to DynamoDB for chat {ChatId}", chatId);
-            // Don't throw - we don't want to break the chat flow if persistence fails
+            _logger.LogError(ex, "Failed to persist chat history to DynamoDB for chat {ChatId}", chatId);
+            // Don't throw - we log the error but don't prevent chat closure
         }
     }
 }

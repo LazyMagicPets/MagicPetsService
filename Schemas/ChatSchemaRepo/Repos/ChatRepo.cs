@@ -113,15 +113,14 @@ public partial class ChatRepo : DYDBRepository<Chat>, IChatRepo
     }
 
     /// <summary>
-    /// Creates a new message in a chat - queues with ChatManagerService and persists to DynamoDB
+    /// Creates a new message in a chat - queues with ChatManagerService for background processing
+    /// Messages are kept in memory and persisted when the chat is closed
     /// </summary>
     public async Task<ActionResult<ChatMessage>> CreateMessageAsync(ICallerInfo callerInfo, string chatId, ChatMessage message)
     {
         // Queue message with ChatManagerService for background processing
+        // The message is added to the in-memory queue and will be persisted when chat closes
         var userMessage = await _chatManagerService.ProcessUserMessageAsync(callerInfo, chatId, message);
-
-        // Persist user message to DynamoDB via ChatMessagesRepo (which implements IMessagePersistence)
-        await ((IMessagePersistence)_chatMessagesRepo).AppendMessageAsync(chatId, userMessage);
 
         return new OkObjectResult(userMessage);
     }

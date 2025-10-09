@@ -1700,12 +1700,11 @@ namespace TenantApi
         /// <remarks>
         /// Updates an existing chat
         /// </remarks>
-        /// <param name="chatId">ID of the chat to update</param>
         /// <returns>Chat updated successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual System.Threading.Tasks.Task<Chat> ChatModuleUpdateChatAsync(string chatId, Chat body)
+        public virtual System.Threading.Tasks.Task<Chat> ChatModuleUpdateChatAsync(Chat body)
         {
-            return ChatModuleUpdateChatAsync(chatId, body, System.Threading.CancellationToken.None);
+            return ChatModuleUpdateChatAsync(body, System.Threading.CancellationToken.None);
         }
 
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
@@ -1715,14 +1714,10 @@ namespace TenantApi
         /// <remarks>
         /// Updates an existing chat
         /// </remarks>
-        /// <param name="chatId">ID of the chat to update</param>
         /// <returns>Chat updated successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public virtual async System.Threading.Tasks.Task<Chat> ChatModuleUpdateChatAsync(string chatId, Chat body, System.Threading.CancellationToken cancellationToken)
+        public virtual async System.Threading.Tasks.Task<Chat> ChatModuleUpdateChatAsync(Chat body, System.Threading.CancellationToken cancellationToken)
         {
-            if (chatId == null)
-                throw new System.ArgumentNullException("chatId");
-
             if (body == null)
                 throw new System.ArgumentNullException("body");
 
@@ -1743,7 +1738,6 @@ namespace TenantApi
                 
                     // Operation Path: "TenantApi/ChatModule/chat/{chatId}"
                     urlBuilder_.Append("TenantApi/ChatModule/chat/");
-                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(chatId, System.Globalization.CultureInfo.InvariantCulture)));
 
                     PrepareRequest(client_, request_, urlBuilder_);
 

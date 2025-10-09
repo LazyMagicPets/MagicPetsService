@@ -106,13 +106,6 @@ paths:
       summary: Update chat
       description: Updates an existing chat
       operationId: ChatModuleUpdateChatAsync
-      parameters:
-      - name: chatId
-        in: path
-        required: true
-        description: ID of the chat to update
-        schema:
-          type: string
       requestBody:
         content:
           application/json:
