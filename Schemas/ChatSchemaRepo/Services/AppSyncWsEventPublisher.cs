@@ -6,13 +6,16 @@ using System.Text.Json;
 
 namespace ChatSchemaRepo;
 
-public class AppSyncEventPublisher : IAppSyncEventPublisher
+/// <summary>
+/// AWS AppSync Events WebSocket publisher implementation
+/// </summary>
+public class AppSyncWsEventPublisher : IWsEventPublisher
 {
     // Configuration option for authentication method
     // TODO: Move this to configuration file once we verify API Key approach works
     private const bool UseApiKeyAuth = true; // Set to false to use IAM/SigV4 signing
 
-    private readonly ILogger<AppSyncEventPublisher> _logger;
+    private readonly ILogger<AppSyncWsEventPublisher> _logger;
     private readonly IConfiguration _configuration;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly string? _region;
@@ -21,9 +24,9 @@ public class AppSyncEventPublisher : IAppSyncEventPublisher
 
     private readonly AwsCredentialsCache _credentialsCache;
 
-    public AppSyncEventPublisher(
+    public AppSyncWsEventPublisher(
         AwsCredentialsCache credentialsCache,
-        ILogger<AppSyncEventPublisher> logger,
+        ILogger<AppSyncWsEventPublisher> logger,
         IConfiguration configuration,
         IHttpClientFactory httpClientFactory)
     {
@@ -69,7 +72,7 @@ public class AppSyncEventPublisher : IAppSyncEventPublisher
         }
         else
         {
-            _logger.LogInformation("AppSync Events Publisher initialized with domain: {Domain}", _eventApiHttpDomain);
+            _logger.LogInformation("AppSync WebSocket Publisher initialized with domain: {Domain}", _eventApiHttpDomain);
         }
 
         if (string.IsNullOrEmpty(_eventApiKey) && UseApiKeyAuth)
@@ -79,43 +82,35 @@ public class AppSyncEventPublisher : IAppSyncEventPublisher
         }
     }
 
-    public async Task PublishChatEventAsync(string chatId, ChatEvent sessionEvent)
+    public async Task PublishAsync<T>(
+        string channel,
+        string eventType,
+        T data,
+        Dictionary<string, object>? metadata = null)
     {
         try
         {
-            // Determine the data type name for the client BEFORE serialization
-            string? dataTypeName = null;
-            if (sessionEvent.Data != null)
-            {
-                var dataType = sessionEvent.Data.GetType();
+            // Extract dataType from metadata or infer from T
+            var dataTypeName = metadata?.GetValueOrDefault("dataType")?.ToString()
+                ?? GetDataTypeName<T>();
 
-                // For anonymous types, use a more friendly name
-                if (dataType.Name.Contains("AnonymousType") || dataType.Name.Contains("<>"))
-                {
-                    dataTypeName = "Object";
-                }
-                else
-                {
-                    // Use the actual type name (e.g., "ChatMessage")
-                    dataTypeName = dataType.Name;
-                }
-            }
+            // Extract chatId from channel path
+            var chatId = ExtractChatIdFromChannel(channel);
 
-            // Serialize the data first to preserve it properly
-            // Then wrap it with metadata
+            // Build event payload with AppSync Events structure
             var eventPayload = new
             {
-                chatId = sessionEvent.ChatId,
-                eventType = sessionEvent.EventType.ToString(),
-                timestamp = sessionEvent.Timestamp.ToString("O"),
-                data = sessionEvent.Data,  // Will be serialized with the payload
+                chatId = chatId,
+                eventType = eventType,
+                timestamp = DateTime.UtcNow.ToString("O"),
+                data = data,
                 dataType = dataTypeName
             };
 
-            _logger.LogInformation("Publishing session event: {EventType} for session: {SessionId} with data type: {DataType}",
-                sessionEvent.EventType, chatId, dataTypeName ?? "null");
+            _logger.LogInformation("Publishing event: {EventType} to channel: {Channel} with data type: {DataType}",
+                eventType, channel, dataTypeName);
 
-            // Use the configured Events API (single API per container)
+            // Check configuration
             if (string.IsNullOrEmpty(_eventApiHttpDomain))
             {
                 _logger.LogWarning("AppSync Event API HTTP Domain not configured, logging event instead");
@@ -123,21 +118,39 @@ public class AppSyncEventPublisher : IAppSyncEventPublisher
                 return;
             }
 
-            // Publish to AppSync Events via HTTP with configured authentication
-            await PublishEventAsync(_eventApiHttpDomain, chatId, eventPayload, sessionEvent.EventType.ToString());
+            // Publish to AppSync Events via HTTP
+            await PublishEventAsync(channel, eventPayload, eventType);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Failed to publish session event: {EventType} for session: {SessionId}", sessionEvent.EventType, chatId);
+            _logger.LogError(ex, "Failed to publish event: {EventType} to channel: {Channel}", eventType, channel);
             // Don't throw - event publishing should be non-blocking
         }
     }
 
-    private async Task PublishEventAsync(string httpDomain, string chatId, object eventPayload, string eventType)
+    private string GetDataTypeName<T>()
     {
-        // Construct the channel path: /chat/{chatId}
-        var channel = $"/chat/{chatId}";
+        var type = typeof(T);
 
+        // For anonymous types, use a more friendly name
+        if (type.Name.Contains("AnonymousType") || type.Name.Contains("<>"))
+        {
+            return "Object";
+        }
+
+        // Use the actual type name (e.g., "ChatMessage")
+        return type.Name;
+    }
+
+    private string ExtractChatIdFromChannel(string channel)
+    {
+        // Extract chatId from "/chat/{chatId}" pattern
+        var parts = channel.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        return parts.Length >= 2 ? parts[1] : string.Empty;
+    }
+
+    private async Task PublishEventAsync(string channel, object eventPayload, string eventType)
+    {
         // AWS AppSync Events API expects the events array to contain JSON STRINGS, not objects
         // So we serialize the event to a JSON string, then serialize that string again as part of the array
         var eventJsonString = JsonSerializer.Serialize(eventPayload);
@@ -163,7 +176,7 @@ public class AppSyncEventPublisher : IAppSyncEventPublisher
             if (!string.IsNullOrEmpty(_eventApiKey))
             {
                 httpClient.DefaultRequestHeaders.TryAddWithoutValidation("x-api-key", _eventApiKey);
-                _logger.LogInformation("  API Key configured: {ApiKeyPrefix}...", _eventApiKey.Length > 8 ? _eventApiKey.Substring(0, 8) : "***");
+                _logger.LogDebug("  API Key configured: {ApiKeyPrefix}...", _eventApiKey.Length > 8 ? _eventApiKey.Substring(0, 8) : "***");
             }
             else
             {
@@ -200,24 +213,13 @@ public class AppSyncEventPublisher : IAppSyncEventPublisher
         }
 
         // Log detailed request information for debugging
-        var url = $"https://{httpDomain}/event";
-        _logger.LogInformation("AppSync Events API Request Details:");
-        _logger.LogInformation("  Auth Method: {AuthMethod}", UseApiKeyAuth ? "API Key" : "IAM/SigV4");
-        _logger.LogInformation("  URL: {Url}", url);
-        _logger.LogInformation("  Region: {Region}", _region);
-        _logger.LogInformation("  Channel: {Channel}", channel);
-        _logger.LogInformation("  Request Body: {RequestBody}", requestJson);
-
-        // Log all headers for debugging
-        _logger.LogInformation("  Request Headers:");
-        foreach (var header in httpClient.DefaultRequestHeaders)
-        {
-            _logger.LogInformation("    {HeaderName}: {HeaderValue}", header.Key, string.Join(", ", header.Value));
-        }
-        foreach (var header in content.Headers)
-        {
-            _logger.LogInformation("    {HeaderName}: {HeaderValue}", header.Key, string.Join(", ", header.Value));
-        }
+        var url = $"https://{_eventApiHttpDomain}/event";
+        _logger.LogDebug("AppSync Events API Request Details:");
+        _logger.LogDebug("  Auth Method: {AuthMethod}", UseApiKeyAuth ? "API Key" : "IAM/SigV4");
+        _logger.LogDebug("  URL: {Url}", url);
+        _logger.LogDebug("  Region: {Region}", _region);
+        _logger.LogDebug("  Channel: {Channel}", channel);
+        _logger.LogDebug("  Request Body: {RequestBody}", requestJson);
 
         // Make the HTTP request with appropriate authentication
         HttpResponseMessage response;
@@ -246,8 +248,8 @@ public class AppSyncEventPublisher : IAppSyncEventPublisher
 
         if (response.IsSuccessStatusCode)
         {
-            _logger.LogInformation("Successfully published event to AppSync Events API: {EventType} for chat: {ChatId}",
-                eventType, chatId);
+            _logger.LogInformation("Successfully published event to AppSync Events API: {EventType} for channel: {Channel}",
+                eventType, channel);
         }
         else
         {
@@ -255,44 +257,5 @@ public class AppSyncEventPublisher : IAppSyncEventPublisher
             _logger.LogWarning("Failed to publish event to AppSync Events API. Status: {StatusCode}, Error: {Error}",
                 response.StatusCode, errorContent);
         }
-    }
-
-    public async Task PublishMessageEventAsync(string chatId, ChatMessage message)
-    {
-        var sessionEvent = new ChatEvent
-        {
-            EventType = message.Role == ChatMessageRole.User ? ChatEventType.Message_received : ChatEventType.Message_completed,
-            ChatId = chatId,
-            Timestamp = DateTime.UtcNow,
-            Data = message
-        };
-
-        await PublishChatEventAsync(chatId, sessionEvent);
-    }
-
-    public async Task PublishChatStatusEventAsync(string chatId, ChatStatus status)
-    {
-        var sessionEvent = new ChatEvent
-        {
-            EventType = ChatEventType.Chat_status_changed,
-            ChatId = chatId,
-            Timestamp = DateTime.UtcNow,
-            Data = new { Status = status.ToString() }
-        };
-
-        await PublishChatEventAsync(chatId, sessionEvent);
-    }
-
-    public async Task PublishErrorEventAsync(string chatId, string error)
-    {
-        var sessionEvent = new ChatEvent
-        {
-            EventType = ChatEventType.Error_occurred,
-            ChatId = chatId,
-            Timestamp = DateTime.UtcNow,
-            Data = new { Error = error }
-        };
-
-        await PublishChatEventAsync(chatId, sessionEvent);
     }
 }

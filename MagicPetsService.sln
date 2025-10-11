@@ -95,6 +95,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		LICENSE.txt = LICENSE.txt
 		LocalApis.json = LocalApis.json
 		OpenApiHints.md = OpenApiHints.md
+		PLAN_EventPublisher_Abstraction.md = PLAN_EventPublisher_Abstraction.md
 		README.md = README.md
 		RepoHints.md = RepoHints.md
 		ServiceVersion.props = ServiceVersion.props

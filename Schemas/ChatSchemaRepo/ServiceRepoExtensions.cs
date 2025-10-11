@@ -21,8 +21,9 @@ public static partial class ChatSchemaRepoExtensions
         services.TryAddSingleton<BedrockChat>();
         services.TryAddSingleton<ILlmClient>(sp => sp.GetRequiredService<BedrockChat>());
 
-        // Register chat business logic services
-        services.TryAddSingleton<IAppSyncEventPublisher, AppSyncEventPublisher>();
+        // Register event publishing services (transport and domain layers)
+        services.TryAddSingleton<IWsEventPublisher, AppSyncWsEventPublisher>();
+        services.TryAddSingleton<IChatEventPublisher, ChatEventPublisher>();
 
         // Register IMessagePersistence as singleton wrapper that creates transient ChatMessagesRepo instances
         services.AddSingleton<IMessagePersistence>(sp => new MessagePersistenceWrapper(sp));

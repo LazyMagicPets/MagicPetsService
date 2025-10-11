@@ -23,7 +23,7 @@ public class ChatModuleTestFixture : IDisposable
     public IServiceProvider ServiceProvider { get; }
     public IChatModuleController Controller { get; }
     public ICallerInfo CallerInfo { get; }
-    public MockAppSyncEventPublisher EventPublisher { get; }
+    public MockWsEventPublisher EventPublisher { get; }
 
     public ChatModuleTestFixture()
     {
@@ -154,8 +154,9 @@ public class ChatModuleTestFixture : IDisposable
         CallerInfo = new MockCallerInfo();
 
         // Create and register mock event publisher BEFORE calling AddChatModule
-        EventPublisher = new MockAppSyncEventPublisher();
-        services.AddSingleton<IAppSyncEventPublisher>(EventPublisher);
+        EventPublisher = new MockWsEventPublisher();
+        services.AddSingleton<IWsEventPublisher>(EventPublisher);
+        services.AddSingleton<IChatEventPublisher, ChatEventPublisher>();
 
         // Register mock authorization BEFORE calling AddChatModule
         // This ensures our mock authorization will be used instead of the default

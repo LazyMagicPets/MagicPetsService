@@ -34,8 +34,16 @@ This document describes the real-time chat events implementation using AWS AppSy
 │                     │
 │  ChatManagerService │
 │  ↓                  │
-│  AppSyncEvent       │
+│  IChatEvent         │
 │  Publisher          │
+│  (Domain Layer)     │
+│  ↓                  │
+│  IWsEvent           │
+│  Publisher          │
+│  (Transport Layer)  │
+│  ↓                  │
+│  AppSyncWs          │
+│  EventPublisher     │
 └─────────────────────┘
 ```
 
@@ -209,25 +217,53 @@ Fired when an error occurs during message processing.
 
 ## Backend Implementation
 
-### Publishing Events
+### Two-Layer Architecture
 
-Events are published using the `IAppSyncEventPublisher` service:
+The backend uses a two-layer architecture for event publishing:
+
+#### Domain Layer: `IChatEventPublisher`
+
+Provides high-level, business-focused methods for publishing chat events:
 
 ```csharp
-// Service/Schemas/ChatSchemaRepo/Services/AppSyncEventPublisher.cs
+// Service/Schemas/ChatSchemaRepo/Services/IChatEventPublisher.cs
 
-public interface IAppSyncEventPublisher
+public interface IChatEventPublisher
 {
-    Task PublishChatEventAsync(string chatId, ChatEvent sessionEvent);
-    Task PublishMessageEventAsync(string chatId, ChatMessage message);
-    Task PublishChatStatusEventAsync(string chatId, ChatStatus status);
-    Task PublishErrorEventAsync(string chatId, string error);
+    Task PublishUserMessageAsync(string chatId, ChatMessage message);
+    Task PublishProcessingStartedAsync(string chatId, string messageId);
+    Task PublishStreamingChunkAsync(string chatId, string messageId, string chunk);
+    Task PublishMessageCompletedAsync(string chatId, ChatMessage message);
+    Task PublishErrorAsync(string chatId, string error);
+    Task PublishStatusChangedAsync(string chatId, ChatStatus status);
 }
 ```
+
+#### Transport Layer: `IWsEventPublisher`
+
+Provides platform-agnostic WebSocket event publishing:
+
+```csharp
+// Service/Schemas/ChatSchemaRepo/Services/IWsEventPublisher.cs
+
+public interface IWsEventPublisher
+{
+    Task PublishAsync<T>(
+        string channel,
+        string eventType,
+        T data,
+        Dictionary<string, object>? metadata = null);
+}
+```
+
+### Publishing Events
+
+Business logic uses the domain layer interface for simplified event publishing:
 
 **Example - Publishing a message received event:**
 
 ```csharp
+// BEFORE (6 lines):
 await _eventPublisher.PublishChatEventAsync(chat.ChatId, new ChatEvent
 {
     EventType = ChatEventType.Message_received,
@@ -235,28 +271,135 @@ await _eventPublisher.PublishChatEventAsync(chat.ChatId, new ChatEvent
     Timestamp = DateTime.UtcNow,
     Data = message
 });
+
+// AFTER (1 line):
+await _eventPublisher.PublishUserMessageAsync(chat.ChatId, message);
 ```
+
+**All Domain Layer Methods:**
+
+```csharp
+// User message received
+await _eventPublisher.PublishUserMessageAsync(chatId, message);
+
+// Processing started
+await _eventPublisher.PublishProcessingStartedAsync(chatId, messageId);
+
+// Streaming chunk
+await _eventPublisher.PublishStreamingChunkAsync(chatId, messageId, chunk);
+
+// Message completed
+await _eventPublisher.PublishMessageCompletedAsync(chatId, assistantMessage);
+
+// Error occurred
+await _eventPublisher.PublishErrorAsync(chatId, "Error message");
+
+// Status changed
+await _eventPublisher.PublishStatusChangedAsync(chatId, ChatStatus.Active);
+```
+
+### Implementation Details
+
+**ChatEventPublisher** (Domain Implementation):
+```csharp
+public class ChatEventPublisher : IChatEventPublisher
+{
+    private readonly IWsEventPublisher _wsPublisher;
+
+    public async Task PublishUserMessageAsync(string chatId, ChatMessage message)
+    {
+        await _wsPublisher.PublishAsync(
+            channel: $"/chat/{chatId}",
+            eventType: ChatEventType.Message_received.ToString(),
+            data: message,
+            metadata: new Dictionary<string, object>
+            {
+                { "dataType", nameof(ChatMessage) }
+            });
+    }
+    // ... other methods
+}
+```
+
+**AppSyncWsEventPublisher** (AWS AppSync Transport Implementation):
+```csharp
+public class AppSyncWsEventPublisher : IWsEventPublisher
+{
+    public async Task PublishAsync<T>(
+        string channel,
+        string eventType,
+        T data,
+        Dictionary<string, object>? metadata = null)
+    {
+        // Build AppSync-specific event payload
+        var eventPayload = new
+        {
+            chatId = ExtractChatIdFromChannel(channel),
+            eventType = eventType,
+            timestamp = DateTime.UtcNow.ToString("O"),
+            data = data,
+            dataType = metadata?.GetValueOrDefault("dataType")?.ToString()
+                ?? typeof(T).Name
+        };
+
+        // Publish via AppSync HTTP API
+        await PublishEventAsync(channel, eventPayload, eventType);
+    }
+}
+```
+
+### Benefits of Two-Layer Architecture
+
+1. **Simplified Business Logic**: 83% less code in ChatManagerService (6 lines → 1 line per event)
+2. **Platform Independence**: Easy to add SignalR, Azure Event Grid, or other transports
+3. **Clear Separation**: Domain logic isolated from transport details
+4. **Better Testing**: Mock at either layer depending on test needs
+5. **Type Safety**: Strongly-typed domain methods prevent mistakes
 
 ### Configuration
 
-The service requires configuration for the AppSync Events API endpoints:
+The service uses unified configuration for the AppSync Events API endpoint:
 
 ```json
 {
   "AWS": {
     "Region": "us-west-2",
     "AppSync": {
-      "TenantEventsApi": {
+      "EventsApi": {
         "HttpDomain": "24njcduygfd35m34apqhaaqs6e.appsync-api.us-west-2.amazonaws.com",
-        "ApiKey": "da2-xxx..."
-      },
-      "ConsumerEventsApi": {
-        "HttpDomain": "kwzvarrv3na35ebufl3hqqpmdq.appsync-api.us-west-2.amazonaws.com",
-        "ApiKey": "da2-yyy..."
+        "ApiKey": "da2-xxx...",
+        "Region": "us-west-2"
       }
     }
-  }
+  },
+  "APPSYNC_EVENTS_API_TYPE": "Tenant"
 }
+```
+
+**Configuration Strategy:**
+
+Each AppRunner container uses ONE Events API (not both). Configuration is set via:
+
+1. **Primary (Unified)**: `AWS:AppSync:EventsApi:*` - Current standard
+2. **Fallback (Type-Specific)**: `AWS:AppSync:{Type}EventsApi:*` - Backward compatible
+   - `Type` determined by `APPSYNC_EVENTS_API_TYPE` environment variable (Tenant or Consumer)
+
+**Example - LocalWebService reads from CloudFormation stack:**
+```csharp
+// Startup.g.cs reads stack outputs and sets unified config
+_configuration["AWS:AppSync:EventsApi:HttpDomain"] = stackOutput.HttpDomain;
+_configuration["AWS:AppSync:EventsApi:ApiKey"] = stackOutput.ApiKey;
+```
+
+**Example - AppRunner receives from CloudFormation:**
+```yaml
+RuntimeEnvironmentVariables:
+  - Name: AWS__AppSync__EventsApi__HttpDomain
+    Value: !GetAtt TenantEventsApi.Dns.Http
+  - Name: AWS__AppSync__EventsApi__ApiKey
+    Value: !GetAtt TenantEventsApiKey.ApiKey
+  - Name: APPSYNC_EVENTS_API_TYPE
+    Value: Tenant
 ```
 
 **Authentication Methods:**
@@ -264,16 +407,22 @@ The service requires configuration for the AppSync Events API endpoints:
 1. **API Key** (Currently Used): Simple, passed via `x-api-key` header
 2. **IAM/SigV4**: AWS signature-based authentication (available but not currently used)
 
-Toggle via `UseApiKeyAuth` constant in `AppSyncEventPublisher.cs` (line 13).
+Toggle via `UseApiKeyAuth` constant in `AppSyncWsEventPublisher.cs`.
 
 ### Event Publishing Flow
 
-1. **ChatManagerService** creates a `ChatEvent` with type, timestamp, and data
-2. **AppSyncEventPublisher** extracts the data type name before serialization
-3. Event payload is created with `chatId`, `eventType`, `timestamp`, `data`, and `dataType`
-4. Payload is serialized to JSON string (AppSync Events requires JSON strings in events array)
-5. HTTP POST to `https://{domain}/event` with channel path `/chat/{chatId}`
-6. AppSync Events API delivers to all subscribed clients on that channel
+1. **ChatManagerService** calls domain method: `await _eventPublisher.PublishUserMessageAsync(chatId, message)`
+2. **ChatEventPublisher** (domain layer):
+   - Constructs channel path: `/chat/{chatId}`
+   - Converts event type enum to string: `ChatEventType.Message_received.ToString()`
+   - Adds metadata with dataType: `nameof(ChatMessage)`
+   - Calls transport layer: `_wsPublisher.PublishAsync(channel, eventType, data, metadata)`
+3. **AppSyncWsEventPublisher** (transport layer):
+   - Extracts chatId from channel path
+   - Builds AppSync event payload with `chatId`, `eventType`, `timestamp`, `data`, `dataType`
+   - Serializes payload to JSON string (AppSync Events requires JSON strings in events array)
+   - HTTP POST to `https://{domain}/event` with Authorization header
+4. **AppSync Events API** delivers event to all subscribed clients on that channel
 
 ## Client Implementation
 
@@ -767,11 +916,14 @@ _logger.LogInformation(
 ### Code Locations
 
 **Backend:**
-- Events Publisher: `Service/Schemas/ChatSchemaRepo/Services/AppSyncEventPublisher.cs`
+- Domain Interface: `Service/Schemas/ChatSchemaRepo/Services/IChatEventPublisher.cs`
+- Domain Implementation: `Service/Schemas/ChatSchemaRepo/Services/ChatEventPublisher.cs`
+- Transport Interface: `Service/Schemas/ChatSchemaRepo/Services/IWsEventPublisher.cs`
+- AWS AppSync Transport: `Service/Schemas/ChatSchemaRepo/Services/AppSyncWsEventPublisher.cs`
 - Chat Manager: `Service/Schemas/ChatSchemaRepo/Services/ChatManagerService.cs`
-- Event Interfaces: `Service/Schemas/ChatSchemaRepo/Services/IAppSyncEventPublisher.cs`
-- Event DTOs: `Service/Schemas/ChatSchema/DTOs/ChatEvent.g.cs`
+- DI Registration: `Service/Schemas/ChatSchemaRepo/ServiceRepoExtensions.cs`
 - Event Types: `Service/Schemas/ChatSchema/DTOs/ChatEventType.g.cs`
+- Test Mock: `Service/TestModules/MockWsEventPublisher.cs`
 
 **Client:**
 - WebSocket Client: `BaseAppLib/BaseApp.ViewModels/Services/AppSyncEventsWebSocketClient.cs`
@@ -786,6 +938,12 @@ _logger.LogInformation(
 
 ## Version History
 
+- **v1.1** (2025-01-11): Two-layer architecture refactoring
+  - Implemented IChatEventPublisher (domain layer) and IWsEventPublisher (transport layer)
+  - Simplified ChatManagerService event publishing (83% code reduction)
+  - Added platform-independent abstractions
+  - Unified configuration with fallback support
+  - Updated CloudFormation templates for AppRunner
 - **v1.0** (2025-10-11): Initial implementation
   - WebSocket connection and subscription
   - All 6 event types implemented
@@ -795,5 +953,5 @@ _logger.LogInformation(
 
 ---
 
-**Last Updated**: 2025-10-11
+**Last Updated**: 2025-01-11
 **Authors**: LazyMagic Team, Claude (Anthropic AI Assistant)

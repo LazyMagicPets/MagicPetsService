@@ -245,7 +245,7 @@ public class ChatModuleTests : IClassFixture<ChatModuleTestFixture>
             var result = await _controller.ChatModuleAddChatMessageAsync(createdChat.Id, message);
 
             // Wait for message received event
-            await _fixture.EventPublisher.WaitForEventAsync(createdChat.Id, ChatEventType.Message_received);
+            await _fixture.EventPublisher.WaitForEventAsync($"/chat/{createdChat.Id}", ChatEventType.Message_received.ToString());
 
             // Assert
             var createdMessage = GetValueFromActionResult(result);
@@ -254,8 +254,8 @@ public class ChatModuleTests : IClassFixture<ChatModuleTestFixture>
             Assert.Equal(ChatMessageRole.User, createdMessage.Role);
 
             // Verify event was published
-            var events = _fixture.EventPublisher.GetEvents(createdChat.Id);
-            Assert.Contains(events, e => e.EventType == ChatEventType.Message_received);
+            var events = _fixture.EventPublisher.GetEvents($"/chat/{createdChat.Id}");
+            Assert.Contains(events, e => e.EventType == ChatEventType.Message_received.ToString());
         }
         finally
         {
@@ -296,7 +296,7 @@ public class ChatModuleTests : IClassFixture<ChatModuleTestFixture>
             await _controller.ChatModuleAddChatMessageAsync(createdChat.Id, message1);
 
             // Wait for first message to be received
-            await _fixture.EventPublisher.WaitForEventAsync(createdChat.Id, ChatEventType.Message_received);
+            await _fixture.EventPublisher.WaitForEventAsync($"/chat/{createdChat.Id}", ChatEventType.Message_received.ToString());
 
             var message2 = new ChatMessage
             {
@@ -309,7 +309,7 @@ public class ChatModuleTests : IClassFixture<ChatModuleTestFixture>
             await _controller.ChatModuleAddChatMessageAsync(createdChat.Id, message2);
 
             // Wait for second message (need to wait for processing event as message_received fires twice)
-            await _fixture.EventPublisher.WaitForEventAsync(createdChat.Id, ChatEventType.Message_processing);
+            await _fixture.EventPublisher.WaitForEventAsync($"/chat/{createdChat.Id}", ChatEventType.Message_processing.ToString());
 
             // Act
             var result = await _controller.ChatModuleGetChatMessagesAsync(createdChat.Id, null, null);
@@ -362,25 +362,26 @@ public class ChatModuleTests : IClassFixture<ChatModuleTestFixture>
             await _controller.ChatModuleAddChatMessageAsync(createdChat.Id, message1);
 
             // Wait for user message to be received
-            var receivedEvent1 = await _fixture.EventPublisher.WaitForEventAsync(createdChat.Id, ChatEventType.Message_received);
+            var channel = $"/chat/{createdChat.Id}";
+            var receivedEvent1 = await _fixture.EventPublisher.WaitForEventAsync(channel, ChatEventType.Message_received.ToString());
             Assert.NotNull(receivedEvent1);
-            Assert.Equal(ChatEventType.Message_received, receivedEvent1.EventType);
+            Assert.Equal(ChatEventType.Message_received.ToString(), receivedEvent1.EventType);
 
             // Wait for assistant processing to start
             // Note: Processing may take time with real Bedrock, or may fail/timeout
             try
             {
-                var processingEvent1 = await _fixture.EventPublisher.WaitForEventAsync(createdChat.Id, ChatEventType.Message_processing, TimeSpan.FromSeconds(20));
+                var processingEvent1 = await _fixture.EventPublisher.WaitForEventAsync(channel, ChatEventType.Message_processing.ToString(), TimeSpan.FromSeconds(20));
                 Assert.NotNull(processingEvent1);
 
                 // If we got processing, try to wait for streaming (but it's okay if Bedrock is slow)
                 try
                 {
-                    var streamingEvent1 = await _fixture.EventPublisher.WaitForEventAsync(createdChat.Id, ChatEventType.Message_streaming, TimeSpan.FromSeconds(30));
+                    var streamingEvent1 = await _fixture.EventPublisher.WaitForEventAsync(channel, ChatEventType.Message_streaming.ToString(), TimeSpan.FromSeconds(30));
                     Assert.NotNull(streamingEvent1);
 
                     // Wait for assistant message to complete
-                    var completedEvent1 = await _fixture.EventPublisher.WaitForEventAsync(createdChat.Id, ChatEventType.Message_completed, TimeSpan.FromSeconds(30));
+                    var completedEvent1 = await _fixture.EventPublisher.WaitForEventAsync(channel, ChatEventType.Message_completed.ToString(), TimeSpan.FromSeconds(30));
                     Assert.NotNull(completedEvent1);
                 }
                 catch (TimeoutException)
@@ -392,8 +393,8 @@ public class ChatModuleTests : IClassFixture<ChatModuleTestFixture>
             catch (TimeoutException)
             {
                 // Processing event didn't fire - check for errors
-                var events = _fixture.EventPublisher.GetEvents(createdChat.Id);
-                var errorEvents = events.Where(e => e.EventType == ChatEventType.Error_occurred).ToList();
+                var events = _fixture.EventPublisher.GetEvents(channel);
+                var errorEvents = events.Where(e => e.EventType == ChatEventType.Error_occurred.ToString()).ToList();
 
                 if (errorEvents.Any())
                 {
@@ -421,15 +422,15 @@ public class ChatModuleTests : IClassFixture<ChatModuleTestFixture>
             Assert.Contains(messagesList1, m => m.Content == "What is the weather like today?");
 
             // Verify events were published for first message
-            var allEvents = _fixture.EventPublisher.GetEvents(createdChat.Id);
+            var allEvents = _fixture.EventPublisher.GetEvents(channel);
             Assert.NotEmpty(allEvents);
 
             // Should have received event for user message
-            var receivedEvents = allEvents.Where(e => e.EventType == ChatEventType.Message_received).ToList();
+            var receivedEvents = allEvents.Where(e => e.EventType == ChatEventType.Message_received.ToString()).ToList();
             Assert.True(receivedEvents.Count >= 1, $"Expected at least 1 Message_received event, got {receivedEvents.Count}");
 
             // Should have processing event
-            var processingEvents = allEvents.Where(e => e.EventType == ChatEventType.Message_processing).ToList();
+            var processingEvents = allEvents.Where(e => e.EventType == ChatEventType.Message_processing.ToString()).ToList();
             Assert.True(processingEvents.Count >= 1, $"Expected at least 1 Message_processing event, got {processingEvents.Count}");
 
             // Verify chat has the message in history

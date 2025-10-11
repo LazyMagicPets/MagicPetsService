@@ -19,7 +19,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
 {
     private readonly ILogger<ChatManagerService> _logger;
     private readonly ILlmClient _llmClient;
-    private readonly IAppSyncEventPublisher _eventPublisher;
+    private readonly IChatEventPublisher _eventPublisher;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IMessagePersistence _messagePersistence;
     private readonly ConcurrentDictionary<string, ConnectionChat> _chats;
@@ -32,7 +32,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
     public ChatManagerService(
         ILogger<ChatManagerService> logger,
         ILlmClient llmClient,
-        IAppSyncEventPublisher eventPublisher,
+        IChatEventPublisher eventPublisher,
         IHttpClientFactory httpClientFactory,
         IMessagePersistence messagePersistence)
     {
@@ -387,13 +387,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
                     chat.Status = ChatStatus.Processing;
 
                     // Publish user message event
-                    await _eventPublisher.PublishChatEventAsync(chat.ChatId, new ChatEvent
-                    {
-                        EventType = ChatEventType.Message_received,
-                        ChatId = chat.ChatId,
-                        Timestamp = DateTime.UtcNow,
-                        Data = message
-                    });
+                    await _eventPublisher.PublishUserMessageAsync(chat.ChatId, message);
 
                     // Process with LLM using streaming
                     var assistantMessageId = Guid.NewGuid().ToString();
@@ -401,13 +395,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
                     var fullResponse = new System.Text.StringBuilder();
 
                     // Publish streaming start event
-                    await _eventPublisher.PublishChatEventAsync(chat.ChatId, new ChatEvent
-                    {
-                        EventType = ChatEventType.Message_processing,
-                        ChatId = chat.ChatId,
-                        Timestamp = streamStartTime,
-                        Data = new { MessageId = assistantMessageId }
-                    });
+                    await _eventPublisher.PublishProcessingStartedAsync(chat.ChatId, assistantMessageId);
 
                     // Stream the response
                     await foreach (var textChunk in _llmClient.GenerateResponseStreamAsync(chat.History, chat.CancellationToken.Token))
@@ -416,18 +404,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
 
                         // Publish streaming chunk event with only the new chunk
                         // Client can accumulate chunks on their end
-                        await _eventPublisher.PublishChatEventAsync(chat.ChatId, new ChatEvent
-                        {
-                            EventType = ChatEventType.Message_streaming,
-                            ChatId = chat.ChatId,
-                            Timestamp = DateTime.UtcNow,
-                            Data = new
-                            {
-                                MessageId = assistantMessageId,
-                                Chunk = textChunk
-                                // Removed FullContent to reduce bandwidth - client accumulates chunks
-                            }
-                        });
+                        await _eventPublisher.PublishStreamingChunkAsync(chat.ChatId, assistantMessageId, textChunk);
                     }
 
                     // Create complete assistant message
@@ -446,13 +423,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
                     chat.Status = ChatStatus.Active;
 
                     // Publish assistant response completed event
-                    await _eventPublisher.PublishChatEventAsync(chat.ChatId, new ChatEvent
-                    {
-                        EventType = ChatEventType.Message_completed,
-                        ChatId = chat.ChatId,
-                        Timestamp = DateTime.UtcNow,
-                        Data = assistantMessage
-                    });
+                    await _eventPublisher.PublishMessageCompletedAsync(chat.ChatId, assistantMessage);
 
                     _logger.LogInformation("Processed streaming message for chat {ChatId}, total length: {Length}", chat.ChatId, fullResponse.Length);
                 }
@@ -461,13 +432,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
                     _logger.LogError(ex, "Error processing message for chat {ChatId}", chat.ChatId);
 
                     // Publish error event
-                    await _eventPublisher.PublishChatEventAsync(chat.ChatId, new ChatEvent
-                    {
-                        EventType = ChatEventType.Error_occurred,
-                        ChatId = chat.ChatId,
-                        Timestamp = DateTime.UtcNow,
-                        Data = new { Error = ex.Message }
-                    });
+                    await _eventPublisher.PublishErrorAsync(chat.ChatId, ex.Message);
 
                     chat.Status = ChatStatus.Error;
                 }
