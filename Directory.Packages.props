@@ -19,6 +19,7 @@
     <PackageVersion Include="AWSSDK.AppSync" Version="4.0.1.19" />
     <PackageVersion Include="AWSSDK.BedrockRuntime" Version="4.0.7" />
     <PackageVersion Include="AWSSDK.CognitoIdentityProvider" Version="4.0.3.5" />
+    <PackageVersion Include="AWSSDK.CloudFormation" Version="4.0.3.3" />
     <PackageVersion Include="AWSSDK.CloudFront" Version="4.0.5.3" />
     <PackageVersion Include="AWSSDK.CloudFrontKeyValueStore" Version="4.0.0.24" />
     <PackageVersion Include="AWSSDK.Core" Version="3.7.400.59" />
@@ -28,6 +29,7 @@
     <PackageVersion Include="AWSSDK.SecurityToken" Version="4.0.2.4" />
     <PackageVersion Include="AWSSDK.SSO" Version="4.0.1.4" />
     <PackageVersion Include="AWSSDK.SSOOIDC" Version="4.0.2.1" />
+    <PackageVersion Include="AwsSignatureVersion4" Version="5.0.1" />
     <PackageVersion Include="DeepCloner" Version="0.10.4" />
     <PackageVersion Include="FluentValidation" Version="12.0.0" />
     <PackageVersion Include="JsonSubTypes" Version="2.0.1" />

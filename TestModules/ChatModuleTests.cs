@@ -56,9 +56,7 @@ public class ChatModuleTests : IClassFixture<ChatModuleTestFixture>
             Status = ChatStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow,
             LastActivityAt = DateTimeOffset.UtcNow,
-            MessageCount = 0,
-            CreateUtcTick = DateTime.UtcNow.Ticks,
-            UpdateUtcTick = DateTime.UtcNow.Ticks
+            MessageCount = 0
         };
 
         // Act
@@ -88,9 +86,7 @@ public class ChatModuleTests : IClassFixture<ChatModuleTestFixture>
             Status = ChatStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow,
             LastActivityAt = DateTimeOffset.UtcNow,
-            MessageCount = 0,
-            CreateUtcTick = DateTime.UtcNow.Ticks,
-            UpdateUtcTick = DateTime.UtcNow.Ticks
+            MessageCount = 0
         };
         var createResult = await _controller.ChatModuleAddChatAsync(testChat);
         var createdChat = GetValueFromActionResult(createResult)!;
@@ -125,9 +121,7 @@ public class ChatModuleTests : IClassFixture<ChatModuleTestFixture>
             Status = ChatStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow,
             LastActivityAt = DateTimeOffset.UtcNow,
-            MessageCount = 0,
-            CreateUtcTick = DateTime.UtcNow.Ticks,
-            UpdateUtcTick = DateTime.UtcNow.Ticks
+            MessageCount = 0
         };
         var createResult = await _controller.ChatModuleAddChatAsync(testChat);
         var createdChat = GetValueFromActionResult(createResult)!;
@@ -163,9 +157,7 @@ public class ChatModuleTests : IClassFixture<ChatModuleTestFixture>
             Status = ChatStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow,
             LastActivityAt = DateTimeOffset.UtcNow,
-            MessageCount = 0,
-            CreateUtcTick = DateTime.UtcNow.Ticks,
-            UpdateUtcTick = DateTime.UtcNow.Ticks
+            MessageCount = 0
         };
         var createResult = await _controller.ChatModuleAddChatAsync(testChat);
         var createdChat = GetValueFromActionResult(createResult)!;
@@ -204,9 +196,7 @@ public class ChatModuleTests : IClassFixture<ChatModuleTestFixture>
             Status = ChatStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow,
             LastActivityAt = DateTimeOffset.UtcNow,
-            MessageCount = 0,
-            CreateUtcTick = DateTime.UtcNow.Ticks,
-            UpdateUtcTick = DateTime.UtcNow.Ticks
+            MessageCount = 0
         };
         var createResult = await _controller.ChatModuleAddChatAsync(testChat);
         var createdChat = GetValueFromActionResult(createResult)!;
@@ -235,9 +225,7 @@ public class ChatModuleTests : IClassFixture<ChatModuleTestFixture>
             Status = ChatStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow,
             LastActivityAt = DateTimeOffset.UtcNow,
-            MessageCount = 0,
-            CreateUtcTick = DateTime.UtcNow.Ticks,
-            UpdateUtcTick = DateTime.UtcNow.Ticks
+            MessageCount = 0
         };
         var createResult = await _controller.ChatModuleAddChatAsync(testChat);
         var createdChat = GetValueFromActionResult(createResult)!;
@@ -289,9 +277,7 @@ public class ChatModuleTests : IClassFixture<ChatModuleTestFixture>
             Status = ChatStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow,
             LastActivityAt = DateTimeOffset.UtcNow,
-            MessageCount = 0,
-            CreateUtcTick = DateTime.UtcNow.Ticks,
-            UpdateUtcTick = DateTime.UtcNow.Ticks
+            MessageCount = 0
         };
         var createResult = await _controller.ChatModuleAddChatAsync(testChat);
         var createdChat = GetValueFromActionResult(createResult)!;
@@ -355,9 +341,7 @@ public class ChatModuleTests : IClassFixture<ChatModuleTestFixture>
             Status = ChatStatus.Active,
             CreatedAt = DateTimeOffset.UtcNow,
             LastActivityAt = DateTimeOffset.UtcNow,
-            MessageCount = 0,
-            CreateUtcTick = DateTime.UtcNow.Ticks,
-            UpdateUtcTick = DateTime.UtcNow.Ticks
+            MessageCount = 0
         };
         var createResult = await _controller.ChatModuleAddChatAsync(testChat);
         var createdChat = GetValueFromActionResult(createResult)!;

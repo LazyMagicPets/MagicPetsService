@@ -8,6 +8,9 @@ public static partial class ChatSchemaRepoExtensions
         services.TryAddAWSService<IAmazonBedrockRuntime>();
         services.TryAddAWSService<IAmazonAppSync>();
 
+        // Register AWS credentials cache for services that need raw AWS API calls
+        services.TryAddSingleton<AwsCredentialsCache>();
+
         // Register HTTP client factory for keep-alive requests
         services.AddHttpClient("KeepAlive", client =>
         {

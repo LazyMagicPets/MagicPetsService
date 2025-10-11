@@ -4,7 +4,7 @@ using Amazon.AppSync.Model;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
-namespace EventsApi;
+namespace ConsumerEventsApi;
 
 public interface IAppSyncEventsClient
 {

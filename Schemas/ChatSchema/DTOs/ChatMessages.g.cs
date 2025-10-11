@@ -22,14 +22,13 @@ namespace ChatSchema
     [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "14.0.3.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))")]
     public partial class ChatMessages : System.ComponentModel.INotifyPropertyChanged,IItem    {
         private string _id;
-        private string _chatMessagesId;
         private string _chatId;
         private System.Collections.Generic.ICollection<ChatMessage> _messages;
         private long _createUtcTick;
         private long _updateUtcTick;
 
         /// <summary>
-        /// DynamoDB primary key (same as chatMessagesId)
+        /// DynamoDB primary key (same as chatId)
         /// </summary>
         [Newtonsoft.Json.JsonProperty("id", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Id
@@ -47,25 +46,7 @@ namespace ChatSchema
         }
 
         /// <summary>
-        /// Unique identifier for the messages collection
-        /// </summary>
-        [Newtonsoft.Json.JsonProperty("chatMessagesId", Required = Newtonsoft.Json.Required.Always)]
-        public string ChatMessagesId
-        {
-            get { return _chatMessagesId; }
-
-            set
-            {
-                if (_chatMessagesId != value)
-                {
-                    _chatMessagesId = value;
-                    RaisePropertyChanged();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Reference to the parent chat
+        /// Reference to the parent chat (also used as primary key)
         /// </summary>
         [Newtonsoft.Json.JsonProperty("chatId", Required = Newtonsoft.Json.Required.Always)]
         public string ChatId

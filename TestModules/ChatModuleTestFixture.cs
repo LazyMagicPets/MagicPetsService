@@ -181,6 +181,9 @@ public class ChatModuleTestFixture : IDisposable
 
     public void Dispose()
     {
+        // Clean up all test data from DynamoDB before disposing
+        CleanupTestData().GetAwaiter().GetResult();
+
         // Stop the ChatManagerService before disposing
         var chatManagerService = ServiceProvider.GetService<IChatManagerService>() as ChatManagerService;
         if (chatManagerService != null)
@@ -191,6 +194,61 @@ public class ChatModuleTestFixture : IDisposable
         if (ServiceProvider is IDisposable disposable)
         {
             disposable.Dispose();
+        }
+    }
+
+    /// <summary>
+    /// Cleans up all test Chat and ChatMessages records from DynamoDB.
+    /// Finds all chats associated with the test-user and deletes them along with their messages.
+    /// </summary>
+    private async Task CleanupTestData()
+    {
+        try
+        {
+            var logger = ServiceProvider.GetRequiredService<ILoggerFactory>()
+                .CreateLogger<ChatModuleTestFixture>();
+
+            logger.LogInformation("Cleaning up test data from DynamoDB...");
+
+            // Get repos
+            var chatRepo = ServiceProvider.GetRequiredService<IChatRepo>();
+
+            // Get all chats for the test user
+            var chatsResult = await chatRepo.ListAsync(CallerInfo);
+            var chats = chatsResult.Value as List<Chat>;
+
+            // Delete all Chats - ChatRepo.DeleteAsync should also delete their ChatMessages
+            if (chats != null && chats.Count > 0)
+            {
+                logger.LogInformation($"Found {chats.Count} test chats to clean up");
+
+                foreach (var chat in chats)
+                {
+                    try
+                    {
+                        logger.LogInformation($"Deleting Chat {chat.Id} with ChatId {chat.ChatId}");
+                        await chatRepo.DeleteAsync(CallerInfo, chat.Id);
+                        logger.LogInformation($"Successfully deleted Chat {chat.Id} (ChatRepo should have also deleted ChatMessages)");
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex, $"Failed to delete Chat {chat.Id}");
+                    }
+                }
+
+                logger.LogInformation($"Test data cleanup completed. Deleted {chats.Count} chats.");
+            }
+            else
+            {
+                logger.LogInformation("No test chats found to clean up");
+            }
+        }
+        catch (Exception ex)
+        {
+            var logger = ServiceProvider.GetRequiredService<ILoggerFactory>()
+                .CreateLogger<ChatModuleTestFixture>();
+            logger.LogError(ex, "Error during test data cleanup");
+            // Don't throw - cleanup failures shouldn't break test execution
         }
     }
 }

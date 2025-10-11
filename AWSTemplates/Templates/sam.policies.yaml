@@ -37,11 +37,11 @@ Resources:
           - KeyValueStoreARN: !Ref KeyValueStoreArnParameter
       FunctionCode: |
         import cf from 'cloudfront';
-        const kvs = cf.kvs(); 
+        const kvs = cf.kvs();
         async function handler(event) {
             const request = event.request;
             const headers = request.headers;
-            let uri = request.uri;  
+            let uri = request.uri;
             const originalUri = request.uri;
             const origin = headers.origin && headers.origin.value;
             const debug = false;
@@ -50,14 +50,28 @@ Resources:
             let config = {
                 meta: {
                     type: "",
-                    awsRegion: "",
-                    wsUrl: ""
+                    awsRegion: ""
                 },
-                authConfigs: {}
+                authConfigs: {},
+                eventsApis: {}
             };
             try {
+                // Get AuthConfigs from KVS
                 const authConfigs = await kvs.get("AuthConfigs");
-                config.authConfigs = JSON.parse(authConfigs);
+                if (authConfigs) {
+                    config.authConfigs = JSON.parse(authConfigs);
+                }
+
+                // Get EventsApis from KVS
+                try {
+                    const eventsApis = await kvs.get("EventsApis");
+                    if (eventsApis) {
+                        config.eventsApis = JSON.parse(eventsApis);
+                    }
+                } catch (eventsErr) {
+                    // EventsApis might not exist yet, continue without it
+                    console.log("EventsApis not found in KVS, continuing without it");
+                }
 
                 return {
                     statusCode: 200,
@@ -65,7 +79,7 @@ Resources:
                     headers: {
                         'content-type': { value: 'application/json' }, // Set the content type to application/json
                         'cache-control': { value: 'max-age=0, no-cache, no-store, must-revalidate' } // Set caching headers to prevent caching
-                    },            
+                    },
                     body: JSON.stringify(config, null, 0)
                 }
 

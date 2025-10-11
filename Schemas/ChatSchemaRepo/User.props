@@ -4,5 +4,6 @@
 		<PackageReference Include="Amazon.AspNetCore.Identity.Cognito" />
 		<PackageReference Include="AWSSDK.AppSync" />
 		<PackageReference Include="AWSSDK.BedrockRuntime" />
+		<PackageReference Include="AwsSignatureVersion4" />
 	</ItemGroup>
 </Project>

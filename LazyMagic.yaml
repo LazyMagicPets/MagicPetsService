@@ -221,10 +221,15 @@ Directives:
         - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
         - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
 
-  EventsApi:
+  TenantEventsApi:
     Type: Api
     Defaults: ApiAppSyncEventsDefault
     Authentication: tenantauth
+
+  ConsumerEventsApi:
+    Type: Api
+    Defaults: ApiAppSyncEventsDefault
+    Authentication: consumerauth
 
   # Service
   Service:
@@ -233,7 +238,8 @@ Directives:
     - AdminApi
     - TenantApi
     - ConsumerApi 
-    - EventsApi
+    - TenantEventsApi
+    - ConsumerEventsApi
     Artifacts:
       AwsServiceStackTemplate:
 

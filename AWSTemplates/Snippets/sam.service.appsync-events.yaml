@@ -6,15 +6,16 @@
       EventConfig:
         AuthProviders:
           - AuthType: AWS_IAM
+          - AuthType: API_KEY
 #CognitoAuth#
         ConnectionAuthModes:
           - AuthType: AWS_IAM
+          - AuthType: API_KEY
 #CognitoConnectionAuth#
         DefaultPublishAuthModes:
-          - AuthType: AWS_IAM
-#CognitoPublishAuth#
+          - AuthType: API_KEY
         DefaultSubscribeAuthModes:
-          - AuthType: AWS_IAM
+          - AuthType: API_KEY
 #CognitoSubscribeAuth#
         LogConfig:
           LogLevel: ALL
@@ -68,3 +69,16 @@
                 Action:
                   - appsync:EventPublish
                 Resource: !Sub "${__AppSyncEventsApiName__}/*"
+
+  __AppSyncEventsApiName__ApiKey:
+    Type: AWS::AppSync::ApiKey
+    Properties:
+      ApiId: !GetAtt __AppSyncEventsApiName__.ApiId
+      Description: API Key for __AppSyncEventsApiName__
+      Expires: !Ref AWS::NoValue  # No expiration
+
+  __AppSyncEventsApiName__ChatChannelNamespace:
+    Type: AWS::AppSync::ChannelNamespace
+    Properties:
+      ApiId: !GetAtt __AppSyncEventsApiName__.ApiId
+      Name: chat

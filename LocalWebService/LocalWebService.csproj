@@ -7,6 +7,7 @@
 	</PropertyGroup>
 	<Import Project="User.props"  Condition="Exists('User.props')" />
 	<ItemGroup>
+		<PackageReference Include="AWSSDK.CloudFormation" />
 		<PackageReference Include="AWSSDK.CloudFront" />
 		<PackageReference Include="AWSSDK.CloudFrontKeyValueStore" />
 		<PackageReference Include="AWSSDK.DynamoDBv2"/>

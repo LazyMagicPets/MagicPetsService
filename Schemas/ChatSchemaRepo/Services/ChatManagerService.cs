@@ -52,16 +52,15 @@ public class ChatManagerService : IChatManagerService, IHostedService
 
     public async Task<Chat> InitializeChatAsync(ICallerInfo callerInfo, Chat chat)
     {
-        // Generate IDs if not provided
+        // Generate chatId if not provided (chatMessagesId is the same as chatId now)
         var chatId = chat.ChatId ?? Guid.NewGuid().ToString();
-        var chatMessagesId = chat.ChatMessagesId ?? Guid.NewGuid().ToString();
         var userId = callerInfo?.LzUserId ?? "unknown";
 
         // Create in-memory chat state
         var connectionChat = new ConnectionChat
         {
             ChatId = chatId,
-            ChatMessagesId = chatMessagesId,
+            ChatMessagesId = chatId, // Same as chatId
             UserId = userId,
             Status = ChatStatus.Active,
             CreatedAt = DateTime.UtcNow,
@@ -81,11 +80,11 @@ public class ChatManagerService : IChatManagerService, IHostedService
         var backgroundTask = ProcessChatMessagesAsync(connectionChat);
         _backgroundTasks.TryAdd(chatId, backgroundTask);
 
-        // Start keep-alive task if this is the first chat
-        if (_chats.Count == 1 && _keepAliveTask == null)
-        {
-            _keepAliveTask = InitiateKeepAliveAsync();
-        }
+        // Keep-alive feature disabled for now
+        // if (_chats.Count == 1 && _keepAliveTask == null)
+        // {
+        //     _keepAliveTask = InitiateKeepAliveAsync();
+        // }
 
         _logger.LogInformation("Initialized chat {ChatId} for user {UserId}", chatId, userId);
 
@@ -99,7 +98,6 @@ public class ChatManagerService : IChatManagerService, IHostedService
         {
             Id = chatId,
             ChatId = chatId,
-            ChatMessagesId = chatMessagesId,
             UserId = userId,
             Status = ChatStatus.Active,
             Summary = null,
@@ -170,7 +168,6 @@ public class ChatManagerService : IChatManagerService, IHostedService
         {
             Id = chatId,
             ChatId = chatId,
-            ChatMessagesId = chat.ChatMessagesId,
             UserId = userId,
             Status = chat.Status,
             Summary = GenerateSummary(chat.History),
@@ -185,28 +182,47 @@ public class ChatManagerService : IChatManagerService, IHostedService
 
     public async Task<List<ChatMessage>> GetChatHistoryAsync(ICallerInfo callerInfo, string chatId, int? page, int? limit)
     {
-        if (!_chats.TryGetValue(chatId, out var chat))
+        var userId = callerInfo?.LzUserId ?? "unknown";
+
+        // Check if chat is in memory (active)
+        if (_chats.TryGetValue(chatId, out var chat))
+        {
+            // Verify ownership
+            if (chat.UserId != userId)
+            {
+                throw new UnauthorizedAccessException($"User {userId} does not own chat {chatId}");
+            }
+
+            var pageNumber = page ?? 1;
+            var pageSize = Math.Min(limit ?? 50, 100);
+            var skip = (pageNumber - 1) * pageSize;
+
+            return chat.History
+                .OrderBy(m => m.Timestamp)
+                .Skip(skip)
+                .Take(pageSize)
+                .ToList();
+        }
+
+        // Chat not in memory - load from DynamoDB
+        var messages = await _messagePersistence.GetMessagesAsync(callerInfo, chatId);
+
+        if (messages == null || messages.Count == 0)
         {
             throw new InvalidOperationException($"Chat {chatId} not found");
         }
 
-        // Verify ownership
-        var userId = callerInfo?.LzUserId ?? "unknown";
-        if (chat.UserId != userId)
-        {
-            throw new UnauthorizedAccessException($"User {userId} does not own chat {chatId}");
-        }
+        // TODO: Add ownership verification by loading Chat record from DynamoDB
+        // For now, we assume if messages exist, they belong to the caller
 
-        var pageNumber = page ?? 1;
-        var pageSize = Math.Min(limit ?? 50, 100);
-        var skip = (pageNumber - 1) * pageSize;
+        var pageNum = page ?? 1;
+        var pageSz = Math.Min(limit ?? 50, 100);
+        var skipCount = (pageNum - 1) * pageSz;
 
-        await Task.Delay(0); // Keep async
-
-        return chat.History
+        return messages
             .OrderBy(m => m.Timestamp)
-            .Skip(skip)
-            .Take(pageSize)
+            .Skip(skipCount)
+            .Take(pageSz)
             .ToList();
     }
 
@@ -243,7 +259,6 @@ public class ChatManagerService : IChatManagerService, IHostedService
         {
             Id = chat.ChatId,
             ChatId = chat.ChatId,
-            ChatMessagesId = connectionChat.ChatMessagesId,
             UserId = userId,
             Status = connectionChat.Status,
             Summary = GenerateSummary(connectionChat.History),
@@ -271,6 +286,25 @@ public class ChatManagerService : IChatManagerService, IHostedService
         }
 
         await CloseChatInternalAsync(chatId);
+    }
+
+    public async Task PersistChatMessagesAsync(ICallerInfo callerInfo, string chatId)
+    {
+        if (!_chats.TryGetValue(chatId, out var chat))
+        {
+            throw new InvalidOperationException($"Chat {chatId} not found");
+        }
+
+        // Verify ownership
+        var userId = callerInfo?.LzUserId ?? "unknown";
+        if (chat.UserId != userId)
+        {
+            throw new UnauthorizedAccessException($"User {userId} does not own chat {chatId}");
+        }
+
+        // Persist messages to DynamoDB without closing the chat
+        await PersistChatHistoryAsync(chat.CallerInfo, chatId, chat.History);
+        _logger.LogInformation("Persisted messages for chat {ChatId} (chat remains active)", chatId);
     }
 
     public SemaphoreSlim? GetKeepAliveSemaphore(string chatId)
@@ -380,7 +414,8 @@ public class ChatManagerService : IChatManagerService, IHostedService
                     {
                         fullResponse.Append(textChunk);
 
-                        // Publish streaming chunk event
+                        // Publish streaming chunk event with only the new chunk
+                        // Client can accumulate chunks on their end
                         await _eventPublisher.PublishChatEventAsync(chat.ChatId, new ChatEvent
                         {
                             EventType = ChatEventType.Message_streaming,
@@ -389,8 +424,8 @@ public class ChatManagerService : IChatManagerService, IHostedService
                             Data = new
                             {
                                 MessageId = assistantMessageId,
-                                Chunk = textChunk,
-                                FullContent = fullResponse.ToString()
+                                Chunk = textChunk
+                                // Removed FullContent to reduce bandwidth - client accumulates chunks
                             }
                         });
                     }
@@ -472,27 +507,27 @@ public class ChatManagerService : IChatManagerService, IHostedService
             }
 
             // Persist all messages to DynamoDB before closing
-            await PersistChatHistoryAsync(chatId, chat.History);
+            await PersistChatHistoryAsync(chat.CallerInfo, chatId, chat.History);
 
             chat.CancellationToken.Dispose();
             _logger.LogInformation("Closed chat {ChatId}", chatId);
 
-            // Release keep-alive semaphore if this was the last chat
-            if (_chats.Count == 0)
-            {
-                try
-                {
-                    if (_keepAliveSemaphore.CurrentCount == 0)
-                    {
-                        _keepAliveSemaphore.Release();
-                        _logger.LogDebug("Released keep-alive semaphore (no active chats)");
-                    }
-                }
-                catch (Exception ex)
-                {
-                    _logger.LogWarning(ex, "Error releasing keep-alive semaphore");
-                }
-            }
+            // Keep-alive feature disabled for now
+            // if (_chats.Count == 0)
+            // {
+            //     try
+            //     {
+            //         if (_keepAliveSemaphore.CurrentCount == 0)
+            //         {
+            //             _keepAliveSemaphore.Release();
+            //             _logger.LogDebug("Released keep-alive semaphore (no active chats)");
+            //         }
+            //     }
+            //     catch (Exception ex)
+            //     {
+            //         _logger.LogWarning(ex, "Error releasing keep-alive semaphore");
+            //     }
+            // }
         }
     }
 
@@ -554,9 +589,10 @@ public class ChatManagerService : IChatManagerService, IHostedService
     }
 
     /// <summary>
-    /// Persists all messages in chat history to the ChatMessages table when chat closes
+    /// Persists all messages in chat history to the ChatMessages table when chat closes.
+    /// Creates or replaces the entire ChatMessages record with all messages at once.
     /// </summary>
-    private async Task PersistChatHistoryAsync(string chatId, List<ChatMessage> history)
+    private async Task PersistChatHistoryAsync(ICallerInfo? callerInfo, string chatId, List<ChatMessage> history)
     {
         if (history == null || history.Count == 0)
         {
@@ -566,10 +602,8 @@ public class ChatManagerService : IChatManagerService, IHostedService
 
         try
         {
-            foreach (var message in history)
-            {
-                await _messagePersistence.AppendMessageAsync(chatId, message);
-            }
+            // Save all messages at once to avoid race conditions
+            await _messagePersistence.SaveAllMessagesAsync(callerInfo!, chatId, history);
 
             _logger.LogInformation("Persisted {MessageCount} messages to DynamoDB for chat {ChatId}", history.Count, chatId);
         }

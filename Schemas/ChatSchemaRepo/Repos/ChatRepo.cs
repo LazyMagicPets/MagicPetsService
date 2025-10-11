@@ -32,15 +32,13 @@ public partial class ChatRepo : DYDBRepository<Chat>, IChatRepo
         // Persist to DynamoDB
         await base.CreateAsync(callerInfo, initializedChat);
 
-        // Create empty ChatMessages record
+        // Create empty ChatMessages record (using chatId as the primary key)
+        // Let the base repository handle CreateUtcTick and UpdateUtcTick
         var chatMessages = new ChatMessages
         {
-            Id = initializedChat.ChatMessagesId,
-            ChatMessagesId = initializedChat.ChatMessagesId!,
+            Id = initializedChat.ChatId,
             ChatId = initializedChat.ChatId!,
-            Messages = new List<ChatMessage>(),
-            CreateUtcTick = initializedChat.CreateUtcTick,
-            UpdateUtcTick = initializedChat.UpdateUtcTick
+            Messages = new List<ChatMessage>()
         };
         await _chatMessagesRepo.CreateAsync(callerInfo, chatMessages);
 
@@ -86,6 +84,10 @@ public partial class ChatRepo : DYDBRepository<Chat>, IChatRepo
     // Override DeleteAsync to close chat and cleanup resources
     public override async Task<StatusCodeResult> DeleteAsync(ICallerInfo callerInfo, string id)
     {
+        // First, retrieve the chat to get ChatMessagesId
+        var chatResult = await base.ReadAsync(callerInfo, id);
+        var chat = chatResult.Value;
+
         // Close chat in ChatManagerService (cleanup in-memory resources)
         try
         {
@@ -99,8 +101,11 @@ public partial class ChatRepo : DYDBRepository<Chat>, IChatRepo
         // Delete from DynamoDB
         await base.DeleteAsync(callerInfo, id);
 
-        // Delete associated ChatMessages
-        await _chatMessagesRepo.DeleteAsync(callerInfo, id);
+        // Delete associated ChatMessages using chatId
+        if (chat?.ChatId != null)
+        {
+            await _chatMessagesRepo.DeleteAsync(callerInfo, chat.ChatId);
+        }
 
         return new StatusCodeResult(200);
     }
@@ -118,11 +123,31 @@ public partial class ChatRepo : DYDBRepository<Chat>, IChatRepo
     /// </summary>
     public async Task<ActionResult<ChatMessage>> CreateMessageAsync(ICallerInfo callerInfo, string chatId, ChatMessage message)
     {
-        // Queue message with ChatManagerService for background processing
-        // The message is added to the in-memory queue and will be persisted when chat closes
-        var userMessage = await _chatManagerService.ProcessUserMessageAsync(callerInfo, chatId, message);
+        try
+        {
+            // Queue message with ChatManagerService for background processing
+            // The message is added to the in-memory queue and will be persisted when chat closes
+            var userMessage = await _chatManagerService.ProcessUserMessageAsync(callerInfo, chatId, message);
+            return new OkObjectResult(userMessage);
+        }
+        catch (InvalidOperationException)
+        {
+            // Chat not in memory - need to re-initialize from DynamoDB
+            var chatResult = await base.ReadAsync(callerInfo, chatId);
+            if (chatResult.Value == null)
+            {
+                return new NotFoundObjectResult($"Chat {chatId} not found");
+            }
 
-        return new OkObjectResult(userMessage);
+            var chat = chatResult.Value;
+
+            // Re-initialize chat in memory
+            var reinitializedChat = await _chatManagerService.InitializeChatAsync(callerInfo, chat);
+
+            // Now process the message
+            var userMessage = await _chatManagerService.ProcessUserMessageAsync(callerInfo, chatId, message);
+            return new OkObjectResult(userMessage);
+        }
     }
 
     /// <summary>

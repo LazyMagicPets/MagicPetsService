@@ -1,9 +1,13 @@
 using System.Linq;
 using Amazon.Extensions.NETCore.Setup;
+using Amazon.Runtime;
+using Amazon.Runtime.CredentialManagement;
 using Amazon.SecurityToken;
 using Amazon.SecurityToken.Model;
 using Amazon.CloudFront;
 using Amazon.CloudFrontKeyValueStore;
+using Amazon.CloudFormation;
+using Amazon.CloudFormation.Model;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,7 +16,6 @@ using LazyMagic.Shared;
 using LazyMagic.Service.AwsLocalWebApiRoutingMiddleware;
 using YamlDotNet.RepresentationModel;
 using Microsoft.Extensions.Logging;
-using Amazon.Runtime.CredentialManagement;
 using Microsoft.AspNetCore.Mvc.ActionConstraints;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
@@ -68,17 +71,29 @@ public partial class Startup
                 if (mapping.Children.TryGetValue(new YamlScalarNode("Region"), out var regionNode))
                     region = ((YamlScalarNode)regionNode).Value;
 
-                var options = new AWSOptions 
-                { 
+                // Store region in configuration for services that need it
+                _configuration["AWS:Region"] = region;
+                logger.LogInformation($"Using AWS Region: {region}");
+
+                var options = new AWSOptions
+                {
                     Profile = profile,
                     Region = Amazon.RegionEndpoint.GetBySystemName(region)
                 };
 
                 var chain = new CredentialProfileStoreChain();
-                if (chain.TryGetAWSCredentials(profile, out var credentials))
+                AWSCredentials awsCredentials = null;
+                if (chain.TryGetAWSCredentials(profile, out awsCredentials))
                 {
-                    options.Credentials = credentials;
+                    options.Credentials = awsCredentials;
                     services.AddDefaultAWSOptions(options);  // Move this up BEFORE any AWS services
+                }
+
+                // Register AWS credentials as a singleton for services that need raw AWS API calls
+                // This ensures the same credentials used by all AWS SDK clients are available
+                if (awsCredentials != null)
+                {
+                    services.AddSingleton(awsCredentials);
                 }
 
                 // Now register AWS services
@@ -86,6 +101,92 @@ public partial class Startup
                 services.AddAWSService<IAmazonSecurityTokenService>();
                 services.AddAWSService<IAmazonCloudFrontKeyValueStore>();
                 services.AddAWSService<IAmazonCloudFront>();
+                services.AddAWSService<IAmazonCloudFormation>();
+
+                // Get stack name from systemconfig.yaml and retrieve AppSync Events API URLs
+                string systemKey = null;
+
+                if (mapping.Children.TryGetValue(new YamlScalarNode("SystemKey"), out var systemKeyNode))
+                    systemKey = ((YamlScalarNode)systemKeyNode).Value;
+
+                // Get the Events API type from environment variable (Tenant or Consumer)
+                var eventsApiType = Environment.GetEnvironmentVariable("APPSYNC_EVENTS_API_TYPE") ?? "Tenant";
+                logger.LogInformation($"Using AppSync Events API Type: {eventsApiType}");
+
+                if (!string.IsNullOrEmpty(systemKey))
+                {
+                    var stackName = $"{systemKey}---service";
+                    logger.LogInformation($"Retrieving AppSync Events API URLs from stack: {stackName}");
+
+                    try
+                    {
+                        var tempProvider = services.BuildServiceProvider();
+                        var cfnClient = tempProvider.GetRequiredService<IAmazonCloudFormation>();
+
+                        var describeStacksRequest = new DescribeStacksRequest
+                        {
+                            StackName = stackName
+                        };
+
+                        var describeStacksResponse = cfnClient.DescribeStacksAsync(describeStacksRequest).GetAwaiter().GetResult();
+                        var stack = describeStacksResponse.Stacks.FirstOrDefault();
+
+                        if (stack != null)
+                        {
+                            // Find all outputs ending with "EventsApiHttpDomain"
+                            var eventsApiOutputs = stack.Outputs.Where(o => o.OutputKey.EndsWith("EventsApiHttpDomain")).ToList();
+
+                            foreach (var output in eventsApiOutputs)
+                            {
+                                logger.LogInformation($"Found {output.OutputKey}: {output.OutputValue}");
+
+                                // Extract the API name (e.g., "Tenant" from "TenantEventsApiHttpDomain")
+                                var apiName = output.OutputKey.Replace("EventsApiHttpDomain", "");
+
+                                // Store in configuration
+                                _configuration[$"AWS:AppSync:{apiName}EventsApi:HttpDomain"] = output.OutputValue;
+
+                                // If this matches the requested API type, also set it as the default
+                                if (apiName.Equals(eventsApiType, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    logger.LogInformation($"Setting {apiName}EventsApi as the active Events API");
+                                }
+                            }
+
+                            if (!eventsApiOutputs.Any())
+                            {
+                                logger.LogWarning("No EventsApiHttpDomain outputs found in stack");
+                            }
+
+                            // Retrieve API Keys from stack outputs
+                            var apiKeyOutputs = stack.Outputs.Where(o => o.OutputKey.EndsWith("EventsApiApiKey")).ToList();
+
+                            foreach (var output in apiKeyOutputs)
+                            {
+                                logger.LogInformation($"Found {output.OutputKey}: {output.OutputValue}");
+
+                                // Extract the API name (e.g., "Tenant" from "TenantEventsApiApiKey")
+                                var apiName = output.OutputKey.Replace("EventsApiApiKey", "");
+
+                                // Store in configuration
+                                _configuration[$"AWS:AppSync:{apiName}EventsApi:ApiKey"] = output.OutputValue;
+                            }
+
+                            if (!apiKeyOutputs.Any())
+                            {
+                                logger.LogWarning("No EventsApiApiKey outputs found in stack");
+                            }
+                        }
+                        else
+                        {
+                            logger.LogWarning($"Stack {stackName} not found");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogWarning(ex, $"Failed to retrieve AppSync Events API URLs from stack {stackName}. Events will be logged instead of published.");
+                    }
+                }
 
                 // Then configure other services
                 ConfigureSvcs(services);

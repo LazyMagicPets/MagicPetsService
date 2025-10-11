@@ -23,9 +23,9 @@
               - Name: AWS_REGION
                 Value: !Ref AWS::Region
               - Name: AWS__Cognito__UserPoolId
-                Value: !Ref tenantauthUserPoolIdParameter
+                Value: !Ref __CognitoResource__UserPoolIdParameter
               - Name: AWS__AppSync__EventApiId
-                Value: !Ref EventsApi
+                Value: !Ref __AppSyncEventsApiName__
           ImageRepositoryType: ECR
         AutoDeploymentsEnabled: true
       InstanceConfiguration:

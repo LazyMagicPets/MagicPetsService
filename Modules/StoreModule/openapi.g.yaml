@@ -393,9 +393,6 @@ components:
         summary:
           type: string
           description: Brief summary of the chat conversation
-        chatMessagesId:
-          type: string
-          description: Reference to the ChatMessages record containing all messages
         messageCount:
           type: integer
           description: Total number of messages in the chat
@@ -458,18 +455,14 @@ components:
     ChatMessages:
       type: object
       required:
-      - chatMessagesId
       - chatId
       properties:
         id:
           type: string
-          description: DynamoDB primary key (same as chatMessagesId)
-        chatMessagesId:
-          type: string
-          description: Unique identifier for the messages collection
+          description: DynamoDB primary key (same as chatId)
         chatId:
           type: string
-          description: Reference to the parent chat
+          description: Reference to the parent chat (also used as primary key)
         messages:
           type: array
           description: Array of all messages in the chat

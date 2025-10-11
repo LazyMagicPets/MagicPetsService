@@ -26,7 +26,6 @@ namespace ChatSchema
         private string _userId;
         private ChatStatus _status;
         private string _summary;
-        private string _chatMessagesId;
         private int _messageCount;
         private System.DateTimeOffset _createdAt;
         private System.DateTimeOffset _lastActivityAt;
@@ -117,24 +116,6 @@ namespace ChatSchema
                 if (_summary != value)
                 {
                     _summary = value;
-                    RaisePropertyChanged();
-                }
-            }
-        }
-
-        /// <summary>
-        /// Reference to the ChatMessages record containing all messages
-        /// </summary>
-        [Newtonsoft.Json.JsonProperty("chatMessagesId", Required = Newtonsoft.Json.Required.DisallowNull, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
-        public string ChatMessagesId
-        {
-            get { return _chatMessagesId; }
-
-            set
-            {
-                if (_chatMessagesId != value)
-                {
-                    _chatMessagesId = value;
                     RaisePropertyChanged();
                 }
             }

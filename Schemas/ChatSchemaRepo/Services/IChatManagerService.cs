@@ -38,6 +38,11 @@ public interface IChatManagerService
     Task CloseChatAsync(ICallerInfo callerInfo, string chatId);
 
     /// <summary>
+    /// Persist chat messages to DynamoDB without closing the chat
+    /// </summary>
+    Task PersistChatMessagesAsync(ICallerInfo callerInfo, string chatId);
+
+    /// <summary>
     /// Get semaphore for keep-alive requests (for long-polling pattern)
     /// </summary>
     SemaphoreSlim? GetKeepAliveSemaphore(string chatId);
