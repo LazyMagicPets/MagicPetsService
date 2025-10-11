@@ -446,8 +446,12 @@ Resources:
                 Value: !Ref AWS::Region
               - Name: AWS__Cognito__UserPoolId
                 Value: !Ref tenantauthUserPoolIdParameter
-              - Name: AWS__AppSync__EventApiId
-                Value: !Ref TenantEventsApi
+              - Name: AWS__AppSync__EventsApi__HttpDomain
+                Value: !GetAtt TenantEventsApi.Dns.Http
+              - Name: AWS__AppSync__EventsApi__ApiKey
+                Value: !GetAtt TenantEventsApiApiKey.ApiKey
+              - Name: AWS__AppSync__EventsApi__Region
+                Value: !Ref AWS::Region
           ImageRepositoryType: ECR
         AutoDeploymentsEnabled: true
       InstanceConfiguration:
@@ -531,8 +535,12 @@ Resources:
                 Value: !Ref AWS::Region
               - Name: AWS__Cognito__UserPoolId
                 Value: !Ref consumerauthUserPoolIdParameter
-              - Name: AWS__AppSync__EventApiId
-                Value: !Ref ConsumerEventsApi
+              - Name: AWS__AppSync__EventsApi__HttpDomain
+                Value: !GetAtt ConsumerEventsApi.Dns.Http
+              - Name: AWS__AppSync__EventsApi__ApiKey
+                Value: !GetAtt ConsumerEventsApiApiKey.ApiKey
+              - Name: AWS__AppSync__EventsApi__Region
+                Value: !Ref AWS::Region
           ImageRepositoryType: ECR
         AutoDeploymentsEnabled: true
       InstanceConfiguration:

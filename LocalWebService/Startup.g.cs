@@ -150,6 +150,9 @@ public partial class Startup
                                 if (apiName.Equals(eventsApiType, StringComparison.OrdinalIgnoreCase))
                                 {
                                     logger.LogInformation($"Setting {apiName}EventsApi as the active Events API");
+
+                                    // Also set unified configuration for forward compatibility
+                                    _configuration["AWS:AppSync:EventsApi:HttpDomain"] = output.OutputValue;
                                 }
                             }
 
@@ -170,6 +173,12 @@ public partial class Startup
 
                                 // Store in configuration
                                 _configuration[$"AWS:AppSync:{apiName}EventsApi:ApiKey"] = output.OutputValue;
+
+                                // If this matches the active API type, also set unified configuration
+                                if (apiName.Equals(eventsApiType, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    _configuration["AWS:AppSync:EventsApi:ApiKey"] = output.OutputValue;
+                                }
                             }
 
                             if (!apiKeyOutputs.Any())

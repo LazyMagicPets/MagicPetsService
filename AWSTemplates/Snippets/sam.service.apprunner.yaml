@@ -24,8 +24,12 @@
                 Value: !Ref AWS::Region
               - Name: AWS__Cognito__UserPoolId
                 Value: !Ref __CognitoResource__UserPoolIdParameter
-              - Name: AWS__AppSync__EventApiId
-                Value: !Ref __AppSyncEventsApiName__
+              - Name: AWS__AppSync__EventsApi__HttpDomain
+                Value: !GetAtt __AppSyncEventsApiName__.Dns.Http
+              - Name: AWS__AppSync__EventsApi__ApiKey
+                Value: !GetAtt __AppSyncEventsApiName__ApiKey.ApiKey
+              - Name: AWS__AppSync__EventsApi__Region
+                Value: !Ref AWS::Region
           ImageRepositoryType: ECR
         AutoDeploymentsEnabled: true
       InstanceConfiguration:
