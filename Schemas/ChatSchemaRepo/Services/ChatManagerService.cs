@@ -22,6 +22,8 @@ public class ChatManagerService : IChatManagerService, IHostedService
     private readonly IChatEventPublisher _eventPublisher;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IMessagePersistence _messagePersistence;
+    private readonly IChatRepo _chatRepo;
+    private readonly IChatMessagesRepo _messagesRepo;
     private readonly ConcurrentDictionary<string, ConnectionChat> _chats;
     private readonly ConcurrentDictionary<string, Task> _backgroundTasks;
     private readonly SemaphoreSlim _keepAliveSemaphore;
@@ -34,13 +36,17 @@ public class ChatManagerService : IChatManagerService, IHostedService
         ILlmClient llmClient,
         IChatEventPublisher eventPublisher,
         IHttpClientFactory httpClientFactory,
-        IMessagePersistence messagePersistence)
+        IMessagePersistence messagePersistence,
+        IChatRepo chatRepo,
+        IChatMessagesRepo messagesRepo)
     {
         _logger = logger;
         _llmClient = llmClient;
         _eventPublisher = eventPublisher;
         _httpClientFactory = httpClientFactory;
         _messagePersistence = messagePersistence;
+        _chatRepo = chatRepo;
+        _messagesRepo = messagesRepo;
         _chats = new ConcurrentDictionary<string, ConnectionChat>();
         _backgroundTasks = new ConcurrentDictionary<string, Task>();
         _keepAliveSemaphore = new SemaphoreSlim(0, 1);
@@ -50,270 +56,468 @@ public class ChatManagerService : IChatManagerService, IHostedService
         _cleanupTimer = new Timer(CleanupExpiredChats, null, TimeSpan.FromMinutes(5), TimeSpan.FromMinutes(5));
     }
 
-    public async Task<Chat> InitializeChatAsync(ICallerInfo callerInfo, Chat chat)
+    #region Orchestrator Methods (API Entry Points)
+
+    /// <summary>
+    /// Creates a new chat and initializes it in memory for LLM processing.
+    /// </summary>
+    public async Task<Microsoft.AspNetCore.Mvc.ActionResult<Chat>> CreateChatAsync(ICallerInfo callerInfo, Chat chat)
     {
-        // Generate chatId if not provided (chatMessagesId is the same as chatId now)
-        var chatId = chat.ChatId ?? Guid.NewGuid().ToString();
+        _logger.LogInformation("DEBUG: CreateChatAsync called with input chatId: {InputChatId}", chat.ChatId);
+
+        // 1. Get user ID from callerInfo
         var userId = callerInfo?.LzUserId ?? "unknown";
 
-        // Create in-memory chat state
+        // 2. Set initial values
+        var newChatId = Guid.NewGuid().ToString();
+        _logger.LogInformation("DEBUG: Generated new chatId: {NewChatId}", newChatId);
+        chat.ChatId = newChatId;
+        chat.Id = newChatId;
+        chat.UserId = userId;  // Set from CallerInfo
+        chat.Status = ChatStatus.Active;
+        chat.CreatedAt = DateTimeOffset.UtcNow;
+        chat.LastActivityAt = DateTimeOffset.UtcNow;
+        chat.MessageCount = 0;
+
+        // 3. Persist Chat to DynamoDB first (CreateUtcTick set by repo)
+        _logger.LogInformation("DEBUG: About to persist Chat to DynamoDB");
+        var chatResult = await _chatRepo.CreateAsync(callerInfo, chat);
+        _logger.LogInformation("DEBUG: Chat persist - Value: {HasValue}, Result: {ResultType}",
+            chatResult.Value != null, chatResult.Result?.GetType().Name ?? "null");
+
+        // Extract chat from ActionResult<Chat> - check .Value first, then .Result
+        Chat? persistedChat = chatResult.Value ?? (chatResult.Result as Microsoft.AspNetCore.Mvc.ObjectResult)?.Value as Chat;
+        if (persistedChat == null)
+        {
+            _logger.LogError("DEBUG: Failed to persist Chat to DynamoDB - no value returned");
+            return chatResult;
+        }
+
+        chat = persistedChat;
+        _logger.LogInformation("DEBUG: Chat persisted successfully, chatId: {ChatId}", chat.ChatId);
+
+        // 4. Create ChatMessages entity
+        var chatMessages = new ChatMessages
+        {
+            Id = chat.ChatId,
+            ChatId = chat.ChatId,
+            Messages = new List<ChatMessage>()
+        };
+
+        _logger.LogInformation("DEBUG: About to persist ChatMessages to DynamoDB");
+        var messagesResult = await _messagesRepo.CreateAsync(callerInfo, chatMessages);
+        _logger.LogInformation("DEBUG: ChatMessages persist - Value: {HasValue}, Result: {ResultType}",
+            messagesResult.Value != null, messagesResult.Result?.GetType().Name ?? "null");
+
+        // Extract ChatMessages from ActionResult<ChatMessages> - check .Value first, then .Result
+        ChatMessages? persistedMessages = messagesResult.Value ?? (messagesResult.Result as Microsoft.AspNetCore.Mvc.ObjectResult)?.Value as ChatMessages;
+        if (persistedMessages == null)
+        {
+            _logger.LogError("DEBUG: Failed to persist ChatMessages, rolling back");
+            // Rollback chat creation
+            await _chatRepo.DeleteAsync(callerInfo, chat.ChatId);
+            return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult("Failed to create chat messages");
+        }
+        _logger.LogInformation("DEBUG: ChatMessages persisted successfully");
+
+        // 5. Initialize in-memory state
         var connectionChat = new ConnectionChat
         {
-            ChatId = chatId,
-            ChatMessagesId = chatId, // Same as chatId
-            UserId = userId,
+            ChatId = chat.ChatId,
+            ChatMessagesId = chat.ChatId,
+            UserId = chat.UserId,
             Status = ChatStatus.Active,
-            CreatedAt = DateTime.UtcNow,
-            LastActivityAt = DateTime.UtcNow,
+            CreatedAt = chat.CreatedAt.DateTime,
+            LastActivityAt = chat.LastActivityAt.DateTime,
             MessageQueue = Channel.CreateUnbounded<ChatMessage>(),
             CancellationToken = CancellationTokenSource.CreateLinkedTokenSource(_cancellationTokenSource.Token),
             Context = chat.Metadata != null && chat.Metadata is IDictionary<string, object> metadataDict
                 ? new Dictionary<string, object>(metadataDict)
                 : new Dictionary<string, object>(),
             History = new List<ChatMessage>(),
-            CallerInfo = callerInfo // Store for service host resolution
+            CallerInfo = callerInfo
         };
 
-        _chats.TryAdd(chatId, connectionChat);
+        if (!_chats.TryAdd(chat.ChatId, connectionChat))
+        {
+            _logger.LogWarning("Chat {ChatId} already exists in memory after creation", chat.ChatId);
+        }
 
-        // Start background processing task
+        // 6. Start background processing
+        var backgroundTask = ProcessChatMessagesAsync(connectionChat);
+        _backgroundTasks.TryAdd(chat.ChatId, backgroundTask);
+
+        // 7. Publish event
+        await _eventPublisher.PublishStatusChangedAsync(chat.ChatId, ChatStatus.Active);
+
+        _logger.LogInformation("DEBUG: About to log Created chat for {ChatId}", chat.ChatId);
+        _logger.LogInformation("Created chat {ChatId} for user {UserId}", chat.ChatId, chat.UserId);
+        _logger.LogInformation("DEBUG: Logged Created chat for {ChatId}", chat.ChatId);
+        return new Microsoft.AspNetCore.Mvc.OkObjectResult(chat);
+    }
+
+    /// <summary>
+    /// Gets a chat by ID. Returns in-memory instance if active, otherwise loads from DynamoDB.
+    /// </summary>
+    public async Task<Microsoft.AspNetCore.Mvc.ActionResult<Chat>> GetChatAsync(ICallerInfo callerInfo, string chatId)
+    {
+        // 1. Try in-memory first
+        if (_chats.TryGetValue(chatId, out var connectionChat))
+        {
+            _logger.LogDebug("Retrieved chat {ChatId} from memory", chatId);
+
+            var chat = new Chat
+            {
+                Id = chatId,
+                ChatId = chatId,
+                UserId = connectionChat.UserId,
+                Status = connectionChat.Status,
+                Summary = GenerateSummary(connectionChat.History),
+                MessageCount = connectionChat.History.Count,
+                CreatedAt = connectionChat.CreatedAt,
+                LastActivityAt = connectionChat.LastActivityAt,
+                Metadata = connectionChat.Context
+            };
+
+            return new Microsoft.AspNetCore.Mvc.OkObjectResult(chat);
+        }
+
+        // 2. Load from DynamoDB
+        return await _chatRepo.ReadAsync(callerInfo, chatId);
+    }
+
+    /// <summary>
+    /// Lists all chats for the current user.
+    /// </summary>
+    public async Task<Microsoft.AspNetCore.Mvc.ActionResult<ICollection<Chat>>> ListChatsAsync(ICallerInfo callerInfo)
+    {
+        // Get all chats from DynamoDB
+        var result = await _chatRepo.ListAsync(callerInfo);
+
+        if (result is not Microsoft.AspNetCore.Mvc.OkObjectResult ok)
+            return result;
+
+        var chats = ((ICollection<Chat>)ok.Value!).ToList();
+
+        // Update with in-memory state if available
+        for (int i = 0; i < chats.Count; i++)
+        {
+            var chat = chats[i];
+            if (_chats.TryGetValue(chat.ChatId, out var connectionChat))
+            {
+                // Use in-memory version (may have updates not yet persisted)
+                chats[i] = new Chat
+                {
+                    Id = connectionChat.ChatId,
+                    ChatId = connectionChat.ChatId,
+                    UserId = connectionChat.UserId,
+                    Status = connectionChat.Status,
+                    Summary = GenerateSummary(connectionChat.History),
+                    MessageCount = connectionChat.History.Count,
+                    CreatedAt = connectionChat.CreatedAt,
+                    LastActivityAt = connectionChat.LastActivityAt,
+                    Metadata = connectionChat.Context,
+                    CreateUtcTick = chat.CreateUtcTick,
+                    UpdateUtcTick = chat.UpdateUtcTick
+                };
+            }
+        }
+
+        return new Microsoft.AspNetCore.Mvc.OkObjectResult(chats);
+    }
+
+    /// <summary>
+    /// Updates a chat. Updates both in-memory and persistent storage.
+    /// </summary>
+    public async Task<Microsoft.AspNetCore.Mvc.ActionResult<Chat>> UpdateChatAsync(
+        ICallerInfo callerInfo,
+        Chat chat)
+    {
+        // 1. Validate
+        if (string.IsNullOrEmpty(chat.ChatId))
+            return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult("ChatId is required");
+
+        var chatId = chat.ChatId;
+
+        // 2. Update in-memory first if exists
+        if (_chats.TryGetValue(chatId, out var connectionChat))
+        {
+            // Update mutable properties
+            connectionChat.Status = chat.Status;
+            connectionChat.LastActivityAt = DateTime.UtcNow;
+
+            if (chat.Metadata != null && chat.Metadata is IDictionary<string, object> metadata)
+            {
+                foreach (var kvp in metadata)
+                {
+                    connectionChat.Context[kvp.Key] = kvp.Value;
+                }
+            }
+
+            // Update chat object from in-memory state
+            chat.Status = connectionChat.Status;
+            chat.Summary = GenerateSummary(connectionChat.History);
+            chat.MessageCount = connectionChat.History.Count;
+            chat.LastActivityAt = connectionChat.LastActivityAt;
+            chat.Metadata = connectionChat.Context;
+        }
+
+        // 3. Persist to DynamoDB (UpdateUtcTick managed by repo)
+        var result = await _chatRepo.UpdateAsync(callerInfo, chat);
+
+        // Extract updated chat from ActionResult<Chat> - check .Value first, then .Result
+        Chat? updatedChat = result.Value ?? (result.Result as Microsoft.AspNetCore.Mvc.ObjectResult)?.Value as Chat;
+        if (updatedChat != null)
+        {
+            // 4. Publish event
+            await _eventPublisher.PublishStatusChangedAsync(chatId, chat.Status);
+
+            _logger.LogInformation("Updated chat {ChatId}", chatId);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Deletes a chat. Stops processing and removes from both memory and DynamoDB.
+    /// </summary>
+    public async Task<Microsoft.AspNetCore.Mvc.StatusCodeResult> DeleteChatAsync(ICallerInfo callerInfo, string chatId)
+    {
+        // 1. Stop in-memory processing if exists
+        if (_chats.TryRemove(chatId, out var connectionChat))
+        {
+            connectionChat.CancellationToken.Cancel();
+            connectionChat.MessageQueue.Writer.Complete();
+
+            if (_backgroundTasks.TryRemove(chatId, out var task))
+            {
+                try
+                {
+                    await task;
+                }
+                catch (OperationCanceledException)
+                {
+                    // Expected when cancelled
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error completing background task for chat {ChatId}", chatId);
+                }
+            }
+
+            // Persist any remaining messages before deletion
+            await PersistChatHistoryAsync(connectionChat.CallerInfo, chatId, connectionChat.History);
+
+            connectionChat.CancellationToken.Dispose();
+
+            _logger.LogInformation("Stopped in-memory processing for chat {ChatId}", chatId);
+        }
+
+        // 2. Delete ChatMessages
+        await _messagesRepo.DeleteAsync(callerInfo, chatId);
+
+        // 3. Delete Chat
+        var result = await _chatRepo.DeleteAsync(callerInfo, chatId);
+
+        if (result.StatusCode == 200)
+        {
+            // 4. Publish event
+            await _eventPublisher.PublishStatusChangedAsync(chatId, ChatStatus.Closed);
+
+            _logger.LogInformation("Deleted chat {ChatId}", chatId);
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Sends a message to a chat. Ensures chat is in memory and enqueues for LLM processing.
+    /// </summary>
+    public async Task<Microsoft.AspNetCore.Mvc.ActionResult<ChatMessage>> SendMessageAsync(
+        ICallerInfo callerInfo,
+        string chatId,
+        ChatMessage message)
+    {
+        _logger.LogInformation("DEBUG: SendMessageAsync called for chat {ChatId}", chatId);
+
+        // 1. Ensure chat exists and is in memory
+        if (!_chats.TryGetValue(chatId, out var connectionChat))
+        {
+            _logger.LogWarning("DEBUG: Chat {ChatId} not found in memory, attempting resume", chatId);
+            // Try to resume from DynamoDB
+            var resumeResult = await ResumeChatAsync(callerInfo, chatId);
+            if (resumeResult is not Microsoft.AspNetCore.Mvc.OkObjectResult)
+            {
+                _logger.LogError("DEBUG: Failed to resume chat {ChatId}", chatId);
+                return new Microsoft.AspNetCore.Mvc.NotFoundObjectResult($"Chat {chatId} not found");
+            }
+
+            connectionChat = _chats[chatId];
+        }
+
+        _logger.LogInformation("DEBUG: Chat {ChatId} found in memory, status: {Status}", chatId, connectionChat.Status);
+
+        // 2. Validate chat is active
+        if (connectionChat.Status != ChatStatus.Active)
+        {
+            _logger.LogWarning("DEBUG: Chat {ChatId} is not active (status: {Status})", chatId, connectionChat.Status);
+            return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult($"Chat {chatId} is not active");
+        }
+
+        // 3. Verify ownership
+        var userId = callerInfo?.LzUserId ?? "unknown";
+        _logger.LogInformation("DEBUG: Checking ownership - callerInfo userId: {UserId}, chat userId: {ChatUserId}", userId, connectionChat.UserId);
+        if (connectionChat.UserId != userId)
+        {
+            _logger.LogWarning("DEBUG: User {UserId} does not own chat {ChatId} (owner: {OwnerId})", userId, chatId, connectionChat.UserId);
+            return new Microsoft.AspNetCore.Mvc.UnauthorizedObjectResult($"User {userId} does not own chat {chatId}");
+        }
+
+        // 4. Enrich message
+        message.MessageId = Guid.NewGuid().ToString();
+        message.ChatId = chatId;
+        message.Timestamp = DateTime.UtcNow;
+        message.Role = ChatMessageRole.User;
+
+        // 5. Add to history (will be persisted by background processing)
+        connectionChat.History.Add(message);
+
+        // 6. Update chat metadata
+        connectionChat.LastActivityAt = DateTime.UtcNow;
+
+        // 7. Publish user message event
+        await _eventPublisher.PublishUserMessageAsync(chatId, message);
+
+        // 8. Enqueue for LLM processing
+        await connectionChat.MessageQueue.Writer.WriteAsync(message, connectionChat.CancellationToken.Token);
+
+        _logger.LogInformation("Sent message {MessageId} to chat {ChatId}", message.MessageId, chatId);
+        return new Microsoft.AspNetCore.Mvc.OkObjectResult(message);
+    }
+
+    /// <summary>
+    /// Gets messages for a chat. Returns in-memory messages if active, otherwise loads from DynamoDB.
+    /// </summary>
+    public async Task<Microsoft.AspNetCore.Mvc.ActionResult<ICollection<ChatMessage>>> GetMessagesAsync(
+        ICallerInfo callerInfo,
+        string chatId,
+        int? page = null,
+        int? limit = null)
+    {
+        // 1. Try in-memory first
+        if (_chats.TryGetValue(chatId, out var connectionChat))
+        {
+            var messages = connectionChat.History.AsEnumerable();
+
+            // Apply pagination if requested
+            if (page.HasValue && limit.HasValue)
+            {
+                var skip = (page.Value - 1) * limit.Value;
+                messages = messages
+                    .Skip(skip)
+                    .Take(limit.Value);
+            }
+
+            var messageList = messages.ToList();
+
+            _logger.LogDebug("Retrieved {Count} messages from memory for chat {ChatId}",
+                messageList.Count, chatId);
+
+            return new Microsoft.AspNetCore.Mvc.OkObjectResult(messageList);
+        }
+
+        // 2. Load from DynamoDB via repo
+        var result = await _messagesRepo.ReadAsync(callerInfo, chatId);
+
+        // Extract ChatMessages from ActionResult<ChatMessages> - check .Value first, then .Result
+        ChatMessages? chatMessages = result.Value ?? (result.Result as Microsoft.AspNetCore.Mvc.ObjectResult)?.Value as ChatMessages;
+        if (chatMessages == null)
+            return new Microsoft.AspNetCore.Mvc.NotFoundObjectResult($"Chat {chatId} not found");
+        var allMessages = chatMessages.Messages?.AsEnumerable() ?? Enumerable.Empty<ChatMessage>();
+
+        // Apply pagination if requested
+        if (page.HasValue && limit.HasValue)
+        {
+            var skip = (page.Value - 1) * limit.Value;
+            allMessages = allMessages
+                .Skip(skip)
+                .Take(limit.Value);
+        }
+
+        var finalMessages = allMessages.ToList();
+
+        _logger.LogDebug("Retrieved {Count} messages from DynamoDB for chat {ChatId}", finalMessages.Count, chatId);
+
+        return new Microsoft.AspNetCore.Mvc.OkObjectResult(finalMessages);
+    }
+
+    /// <summary>
+    /// Resumes a chat from DynamoDB into memory.
+    /// </summary>
+    private async Task<Microsoft.AspNetCore.Mvc.ActionResult> ResumeChatAsync(ICallerInfo callerInfo, string chatId)
+    {
+        // 1. Load Chat from DynamoDB
+        var chatResult = await _chatRepo.ReadAsync(callerInfo, chatId);
+
+        // Extract Chat from ActionResult<Chat> - check .Value first, then .Result
+        Chat? chat = chatResult.Value ?? (chatResult.Result as Microsoft.AspNetCore.Mvc.ObjectResult)?.Value as Chat;
+        if (chat == null)
+            return new Microsoft.AspNetCore.Mvc.NotFoundObjectResult($"Chat {chatId} not found");
+
+        // 2. Load ChatMessages from DynamoDB
+        var messagesResult = await _messagesRepo.ReadAsync(callerInfo, chatId);
+
+        // Extract ChatMessages from ActionResult<ChatMessages> - check .Value first, then .Result
+        ChatMessages? chatMessages = messagesResult.Value ?? (messagesResult.Result as Microsoft.AspNetCore.Mvc.ObjectResult)?.Value as ChatMessages;
+        if (chatMessages == null)
+        {
+            // Create empty ChatMessages if not found
+            chatMessages = new ChatMessages
+            {
+                Id = chatId,
+                ChatId = chatId,
+                Messages = new List<ChatMessage>()
+            };
+        }
+
+        // 3. Initialize in-memory state
+        var connectionChat = new ConnectionChat
+        {
+            ChatId = chat.ChatId,
+            ChatMessagesId = chat.ChatId,
+            UserId = chat.UserId,
+            Status = chat.Status,
+            CreatedAt = chat.CreatedAt.DateTime,
+            LastActivityAt = chat.LastActivityAt.DateTime,
+            MessageQueue = Channel.CreateUnbounded<ChatMessage>(),
+            CancellationToken = CancellationTokenSource.CreateLinkedTokenSource(_cancellationTokenSource.Token),
+            Context = chat.Metadata != null && chat.Metadata is IDictionary<string, object> metadataDict
+                ? new Dictionary<string, object>(metadataDict)
+                : new Dictionary<string, object>(),
+            History = chatMessages.Messages?.ToList() ?? new List<ChatMessage>(),
+            CallerInfo = callerInfo
+        };
+
+        if (!_chats.TryAdd(chatId, connectionChat))
+        {
+            _logger.LogWarning("Chat {ChatId} already in memory during resume", chatId);
+            return new Microsoft.AspNetCore.Mvc.OkObjectResult(chat);
+        }
+
+        // 4. Start background processing
         var backgroundTask = ProcessChatMessagesAsync(connectionChat);
         _backgroundTasks.TryAdd(chatId, backgroundTask);
 
-        // Keep-alive feature disabled for now
-        // if (_chats.Count == 1 && _keepAliveTask == null)
-        // {
-        //     _keepAliveTask = InitiateKeepAliveAsync();
-        // }
+        // 5. Publish event
+        await _eventPublisher.PublishStatusChangedAsync(chatId, chat.Status);
 
-        _logger.LogInformation("Initialized chat {ChatId} for user {UserId}", chatId, userId);
-
-        var now = DateTime.UtcNow;
-        var nowTicks = now.Ticks;
-
-        await Task.Delay(0); // Keep async
-
-        // Return enriched Chat object
-        return new Chat
-        {
-            Id = chatId,
-            ChatId = chatId,
-            UserId = userId,
-            Status = ChatStatus.Active,
-            Summary = null,
-            MessageCount = 0,
-            CreatedAt = connectionChat.CreatedAt,
-            LastActivityAt = connectionChat.LastActivityAt,
-            Metadata = connectionChat.Context,
-            CreateUtcTick = nowTicks,
-            UpdateUtcTick = nowTicks
-        };
+        _logger.LogInformation("Resumed chat {ChatId} from DynamoDB", chatId);
+        return new Microsoft.AspNetCore.Mvc.OkObjectResult(chat);
     }
 
-    public async Task<ChatMessage> ProcessUserMessageAsync(ICallerInfo callerInfo, string chatId, ChatMessage message)
-    {
-        if (!_chats.TryGetValue(chatId, out var chat))
-        {
-            throw new InvalidOperationException($"Chat {chatId} not found");
-        }
+    #endregion
 
-        // Verify ownership
-        var userId = callerInfo?.LzUserId ?? "unknown";
-        if (chat.UserId != userId)
-        {
-            throw new UnauthorizedAccessException($"User {userId} does not own chat {chatId}");
-        }
-
-        // Enrich message with IDs and timestamp
-        var enrichedMessage = new ChatMessage
-        {
-            MessageId = message.MessageId ?? Guid.NewGuid().ToString(),
-            ChatId = chatId,
-            Role = ChatMessageRole.User,
-            Content = message.Content,
-            Timestamp = DateTime.UtcNow,
-            Metadata = message.Metadata
-        };
-
-        // Add to history
-        chat.History.Add(enrichedMessage);
-        chat.LastActivityAt = DateTime.UtcNow;
-        chat.Status = ChatStatus.Processing;
-
-        // Queue for background processing
-        await chat.MessageQueue.Writer.WriteAsync(enrichedMessage, chat.CancellationToken.Token);
-
-        _logger.LogInformation("Queued message for chat {ChatId}", chatId);
-
-        return enrichedMessage;
-    }
-
-    public async Task<Chat> GetChatByIdAsync(ICallerInfo callerInfo, string chatId)
-    {
-        if (!_chats.TryGetValue(chatId, out var chat))
-        {
-            throw new InvalidOperationException($"Chat {chatId} not found");
-        }
-
-        // Verify ownership
-        var userId = callerInfo?.LzUserId ?? "unknown";
-        if (chat.UserId != userId)
-        {
-            throw new UnauthorizedAccessException($"User {userId} does not own chat {chatId}");
-        }
-
-        await Task.Delay(0); // Keep async
-
-        return new Chat
-        {
-            Id = chatId,
-            ChatId = chatId,
-            UserId = userId,
-            Status = chat.Status,
-            Summary = GenerateSummary(chat.History),
-            MessageCount = chat.History.Count,
-            CreatedAt = chat.CreatedAt,
-            LastActivityAt = chat.LastActivityAt,
-            Metadata = chat.Context,
-            CreateUtcTick = chat.CreatedAt.Ticks,
-            UpdateUtcTick = chat.LastActivityAt.Ticks
-        };
-    }
-
-    public async Task<List<ChatMessage>> GetChatHistoryAsync(ICallerInfo callerInfo, string chatId, int? page, int? limit)
-    {
-        var userId = callerInfo?.LzUserId ?? "unknown";
-
-        // Check if chat is in memory (active)
-        if (_chats.TryGetValue(chatId, out var chat))
-        {
-            // Verify ownership
-            if (chat.UserId != userId)
-            {
-                throw new UnauthorizedAccessException($"User {userId} does not own chat {chatId}");
-            }
-
-            var pageNumber = page ?? 1;
-            var pageSize = Math.Min(limit ?? 50, 100);
-            var skip = (pageNumber - 1) * pageSize;
-
-            return chat.History
-                .OrderBy(m => m.Timestamp)
-                .Skip(skip)
-                .Take(pageSize)
-                .ToList();
-        }
-
-        // Chat not in memory - load from DynamoDB
-        var messages = await _messagePersistence.GetMessagesAsync(callerInfo, chatId);
-
-        if (messages == null || messages.Count == 0)
-        {
-            throw new InvalidOperationException($"Chat {chatId} not found");
-        }
-
-        // TODO: Add ownership verification by loading Chat record from DynamoDB
-        // For now, we assume if messages exist, they belong to the caller
-
-        var pageNum = page ?? 1;
-        var pageSz = Math.Min(limit ?? 50, 100);
-        var skipCount = (pageNum - 1) * pageSz;
-
-        return messages
-            .OrderBy(m => m.Timestamp)
-            .Skip(skipCount)
-            .Take(pageSz)
-            .ToList();
-    }
-
-    public async Task<Chat> UpdateChatAsync(ICallerInfo callerInfo, Chat chat)
-    {
-        if (!_chats.TryGetValue(chat.ChatId!, out var connectionChat))
-        {
-            throw new InvalidOperationException($"Chat {chat.ChatId} not found");
-        }
-
-        // Verify ownership
-        var userId = callerInfo?.LzUserId ?? "unknown";
-        if (connectionChat.UserId != userId)
-        {
-            throw new UnauthorizedAccessException($"User {userId} does not own chat {chat.ChatId}");
-        }
-
-        // Update in-memory state
-        connectionChat.Status = chat.Status;
-
-        if (chat.Metadata != null && chat.Metadata is IDictionary<string, object> metadata)
-        {
-            foreach (var kvp in metadata)
-            {
-                connectionChat.Context[kvp.Key] = kvp.Value;
-            }
-        }
-
-        connectionChat.LastActivityAt = DateTime.UtcNow;
-
-        await Task.Delay(0); // Keep async
-
-        return new Chat
-        {
-            Id = chat.ChatId,
-            ChatId = chat.ChatId,
-            UserId = userId,
-            Status = connectionChat.Status,
-            Summary = GenerateSummary(connectionChat.History),
-            MessageCount = connectionChat.History.Count,
-            CreatedAt = connectionChat.CreatedAt,
-            LastActivityAt = connectionChat.LastActivityAt,
-            Metadata = connectionChat.Context,
-            CreateUtcTick = connectionChat.CreatedAt.Ticks,
-            UpdateUtcTick = DateTime.UtcNow.Ticks
-        };
-    }
-
-    public async Task CloseChatAsync(ICallerInfo callerInfo, string chatId)
-    {
-        if (!_chats.TryGetValue(chatId, out var chat))
-        {
-            throw new InvalidOperationException($"Chat {chatId} not found");
-        }
-
-        // Verify ownership
-        var userId = callerInfo?.LzUserId ?? "unknown";
-        if (chat.UserId != userId)
-        {
-            throw new UnauthorizedAccessException($"User {userId} does not own chat {chatId}");
-        }
-
-        await CloseChatInternalAsync(chatId);
-    }
-
-    public async Task PersistChatMessagesAsync(ICallerInfo callerInfo, string chatId)
-    {
-        if (!_chats.TryGetValue(chatId, out var chat))
-        {
-            throw new InvalidOperationException($"Chat {chatId} not found");
-        }
-
-        // Verify ownership
-        var userId = callerInfo?.LzUserId ?? "unknown";
-        if (chat.UserId != userId)
-        {
-            throw new UnauthorizedAccessException($"User {userId} does not own chat {chatId}");
-        }
-
-        // Persist messages to DynamoDB without closing the chat
-        await PersistChatHistoryAsync(chat.CallerInfo, chatId, chat.History);
-        _logger.LogInformation("Persisted messages for chat {ChatId} (chat remains active)", chatId);
-    }
-
-    public SemaphoreSlim? GetKeepAliveSemaphore(string chatId)
-    {
-        // Return the shared semaphore if there are active chats
-        return _chats.Count > 0 ? _keepAliveSemaphore : null;
-    }
-
-    // Private helper methods
+    #region Private Helper Methods
 
     /// <summary>
     /// Initiates a single long-polling HTTP request for the entire service.
@@ -385,9 +589,6 @@ public class ChatManagerService : IChatManagerService, IHostedService
                 {
                     // Update session status
                     chat.Status = ChatStatus.Processing;
-
-                    // Publish user message event
-                    await _eventPublisher.PublishUserMessageAsync(chat.ChatId, message);
 
                     // Process with LLM using streaming
                     var assistantMessageId = Guid.NewGuid().ToString();
@@ -578,6 +779,8 @@ public class ChatManagerService : IChatManagerService, IHostedService
             // Don't throw - we log the error but don't prevent chat closure
         }
     }
+
+    #endregion
 }
 
 /// <summary>

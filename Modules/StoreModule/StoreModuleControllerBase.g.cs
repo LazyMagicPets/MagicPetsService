@@ -22,7 +22,7 @@ namespace StoreModule
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.0.3.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))")]
 
-    public abstract class StoreModuleControllerBase : Controller, IStoreModuleController
+    public abstract partial class StoreModuleControllerBase : Controller, IStoreModuleController
     {
 
         /// <summary>

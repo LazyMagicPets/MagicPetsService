@@ -27,6 +27,15 @@ namespace ChatModule
         System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Chat>> ChatModuleListChatsAsync();
 
         /// <summary>
+        /// Update chat
+        /// </summary>
+        /// Updates an existing chat
+        /// </remarks>
+        /// <returns>Chat updated successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        System.Threading.Tasks.Task<Chat> ChatModuleUpdateChatAsync(Chat body);
+
+        /// <summary>
         /// Health check endpoint
         /// </summary>
         /// Health check endpoint for service monitoring
@@ -44,15 +53,6 @@ namespace ChatModule
         /// <returns>Chat retrieved successfully</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
         System.Threading.Tasks.Task<Chat> ChatModuleGetChatByIdAsync(string chatId);
-
-        /// <summary>
-        /// Update chat
-        /// </summary>
-        /// Updates an existing chat
-        /// </remarks>
-        /// <returns>Chat updated successfully</returns>
-        /// <exception cref="ApiException">A server side error occurred.</exception>
-        System.Threading.Tasks.Task<Chat> ChatModuleUpdateChatAsync(Chat body);
 
         /// <summary>
         /// Delete chat

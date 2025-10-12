@@ -83,6 +83,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{629B071D-24D3-40B3-90CC-8C15F70C4B0E}"
 	ProjectSection(SolutionItems) = preProject
 		.gitignore = .gitignore
+		ANALYSIS_ChatManagerService_Refactoring.md = ANALYSIS_ChatManagerService_Refactoring.md
 		AppRunner.md = AppRunner.md
 		APPSYNC_CONFIGURATION_MIGRATION.md = APPSYNC_CONFIGURATION_MIGRATION.md
 		APPSYNC_EVENTS_SETUP.md = APPSYNC_EVENTS_SETUP.md
@@ -96,6 +97,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		LocalApis.json = LocalApis.json
 		OpenApiHints.md = OpenApiHints.md
 		PLAN_EventPublisher_Abstraction.md = PLAN_EventPublisher_Abstraction.md
+		PROPOSAL_ChatManagerService_Orchestrator.md = PROPOSAL_ChatManagerService_Orchestrator.md
 		README.md = README.md
 		RepoHints.md = RepoHints.md
 		ServiceVersion.props = ServiceVersion.props

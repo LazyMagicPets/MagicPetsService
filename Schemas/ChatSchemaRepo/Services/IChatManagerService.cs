@@ -1,4 +1,5 @@
 using LazyMagic;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ChatSchemaRepo;
 
@@ -7,43 +8,42 @@ namespace ChatSchemaRepo;
 /// </summary>
 public interface IChatManagerService
 {
-    /// <summary>
-    /// Initialize a new chat (sets up in-memory state, background tasks, generates IDs)
-    /// </summary>
-    Task<Chat> InitializeChatAsync(ICallerInfo callerInfo, Chat chat);
+    #region Orchestrator Methods (API Entry Points)
 
     /// <summary>
-    /// Process a user message (queues for LLM processing, returns immediately)
+    /// Creates a new chat and initializes it in memory for LLM processing
     /// </summary>
-    Task<ChatMessage> ProcessUserMessageAsync(ICallerInfo callerInfo, string chatId, ChatMessage message);
+    Task<ActionResult<Chat>> CreateChatAsync(ICallerInfo callerInfo, Chat chat);
 
     /// <summary>
-    /// Get chat by ID from in-memory store
+    /// Gets a chat by ID (from memory or DynamoDB)
     /// </summary>
-    Task<Chat> GetChatByIdAsync(ICallerInfo callerInfo, string chatId);
+    Task<ActionResult<Chat>> GetChatAsync(ICallerInfo callerInfo, string chatId);
 
     /// <summary>
-    /// Get chat message history (from in-memory store)
+    /// Lists all chats for the current user
     /// </summary>
-    Task<List<ChatMessage>> GetChatHistoryAsync(ICallerInfo callerInfo, string chatId, int? page, int? limit);
+    Task<ActionResult<ICollection<Chat>>> ListChatsAsync(ICallerInfo callerInfo);
 
     /// <summary>
-    /// Update chat metadata and status
+    /// Updates a chat (both memory and DynamoDB)
     /// </summary>
-    Task<Chat> UpdateChatAsync(ICallerInfo callerInfo, Chat chat);
+    Task<ActionResult<Chat>> UpdateChatAsync(ICallerInfo callerInfo, Chat chat);
 
     /// <summary>
-    /// Close chat and cleanup resources
+    /// Deletes a chat (from memory and DynamoDB)
     /// </summary>
-    Task CloseChatAsync(ICallerInfo callerInfo, string chatId);
+    Task<StatusCodeResult> DeleteChatAsync(ICallerInfo callerInfo, string chatId);
 
     /// <summary>
-    /// Persist chat messages to DynamoDB without closing the chat
+    /// Sends a message to a chat (ensures in memory, enqueues for LLM)
     /// </summary>
-    Task PersistChatMessagesAsync(ICallerInfo callerInfo, string chatId);
+    Task<ActionResult<ChatMessage>> SendMessageAsync(ICallerInfo callerInfo, string chatId, ChatMessage message);
 
     /// <summary>
-    /// Get semaphore for keep-alive requests (for long-polling pattern)
+    /// Gets messages for a chat (from memory or DynamoDB)
     /// </summary>
-    SemaphoreSlim? GetKeepAliveSemaphore(string chatId);
+    Task<ActionResult<ICollection<ChatMessage>>> GetMessagesAsync(ICallerInfo callerInfo, string chatId, int? page = null, int? limit = null);
+
+    #endregion
 }

@@ -22,7 +22,7 @@ namespace ChatModule
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.0.3.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))")]
 
-    public abstract class ChatModuleControllerBase : Controller, IChatModuleController
+    public abstract partial class ChatModuleControllerBase : Controller, IChatModuleController
     {
 
         /// <summary>
@@ -36,7 +36,7 @@ namespace ChatModule
         public virtual async Task<ActionResult<Chat>> ChatModuleAddChatAsync([FromBody] Chat body)
         {
             var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatRepo.CreateAsync(callerInfo, body);
+            return await ChatManagerService.CreateChatAsync(callerInfo, body);
         }
         /// <summary>
         /// List chats
@@ -49,7 +49,20 @@ namespace ChatModule
         public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Chat>>> ChatModuleListChatsAsync()
         {
             var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatRepo.ListAsync(callerInfo);
+            return await ChatManagerService.ListChatsAsync(callerInfo);
+        }
+        /// <summary>
+        /// Update chat
+        /// </summary>
+        /// <remarks>
+        /// Updates an existing chat
+        /// </remarks>
+        /// <returns>Chat updated successfully</returns>
+        [HttpPut, Route("ChatModule/chat")]
+        public virtual async Task<ActionResult<Chat>> ChatModuleUpdateChatAsync([FromBody] Chat body)
+        {
+            var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            return await ChatManagerService.UpdateChatAsync(callerInfo, body);
         }
         /// <summary>
         /// Health check endpoint
@@ -76,20 +89,7 @@ namespace ChatModule
         public virtual async Task<ActionResult<Chat>> ChatModuleGetChatByIdAsync(string chatId)
         {
             var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatRepo.ReadAsync(callerInfo, chatId);
-        }
-        /// <summary>
-        /// Update chat
-        /// </summary>
-        /// <remarks>
-        /// Updates an existing chat
-        /// </remarks>
-        /// <returns>Chat updated successfully</returns>
-        [HttpPut, Route("ChatModule/chat/{chatId}")]
-        public virtual async Task<ActionResult<Chat>> ChatModuleUpdateChatAsync([FromBody] Chat body)
-        {
-            var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatRepo.UpdateAsync(callerInfo, body);
+            return await ChatManagerService.GetChatAsync(callerInfo, chatId);
         }
         /// <summary>
         /// Delete chat
@@ -103,7 +103,7 @@ namespace ChatModule
         public virtual async Task<IActionResult> ChatModuleDeleteChatAsync(string chatId)
         {
             var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatRepo.DeleteAsync(callerInfo, chatId);
+            return await ChatManagerService.DeleteChatAsync(callerInfo, chatId);
         }
         /// <summary>
         /// Send message to chat
@@ -117,7 +117,7 @@ namespace ChatModule
         public virtual async Task<ActionResult<ChatMessage>> ChatModuleAddChatMessageAsync(string chatId, [FromBody] ChatMessage body)
         {
             var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatRepo.CreateMessageAsync(callerInfo, chatId, body);
+            return await ChatManagerService.SendMessageAsync(callerInfo, chatId, body);
         }
         /// <summary>
         /// Get chat messages
@@ -133,7 +133,7 @@ namespace ChatModule
         public virtual async Task<ActionResult<System.Collections.Generic.ICollection<ChatMessage>>> ChatModuleGetChatMessagesAsync(string chatId, [FromQuery] int? page = null, [FromQuery] int? limit = null)
         {
             var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
-            return await ChatRepo.ReadMessagesAsync(callerInfo, chatId, page, limit);
+            return await ChatManagerService.GetMessagesAsync(callerInfo, chatId, page, limit);
         }
 		public IChatModuleAuthorization ChatModuleAuthorization { get; set; }
 		public IChatRepo ChatRepo { get; set; }

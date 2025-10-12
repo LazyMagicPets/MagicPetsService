@@ -32,6 +32,18 @@ namespace ChatModule
         Task<ActionResult<System.Collections.Generic.ICollection<Chat>>> ChatModuleListChatsAsync();
 
         /// <summary>
+        /// Update chat
+        /// </summary>
+
+        /// <remarks>
+        /// Updates an existing chat
+        /// </remarks>
+
+        /// <returns>Chat updated successfully</returns>
+
+        Task<ActionResult<Chat>> ChatModuleUpdateChatAsync(Chat body);
+
+        /// <summary>
         /// Health check endpoint
         /// </summary>
 
@@ -56,18 +68,6 @@ namespace ChatModule
         /// <returns>Chat retrieved successfully</returns>
 
         Task<ActionResult<Chat>> ChatModuleGetChatByIdAsync(string chatId);
-
-        /// <summary>
-        /// Update chat
-        /// </summary>
-
-        /// <remarks>
-        /// Updates an existing chat
-        /// </remarks>
-
-        /// <returns>Chat updated successfully</returns>
-
-        Task<ActionResult<Chat>> ChatModuleUpdateChatAsync(Chat body);
 
         /// <summary>
         /// Delete chat

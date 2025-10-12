@@ -7,7 +7,7 @@ paths:
       summary: Create new chat
       description: Creates a new chat session
       operationId: addChat
-      x-lz-gencall: ChatRepo.CreateAsync(callerInfo, body)
+      x-lz-gencall: ChatManagerService.CreateChatAsync(callerInfo, body)
       requestBody:
         required: true
         content:
@@ -38,7 +38,7 @@ paths:
       summary: List chats
       description: Lists all chats for the authenticated user
       operationId: listChats
-      x-lz-gencall: ChatRepo.ListAsync(callerInfo)
+      x-lz-gencall: ChatManagerService.ListChatsAsync(callerInfo)
       responses:
         '200':
           description: Chats retrieved successfully
@@ -55,44 +55,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/ChatError'
 
-  '/chat/{chatId}':
-    get:
-      summary: Get chat by ID
-      description: Retrieves a chat by its ID
-      operationId: getChatById
-      x-lz-gencall: ChatRepo.ReadAsync(callerInfo, chatId)
-      parameters:
-        - name: chatId
-          in: path
-          required: true
-          schema:
-            type: string
-          description: ID of the chat
-      responses:
-        '200':
-          description: Chat retrieved successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Chat'
-        '401':
-          description: Unauthorized
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChatError'
-        '404':
-          description: Chat not found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ChatError'
-
     put:
       summary: Update chat
       description: Updates an existing chat
       operationId: updateChat
-      x-lz-gencall: ChatRepo.UpdateAsync(callerInfo, body)
+      x-lz-gencall: ChatManagerService.UpdateChatAsync(callerInfo, body)
       requestBody:
         required: true
         content:
@@ -125,11 +92,45 @@ paths:
               schema:
                 $ref: '#/components/schemas/ChatError'
 
+  '/chat/{chatId}':
+    get:
+      summary: Get chat by ID
+      description: Retrieves a chat by its ID
+      operationId: getChatById
+      x-lz-gencall: ChatManagerService.GetChatAsync(callerInfo, chatId)
+      parameters:
+        - name: chatId
+          in: path
+          required: true
+          schema:
+            type: string
+          description: ID of the chat
+      responses:
+        '200':
+          description: Chat retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chat'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        '404':
+          description: Chat not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+
+
     delete:
       summary: Delete chat
       description: Deletes a chat and cleans up resources
       operationId: deleteChat
-      x-lz-gencall: ChatRepo.DeleteAsync(callerInfo, chatId)
+      x-lz-gencall: ChatManagerService.DeleteChatAsync(callerInfo, chatId)
       parameters:
         - name: chatId
           in: path
@@ -159,7 +160,7 @@ paths:
       summary: Send message to chat
       description: Sends a new message to an existing chat
       operationId: addChatMessage
-      x-lz-gencall: ChatRepo.CreateMessageAsync(callerInfo, chatId, body)
+      x-lz-gencall: ChatManagerService.SendMessageAsync(callerInfo, chatId, body)
       parameters:
         - name: chatId
           in: path
@@ -203,7 +204,7 @@ paths:
       summary: Get chat messages
       description: Retrieves message history for a chat
       operationId: getChatMessages
-      x-lz-gencall: ChatRepo.ReadMessagesAsync(callerInfo, chatId, page, limit)
+      x-lz-gencall: ChatManagerService.GetMessagesAsync(callerInfo, chatId, page, limit)
       parameters:
         - name: chatId
           in: path

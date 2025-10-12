@@ -22,7 +22,7 @@ namespace PublicModule
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.0.3.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))")]
 
-    public abstract class PublicModuleControllerBase : Controller, IPublicModuleController
+    public abstract partial class PublicModuleControllerBase : Controller, IPublicModuleController
     {
 
         /// <returns>successful operation</returns>

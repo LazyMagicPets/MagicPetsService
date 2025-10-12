@@ -22,7 +22,7 @@ namespace AdminModule
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.0.3.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))")]
 
-    public abstract class AdminModuleControllerBase : Controller, IAdminModuleController
+    public abstract partial class AdminModuleControllerBase : Controller, IAdminModuleController
     {
 
         /// <summary>
