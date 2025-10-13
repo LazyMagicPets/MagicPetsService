@@ -7,10 +7,7 @@
 		<Nullable>enable</Nullable>
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 	</PropertyGroup>
-	<Import Project="User.props" Condition="Exists('User.props')" />
-	<ItemGroup>
-	  <Content Include="Nuget.Config.Docker" />
-	</ItemGroup>
+	<Import Project="User.props"  Condition="Exists('User.props')" />
 	<ItemGroup>
 		<PackageReference Include="Amazon.AspNetCore.Identity.Cognito" />
 		<PackageReference Include="AWSSDK.AppSync" />
@@ -21,6 +18,6 @@
 		<PackageReference Include="Newtonsoft.Json" />
 		<PackageReference Include="System.Threading.Channels" />
 	</ItemGroup>
-	<Import Project="Projects.g.props" Condition="Exists('Projects.g.props')" />
-	<Import Project="Packages.g.props" Condition="Exists('Packages.g.props')" />
+	<Import Project="Projects.g.props"  Condition="Exists('Projects.g.props')"  />
+	<Import Project="Packages.g.props"  Condition="Exists('Packages.g.props')"  />
 </Project>

@@ -10,7 +10,7 @@ COPY ["Directory.Packages.props", "."]
 COPY ["Directory.Build.props", "."]
 COPY ["CommonPackageHandling.targets", "."]
 COPY ["ServiceVersion.props", "."]
-COPY ["Containers/AspNetContainer/Nuget.Config.Docker", "."]
+COPY ["nuget.config", "."]
 
 # Copy NuGet packages prepared by Deploy-DockerAws
 COPY ["DockerPackages/", "DockerPackages/"]
@@ -18,7 +18,7 @@ COPY ["DockerPackages/", "DockerPackages/"]
 # Copy project file and restore
 COPY ["Containers/AspNetContainer/AspNetContainer.csproj", "AspNetContainer/"]
 WORKDIR /src/AspNetContainer
-RUN dotnet restore "AspNetContainer.csproj" --configfile /src/Nuget.Config.Docker
+RUN dotnet restore "AspNetContainer.csproj"
 
 # Copy all container source files
 WORKDIR /src
@@ -30,10 +30,10 @@ COPY ["Schemas/", "Schemas/"]
 
 # Build
 WORKDIR /src/AspNetContainer
-RUN dotnet build "AspNetContainer.csproj" -c Release -o /app/build --configfile /src/Nuget.Config.Docker
+RUN dotnet build "AspNetContainer.csproj" -c Release -o /app/build
 
 FROM build AS publish
-RUN dotnet publish "AspNetContainer.csproj" -c Release -o /app/publish --configfile /src/Nuget.Config.Docker
+RUN dotnet publish "AspNetContainer.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app

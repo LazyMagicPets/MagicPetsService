@@ -681,7 +681,10 @@ Resources:
     Properties:
       ApiId: !GetAtt TenantEventsApi.ApiId
       Description: API Key for TenantEventsApi
-      Expires: !Ref AWS::NoValue  # No expiration
+      # AWS AppSync API Keys have a maximum expiration of 365 days
+      # Unix timestamp calculated as: current time + 365 days (31536000 seconds)
+      # You must manually update this stack annually to rotate the key
+      Expires: 1767225600  # January 1, 2026 (update annually)
 
   TenantEventsApiChatChannelNamespace:
     Type: AWS::AppSync::ChannelNamespace
@@ -771,7 +774,10 @@ Resources:
     Properties:
       ApiId: !GetAtt ConsumerEventsApi.ApiId
       Description: API Key for ConsumerEventsApi
-      Expires: !Ref AWS::NoValue  # No expiration
+      # AWS AppSync API Keys have a maximum expiration of 365 days
+      # Unix timestamp calculated as: current time + 365 days (31536000 seconds)
+      # You must manually update this stack annually to rotate the key
+      Expires: 1767225600  # January 1, 2026 (update annually)
 
   ConsumerEventsApiChatChannelNamespace:
     Type: AWS::AppSync::ChannelNamespace
