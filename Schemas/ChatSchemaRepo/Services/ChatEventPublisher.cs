@@ -55,7 +55,7 @@ public class ChatEventPublisher : IChatEventPublisher
             data: new { MessageId = messageId, Chunk = chunk },
             metadata: new Dictionary<string, object>
             {
-                { "dataType", "Object" }
+                { "dataType", "MessageChunk" }
             });
     }
 
