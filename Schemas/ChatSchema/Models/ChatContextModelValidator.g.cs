@@ -13,11 +13,11 @@ namespace ChatSchema
     using System = global::System;
     
 #pragma warning disable CS1591 // Missing XML comment for publicly visible type or member
-public partial class ChatMessagesModelValidator : FluentValidation.AbstractValidator<ChatMessagesModel>
+public partial class ChatContextModelValidator : FluentValidation.AbstractValidator<ChatContextModel>
 {
-    public ChatMessagesModelValidator()
+    public ChatContextModelValidator()
     {
-        Include(new ChatMessagesValidator());
+        Include(new ChatContextValidator());
         CustomValidation();
     }
     partial void CustomValidation();

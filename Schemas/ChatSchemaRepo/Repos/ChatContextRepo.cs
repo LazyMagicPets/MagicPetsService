@@ -3,14 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ChatSchemaRepo;
 
-// Extend the IChatMessagesRepo interface to add custom message operations
-public partial interface IChatMessagesRepo : IDocumentRepo<ChatMessages>
+// Extend the IChatContextRepo interface to add custom message operations
+public partial interface IChatContextRepo : IDocumentRepo<ChatContext>
 {
     Task<ActionResult<ICollection<ChatMessage>>> ReadMessagesAsync(ICallerInfo callerInfo, string chatId, int? page, int? limit);
 }
 
-// Extend the ChatMessagesRepo class to implement custom message operations
-public partial class ChatMessagesRepo : DYDBRepository<ChatMessages>, IChatMessagesRepo, IMessagePersistence
+// Extend the ChatContextRepo class to implement custom message operations
+public partial class ChatContextRepo : DYDBRepository<ChatContext>, IChatContextRepo, IMessagePersistence
 {
     public async Task<ActionResult<ICollection<ChatMessage>>> ReadMessagesAsync(ICallerInfo callerInfo, string chatId, int? page, int? limit)
     {
@@ -38,19 +38,19 @@ public partial class ChatMessagesRepo : DYDBRepository<ChatMessages>, IChatMessa
     }
 
     /// <summary>
-    /// Implementation of IMessagePersistence - appends a message to ChatMessages in DynamoDB
+    /// Implementation of IMessagePersistence - appends a message to ChatContext in DynamoDB
     /// </summary>
     public async Task AppendMessageAsync(ICallerInfo callerInfo, string chatId, ChatMessage message)
     {
-        // Load ChatMessages from DynamoDB
+        // Load ChatContext from DynamoDB
         var messagesResult = await base.ReadAsync(callerInfo, chatId);
         var chatMessages = messagesResult.Value;
 
         if (chatMessages == null)
         {
-            // Create new ChatMessages record if it doesn't exist
+            // Create new ChatContext record if it doesn't exist
             // Let the base repository handle CreateUtcTick and UpdateUtcTick
-            chatMessages = new ChatMessages
+            chatMessages = new ChatContext
             {
                 Id = chatId,
                 ChatId = chatId,
@@ -85,7 +85,7 @@ public partial class ChatMessagesRepo : DYDBRepository<ChatMessages>, IChatMessa
         {
             // Create new record with all messages
             // Let the base repository handle CreateUtcTick and UpdateUtcTick
-            chatMessages = new ChatMessages
+            chatMessages = new ChatContext
             {
                 Id = chatId,
                 ChatId = chatId,
@@ -107,7 +107,7 @@ public partial class ChatMessagesRepo : DYDBRepository<ChatMessages>, IChatMessa
     /// </summary>
     public async Task<List<ChatMessage>> GetMessagesAsync(ICallerInfo callerInfo, string chatId)
     {
-        // Load ChatMessages from DynamoDB
+        // Load ChatContext from DynamoDB
         var messagesResult = await base.ReadAsync(callerInfo, chatId);
         var chatMessages = messagesResult.Value;
 

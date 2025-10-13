@@ -12,12 +12,12 @@ public partial class ChatModuleController : ChatModuleControllerBase
     public ChatModuleController(
         IChatModuleAuthorization chatModuleAuthorization,
         IChatRepo chatRepo,
-        IChatMessagesRepo chatMessagesRepo,
+        IChatContextRepo chatContextRepo,
         IChatManagerService chatManagerService)
     {
         ChatModuleAuthorization = chatModuleAuthorization;
         ChatRepo = chatRepo;
-        ChatMessagesRepo = chatMessagesRepo;
+        ChatContextRepo = chatContextRepo;
         ChatManagerService = chatManagerService;
 
         Init();

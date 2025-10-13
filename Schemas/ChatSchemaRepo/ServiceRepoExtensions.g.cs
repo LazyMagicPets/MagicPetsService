@@ -17,7 +17,7 @@ public static partial class ChatSchemaRepoExtensions
 
         services.TryAddAWSService<Amazon.DynamoDBv2.IAmazonDynamoDB>();
 		services.TryAddTransient<IChatRepo, ChatRepo>();
-		services.TryAddTransient<IChatMessagesRepo, ChatMessagesRepo>();
+		services.TryAddTransient<IChatContextRepo, ChatContextRepo>();
 
 
         return services;

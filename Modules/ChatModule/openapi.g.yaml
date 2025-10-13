@@ -551,7 +551,7 @@ components:
         metadata:
           type: object
           description: Additional message metadata
-    ChatMessages:
+    ChatContext:
       type: object
       required:
       - chatId

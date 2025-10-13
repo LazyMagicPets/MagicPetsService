@@ -3,7 +3,8 @@
 	<packageSources>
 		<clear />
 		<!-- Docker build package cache - prepared by Deploy-DockerAws -->
-		<add key="DockerCache" value="./DockerPackages" />
+		<!-- Using absolute path since build happens from /src/AspNetContainer -->
+		<add key="DockerCache" value="/src/DockerPackages" />
 		<!-- Fallback to nuget.org -->
 		<add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
 	</packageSources>

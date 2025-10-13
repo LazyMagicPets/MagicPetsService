@@ -137,7 +137,7 @@ namespace ChatModule
         }
 		public IChatModuleAuthorization ChatModuleAuthorization { get; set; }
 		public IChatRepo ChatRepo { get; set; }
-		public IChatMessagesRepo ChatMessagesRepo { get; set; }
+		public IChatContextRepo ChatContextRepo { get; set; }
 		protected virtual void Init() { }
     }
 

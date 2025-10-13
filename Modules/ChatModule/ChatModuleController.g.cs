@@ -4,12 +4,12 @@ public partial class ChatModuleController : ChatModuleControllerBase {
         public ChatModuleController(
             IChatModuleAuthorization chatModuleAuthorization,
 			IChatRepo chatRepo,
-			IChatMessagesRepo chatMessagesRepo
+			IChatContextRepo chatContextRepo
             ) 
         {
             ChatModuleAuthorization = chatModuleAuthorization;
 			ChatRepo = chatRepo;
-			ChatMessagesRepo = chatMessagesRepo;
+			ChatContextRepo = chatContextRepo;
 
             Init();
         }

@@ -13,7 +13,7 @@ namespace ChatSchema
     using System = global::System;
     
 
-public partial class ChatMessagesValidator : FluentValidation.AbstractValidator<ChatMessages>
+public partial class ChatContextValidator : FluentValidation.AbstractValidator<ChatContext>
 {
 }
 

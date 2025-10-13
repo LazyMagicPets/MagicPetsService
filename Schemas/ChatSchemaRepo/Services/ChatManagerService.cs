@@ -23,7 +23,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly IMessagePersistence _messagePersistence;
     private readonly IChatRepo _chatRepo;
-    private readonly IChatMessagesRepo _messagesRepo;
+    private readonly IChatContextRepo _contextRepo;
     private readonly ConcurrentDictionary<string, ConnectionChat> _chats;
     private readonly ConcurrentDictionary<string, Task> _backgroundTasks;
     private readonly SemaphoreSlim _keepAliveSemaphore;
@@ -38,7 +38,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
         IHttpClientFactory httpClientFactory,
         IMessagePersistence messagePersistence,
         IChatRepo chatRepo,
-        IChatMessagesRepo messagesRepo)
+        IChatContextRepo contextRepo)
     {
         _logger = logger;
         _llmClient = llmClient;
@@ -46,7 +46,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
         _httpClientFactory = httpClientFactory;
         _messagePersistence = messagePersistence;
         _chatRepo = chatRepo;
-        _messagesRepo = messagesRepo;
+        _contextRepo = contextRepo;
         _chats = new ConcurrentDictionary<string, ConnectionChat>();
         _backgroundTasks = new ConcurrentDictionary<string, Task>();
         _keepAliveSemaphore = new SemaphoreSlim(0, 1);
@@ -96,35 +96,35 @@ public class ChatManagerService : IChatManagerService, IHostedService
         chat = persistedChat;
         _logger.LogInformation("DEBUG: Chat persisted successfully, chatId: {ChatId}", chat.ChatId);
 
-        // 4. Create ChatMessages entity
-        var chatMessages = new ChatMessages
+        // 4. Create ChatContexts entity
+        var chatContext = new ChatContext
         {
             Id = chat.ChatId,
             ChatId = chat.ChatId,
             Messages = new List<ChatMessage>()
         };
 
-        _logger.LogInformation("DEBUG: About to persist ChatMessages to DynamoDB");
-        var messagesResult = await _messagesRepo.CreateAsync(callerInfo, chatMessages);
-        _logger.LogInformation("DEBUG: ChatMessages persist - Value: {HasValue}, Result: {ResultType}",
+        _logger.LogInformation("DEBUG: About to persist ChatContexts to DynamoDB");
+        var messagesResult = await _contextRepo.CreateAsync(callerInfo, chatContext);
+        _logger.LogInformation("DEBUG: ChatContexts persist - Value: {HasValue}, Result: {ResultType}",
             messagesResult.Value != null, messagesResult.Result?.GetType().Name ?? "null");
 
-        // Extract ChatMessages from ActionResult<ChatMessages> - check .Value first, then .Result
-        ChatMessages? persistedMessages = messagesResult.Value ?? (messagesResult.Result as Microsoft.AspNetCore.Mvc.ObjectResult)?.Value as ChatMessages;
+        // Extract ChatContexts from ActionResult<ChatContexts> - check .Value first, then .Result
+        ChatContext? persistedMessages = messagesResult.Value ?? (messagesResult.Result as Microsoft.AspNetCore.Mvc.ObjectResult)?.Value as ChatContext;
         if (persistedMessages == null)
         {
-            _logger.LogError("DEBUG: Failed to persist ChatMessages, rolling back");
+            _logger.LogError("DEBUG: Failed to persist ChatContexts, rolling back");
             // Rollback chat creation
             await _chatRepo.DeleteAsync(callerInfo, chat.ChatId);
             return new Microsoft.AspNetCore.Mvc.BadRequestObjectResult("Failed to create chat messages");
         }
-        _logger.LogInformation("DEBUG: ChatMessages persisted successfully");
+        _logger.LogInformation("DEBUG: ChatContexts persisted successfully");
 
         // 5. Initialize in-memory state
         var connectionChat = new ConnectionChat
         {
             ChatId = chat.ChatId,
-            ChatMessagesId = chat.ChatId,
+            ChatContextsId = chat.ChatId,
             UserId = chat.UserId,
             Status = ChatStatus.Active,
             CreatedAt = chat.CreatedAt.DateTime,
@@ -144,7 +144,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
         }
 
         // 6. Start background processing
-        var backgroundTask = ProcessChatMessagesAsync(connectionChat);
+        var backgroundTask = ProcessChatContextsAsync(connectionChat);
         _backgroundTasks.TryAdd(chat.ChatId, backgroundTask);
 
         // 7. Publish event
@@ -313,8 +313,8 @@ public class ChatManagerService : IChatManagerService, IHostedService
             _logger.LogInformation("Stopped in-memory processing for chat {ChatId}", chatId);
         }
 
-        // 2. Delete ChatMessages
-        await _messagesRepo.DeleteAsync(callerInfo, chatId);
+        // 2. Delete ChatContexts
+        await _contextRepo.DeleteAsync(callerInfo, chatId);
 
         // 3. Delete Chat
         var result = await _chatRepo.DeleteAsync(callerInfo, chatId);
@@ -427,10 +427,10 @@ public class ChatManagerService : IChatManagerService, IHostedService
         }
 
         // 2. Load from DynamoDB via repo
-        var result = await _messagesRepo.ReadAsync(callerInfo, chatId);
+        var result = await _contextRepo.ReadAsync(callerInfo, chatId);
 
-        // Extract ChatMessages from ActionResult<ChatMessages> - check .Value first, then .Result
-        ChatMessages? chatMessages = result.Value ?? (result.Result as Microsoft.AspNetCore.Mvc.ObjectResult)?.Value as ChatMessages;
+        // Extract ChatContexts from ActionResult<ChatContexts> - check .Value first, then .Result
+        ChatContext? chatMessages = result.Value ?? (result.Result as Microsoft.AspNetCore.Mvc.ObjectResult)?.Value as ChatContext;
         if (chatMessages == null)
             return new Microsoft.AspNetCore.Mvc.NotFoundObjectResult($"Chat {chatId} not found");
         var allMessages = chatMessages.Messages?.AsEnumerable() ?? Enumerable.Empty<ChatMessage>();
@@ -464,15 +464,15 @@ public class ChatManagerService : IChatManagerService, IHostedService
         if (chat == null)
             return new Microsoft.AspNetCore.Mvc.NotFoundObjectResult($"Chat {chatId} not found");
 
-        // 2. Load ChatMessages from DynamoDB
-        var messagesResult = await _messagesRepo.ReadAsync(callerInfo, chatId);
+        // 2. Load ChatContexts from DynamoDB
+        var messagesResult = await _contextRepo.ReadAsync(callerInfo, chatId);
 
-        // Extract ChatMessages from ActionResult<ChatMessages> - check .Value first, then .Result
-        ChatMessages? chatMessages = messagesResult.Value ?? (messagesResult.Result as Microsoft.AspNetCore.Mvc.ObjectResult)?.Value as ChatMessages;
+        // Extract ChatContexts from ActionResult<ChatContexts> - check .Value first, then .Result
+        ChatContext? chatMessages = messagesResult.Value ?? (messagesResult.Result as Microsoft.AspNetCore.Mvc.ObjectResult)?.Value as ChatContext;
         if (chatMessages == null)
         {
-            // Create empty ChatMessages if not found
-            chatMessages = new ChatMessages
+            // Create empty ChatContexts if not found
+            chatMessages = new ChatContext
             {
                 Id = chatId,
                 ChatId = chatId,
@@ -484,7 +484,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
         var connectionChat = new ConnectionChat
         {
             ChatId = chat.ChatId,
-            ChatMessagesId = chat.ChatId,
+            ChatContextsId = chat.ChatId,
             UserId = chat.UserId,
             Status = chat.Status,
             CreatedAt = chat.CreatedAt.DateTime,
@@ -505,7 +505,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
         }
 
         // 4. Start background processing
-        var backgroundTask = ProcessChatMessagesAsync(connectionChat);
+        var backgroundTask = ProcessChatContextsAsync(connectionChat);
         _backgroundTasks.TryAdd(chatId, backgroundTask);
 
         // 5. Publish event
@@ -577,7 +577,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
         return "http://localhost:8080";
     }
 
-    private async Task ProcessChatMessagesAsync(ConnectionChat chat)
+    private async Task ProcessChatContextsAsync(ConnectionChat chat)
     {
         _logger.LogInformation("Started background processing for chat {ChatId}", chat.ChatId);
 
@@ -755,8 +755,8 @@ public class ChatManagerService : IChatManagerService, IHostedService
     }
 
     /// <summary>
-    /// Persists all messages in chat history to the ChatMessages table when chat closes.
-    /// Creates or replaces the entire ChatMessages record with all messages at once.
+    /// Persists all messages in chat history to the ChatContexts table when chat closes.
+    /// Creates or replaces the entire ChatContexts record with all messages at once.
     /// </summary>
     private async Task PersistChatHistoryAsync(ICallerInfo? callerInfo, string chatId, List<ChatMessage> history)
     {
@@ -789,7 +789,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
 public class ConnectionChat
 {
     public string ChatId { get; set; } = string.Empty;
-    public string ChatMessagesId { get; set; } = string.Empty;
+    public string ChatContextsId { get; set; } = string.Empty;
     public string UserId { get; set; } = string.Empty;
     public ChatStatus Status { get; set; }
     public DateTime CreatedAt { get; set; }

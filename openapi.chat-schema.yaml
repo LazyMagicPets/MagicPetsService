@@ -89,7 +89,7 @@ components:
           additionalProperties: true
           description: Additional message metadata
 
-    ChatMessages:
+    ChatContext:
       type: object
       x-lz-genrepo: true
       required:

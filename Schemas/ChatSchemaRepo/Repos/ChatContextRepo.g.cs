@@ -6,8 +6,8 @@
 // </auto-generated>
 //----------------------
 namespace ChatSchemaRepo;
-public partial interface IChatMessagesRepo : IDocumentRepo<ChatMessages> {}
-public partial class ChatMessagesRepo : DYDBRepository<ChatMessages>, IChatMessagesRepo
+public partial interface IChatContextRepo : IDocumentRepo<ChatContext> {}
+public partial class ChatContextRepo : DYDBRepository<ChatContext>, IChatContextRepo
 {
-    public ChatMessagesRepo(IAmazonDynamoDB client) : base(client) {}
+    public ChatContextRepo(IAmazonDynamoDB client) : base(client) {}
 }

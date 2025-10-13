@@ -13,7 +13,7 @@ namespace ChatSchema
     using System = global::System;
     
 
-public partial class ChatMessagesModel : ChatMessages,IRegisterObservables
+public partial class ChatContextModel : ChatContext,IRegisterObservables
 {
 }
 
