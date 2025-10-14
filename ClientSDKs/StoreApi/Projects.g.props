@@ -7,10 +7,12 @@
 <ProjectReference Include="$(SolutionDir)Schemas\PublicSchema\PublicSchema.csproj" />
 <ProjectReference Include="$(SolutionDir)Schemas\ConsumerSchema\ConsumerSchema.csproj" />
 <ProjectReference Include="$(SolutionDir)Schemas\StoreSchema\StoreSchema.csproj" />
+<ProjectReference Include="$(SolutionDir)Schemas\AdminSchema\AdminSchema.csproj" />
 <ProjectReference Include="$(SolutionDir)ClientSDKs\ChatModuleClientInterface\ChatModuleClientInterface.csproj" />
 <ProjectReference Include="$(SolutionDir)ClientSDKs\PublicModuleClientInterface\PublicModuleClientInterface.csproj" />
 <ProjectReference Include="$(SolutionDir)ClientSDKs\ConsumerModuleClientInterface\ConsumerModuleClientInterface.csproj" />
 <ProjectReference Include="$(SolutionDir)ClientSDKs\StoreModuleClientInterface\StoreModuleClientInterface.csproj" />
+<ProjectReference Include="$(SolutionDir)ClientSDKs\AdminModuleClientInterface\AdminModuleClientInterface.csproj" />
 
     </ItemGroup>
 </Project>

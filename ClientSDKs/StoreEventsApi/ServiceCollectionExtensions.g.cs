@@ -3,7 +3,7 @@ using Amazon.AppSync;
 using Amazon.Extensions.NETCore.Setup;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace TenantEventsApi;
+namespace StoreEventsApi;
 
 public static class ServiceCollectionExtensions
 {

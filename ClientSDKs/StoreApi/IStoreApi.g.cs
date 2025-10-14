@@ -8,10 +8,11 @@ using ChatModule;
 using PublicModule;
 using ConsumerModule;
 using StoreModule;
+using AdminModule;
 
-namespace TenantApi
+namespace StoreApi
 {
-    public partial interface ITenantApi : IChatModuleClient, IPublicModuleClient, IConsumerModuleClient, IStoreModuleClient
+    public partial interface IStoreApi : IChatModuleClient, IPublicModuleClient, IConsumerModuleClient, IStoreModuleClient, IAdminModuleClient
     {
         // All methods inherited from module client interfaces
     }

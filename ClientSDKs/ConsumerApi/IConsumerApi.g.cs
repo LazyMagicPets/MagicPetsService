@@ -7,11 +7,10 @@
 using ChatModule;
 using PublicModule;
 using ConsumerModule;
-using StoreModule;
 
 namespace ConsumerApi
 {
-    public partial interface IConsumerApi : IChatModuleClient, IPublicModuleClient, IConsumerModuleClient, IStoreModuleClient
+    public partial interface IConsumerApi : IChatModuleClient, IPublicModuleClient, IConsumerModuleClient
     {
         // All methods inherited from module client interfaces
     }

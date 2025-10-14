@@ -1,5 +1,111 @@
 openapi: 3.0.1
 paths:
+  /ChatModule/chat:
+    post:
+      summary: Create new chat
+      description: Creates a new chat session
+      operationId: ChatModuleAddChatAsync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Chat'
+        required: true
+      responses:
+        200:
+          description: Chat created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chat'
+        400:
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+      x-lz-gencall: ChatManagerService.CreateChatAsync(callerInfo, body)
+    get:
+      summary: List chats
+      description: Lists all chats for the authenticated user
+      operationId: ChatModuleListChatsAsync
+      responses:
+        200:
+          description: Chats retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Chat'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+      x-lz-gencall: ChatManagerService.ListChatsAsync(callerInfo)
+    put:
+      summary: Update chat
+      description: Updates an existing chat
+      operationId: ChatModuleUpdateChatAsync
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Chat'
+        required: true
+      responses:
+        200:
+          description: Chat updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chat'
+        400:
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        404:
+          description: Chat not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+      x-lz-gencall: ChatManagerService.UpdateChatAsync(callerInfo, body)
+  /ChatModule/health:
+    get:
+      summary: Health check endpoint
+      description: Health check endpoint for service monitoring
+      operationId: ChatModuleHealthCheckAsync
+      responses:
+        200:
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthCheckResponse'
+        503:
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UnhealthyResponse'
+      x-lz-gencall: HealthService.CheckAsync(callerInfo)
   /PublicModule/fingerprint/create:
     post:
       operationId: PublicModuleFingerprintCreateAsync
@@ -360,6 +466,155 @@ paths:
                   $ref: '#/components/schemas/Subtenant'
         400:
           description: Invalid status value
+  '/ChatModule/chat/{chatId}':
+    get:
+      summary: Get chat by ID
+      description: Retrieves a chat by its ID
+      operationId: ChatModuleGetChatByIdAsync
+      parameters:
+      - name: chatId
+        in: path
+        required: true
+        description: ID of the chat
+        schema:
+          type: string
+      responses:
+        200:
+          description: Chat retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Chat'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        404:
+          description: Chat not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+      x-lz-gencall: ChatManagerService.GetChatAsync(callerInfo, chatId)
+    delete:
+      summary: Delete chat
+      description: Deletes a chat and cleans up resources
+      operationId: ChatModuleDeleteChatAsync
+      parameters:
+      - name: chatId
+        in: path
+        required: true
+        description: ID of the chat to delete
+        schema:
+          type: string
+      responses:
+        200:
+          description: Chat deleted successfully
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        404:
+          description: Chat not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+      x-lz-gencall: ChatManagerService.DeleteChatAsync(callerInfo, chatId)
+  '/ChatModule/chat/{chatId}/messages':
+    post:
+      summary: Send message to chat
+      description: Sends a new message to an existing chat
+      operationId: ChatModuleAddChatMessageAsync
+      parameters:
+      - name: chatId
+        in: path
+        required: true
+        description: ID of the chat
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatMessage'
+        required: true
+      responses:
+        200:
+          description: Message sent successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessage'
+        400:
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        404:
+          description: Chat not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+      x-lz-gencall: ChatManagerService.SendMessageAsync(callerInfo, chatId, body)
+    get:
+      summary: Get chat messages
+      description: Retrieves message history for a chat
+      operationId: ChatModuleGetChatMessagesAsync
+      parameters:
+      - name: chatId
+        in: path
+        required: true
+        description: ID of the chat
+        schema:
+          type: string
+      - name: page
+        in: query
+        description: Page number for pagination
+        schema:
+          type: integer
+          minimum: 1
+      - name: limit
+        in: query
+        description: Number of messages per page
+        schema:
+          type: integer
+          maximum: 100
+          minimum: 1
+      responses:
+        200:
+          description: Messages retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatMessage'
+        401:
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+        404:
+          description: Chat not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatError'
+      x-lz-gencall: ChatManagerService.GetMessagesAsync(callerInfo, chatId, page, limit)
   '/PublicModule/pet/{petId}':
     get:
       summary: Find pet by ID

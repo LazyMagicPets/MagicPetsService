@@ -2,19 +2,21 @@
 	<PropertyGroup>
 		<TargetFramework>net8.0</TargetFramework>
 		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
-		<AWSProjectType>Lambda</AWSProjectType>
 		<GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
-		<!-- This property makes the build directory similar to a publish directory and helps the AWS .NET Lambda Mock Test Tool find project dependencies. -->
-		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
+		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 	</PropertyGroup>
 	<Import Project="User.props"  Condition="Exists('User.props')" />
 	<ItemGroup>
+		<PackageReference Include="Amazon.AspNetCore.Identity.Cognito" />
+		<PackageReference Include="AWSSDK.AppSync" />
+		<PackageReference Include="AWSSDK.BedrockRuntime" />
 		<PackageReference Include="AWSSDK.Extensions.NETCore.Setup" />
-		<PackageReference Include="Amazon.Lambda.AspNetCoreServer" />
+		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" />
 		<PackageReference Include="Newtonsoft.Json" />
+		<PackageReference Include="System.Threading.Channels" />
 	</ItemGroup>
 	<Import Project="Projects.g.props"  Condition="Exists('Projects.g.props')"  />
 	<Import Project="Packages.g.props"  Condition="Exists('Packages.g.props')"  />

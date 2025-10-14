@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<configuration>
+	<packageSources>
+		<clear />
+		<!-- Docker build package cache - prepared by Deploy-DockerAws -->
+		<!-- Using absolute path since restore happens from /src/AspNetContainer but packages are at /src/DockerPackages -->
+		<add key="DockerCache" value="/src/DockerPackages" />
+		<!-- Fallback to nuget.org -->
+		<add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />
+	</packageSources>
+	<fallbackPackageFolders>
+		<clear />
+	</fallbackPackageFolders>
+</configuration>

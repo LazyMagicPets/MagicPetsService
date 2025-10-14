@@ -17,6 +17,9 @@ global using Microsoft.Extensions.Logging.Console;
 global using Microsoft.Extensions.Logging.Debug;
 global using LazyMagic.Service;
 
+global using ChatSchema;
+global using ChatSchemaRepo;
+global using ChatModule;
 global using SharedSchema;
 global using SharedSchemaRepo;
 global using PublicSchema;
@@ -31,6 +34,3 @@ global using StoreModule;
 global using AdminSchema;
 global using AdminSchemaRepo;
 global using AdminModule;
-global using ChatSchema;
-global using ChatSchemaRepo;
-global using ChatModule;

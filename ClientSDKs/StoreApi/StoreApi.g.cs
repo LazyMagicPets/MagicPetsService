@@ -16,12 +16,12 @@
 #pragma warning disable 8604 // Disable "CS8604 Possible null reference argument for parameter"
 #pragma warning disable 8625 // Disable "CS8625 Cannot convert null literal to non-nullable reference type"
 
-namespace AdminApi
+namespace StoreApi
 {
     using System = global::System;
 
     [System.CodeDom.Compiler.GeneratedCode("NSwag", "14.0.3.0 (NJsonSchema v11.0.0.0 (Newtonsoft.Json v13.0.0.0))")]
-    public partial class AdminApi : IAdminApi
+    public partial class StoreApi : IStoreApi
     {
         #pragma warning disable 8618
         private string _baseUrl;
@@ -30,7 +30,7 @@ namespace AdminApi
         private HttpClient _httpClient;
         private static System.Lazy<Newtonsoft.Json.JsonSerializerSettings> _settings = new System.Lazy<Newtonsoft.Json.JsonSerializerSettings>(CreateSerializerSettings, true);
 
-        public AdminApi(HttpClient httpClient)
+        public StoreApi(HttpClient httpClient)
         {
             _httpClient = httpClient;
         }
@@ -49,6 +49,450 @@ namespace AdminApi
         partial void PrepareRequest(HttpClient client, System.Net.Http.HttpRequestMessage request, string url);
         partial void PrepareRequest(HttpClient client, System.Net.Http.HttpRequestMessage request, System.Text.StringBuilder urlBuilder);
         partial void ProcessResponse(HttpClient client, System.Net.Http.HttpResponseMessage response);
+
+        /// <summary>
+        /// Create new chat
+        /// </summary>
+        /// <remarks>
+        /// Creates a new chat session
+        /// </remarks>
+        /// <returns>Chat created successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual System.Threading.Tasks.Task<Chat> ChatModuleAddChatAsync(Chat body)
+        {
+            return ChatModuleAddChatAsync(body, System.Threading.CancellationToken.None);
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Create new chat
+        /// </summary>
+        /// <remarks>
+        /// Creates a new chat session
+        /// </remarks>
+        /// <returns>Chat created successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<Chat> ChatModuleAddChatAsync(Chat body, System.Threading.CancellationToken cancellationToken)
+        {
+            if (body == null)
+                throw new System.ArgumentNullException("body");
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    var json_ = Newtonsoft.Json.JsonConvert.SerializeObject(body, _settings.Value);
+                    var content_ = new System.Net.Http.StringContent(json_);
+                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                    request_.Content = content_;
+                    request_.Method = new System.Net.Http.HttpMethod("POST");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+                
+                    // Operation Path: "StoreApi/ChatModule/chat"
+                    urlBuilder_.Append("StoreApi/ChatModule/chat");
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<Chat>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        if (status_ == 400)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ChatError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ApiException<ChatError>("Invalid request", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        if (status_ == 401)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ChatError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ApiException<ChatError>("Unauthorized", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// List chats
+        /// </summary>
+        /// <remarks>
+        /// Lists all chats for the authenticated user
+        /// </remarks>
+        /// <returns>Chats retrieved successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Chat>> ChatModuleListChatsAsync()
+        {
+            return ChatModuleListChatsAsync(System.Threading.CancellationToken.None);
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// List chats
+        /// </summary>
+        /// <remarks>
+        /// Lists all chats for the authenticated user
+        /// </remarks>
+        /// <returns>Chats retrieved successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<Chat>> ChatModuleListChatsAsync(System.Threading.CancellationToken cancellationToken)
+        {
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+                
+                    // Operation Path: "StoreApi/ChatModule/chat"
+                    urlBuilder_.Append("StoreApi/ChatModule/chat");
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic.ICollection<Chat>>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        if (status_ == 401)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ChatError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ApiException<ChatError>("Unauthorized", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Update chat
+        /// </summary>
+        /// <remarks>
+        /// Updates an existing chat
+        /// </remarks>
+        /// <returns>Chat updated successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual System.Threading.Tasks.Task<Chat> ChatModuleUpdateChatAsync(Chat body)
+        {
+            return ChatModuleUpdateChatAsync(body, System.Threading.CancellationToken.None);
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Update chat
+        /// </summary>
+        /// <remarks>
+        /// Updates an existing chat
+        /// </remarks>
+        /// <returns>Chat updated successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<Chat> ChatModuleUpdateChatAsync(Chat body, System.Threading.CancellationToken cancellationToken)
+        {
+            if (body == null)
+                throw new System.ArgumentNullException("body");
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    var json_ = Newtonsoft.Json.JsonConvert.SerializeObject(body, _settings.Value);
+                    var content_ = new System.Net.Http.StringContent(json_);
+                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                    request_.Content = content_;
+                    request_.Method = new System.Net.Http.HttpMethod("PUT");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+                
+                    // Operation Path: "StoreApi/ChatModule/chat"
+                    urlBuilder_.Append("StoreApi/ChatModule/chat");
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<Chat>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        if (status_ == 400)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ChatError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ApiException<ChatError>("Invalid request", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        if (status_ == 401)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ChatError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ApiException<ChatError>("Unauthorized", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        if (status_ == 404)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ChatError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ApiException<ChatError>("Chat not found", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Health check endpoint
+        /// </summary>
+        /// <remarks>
+        /// Health check endpoint for service monitoring
+        /// </remarks>
+        /// <returns>Service is healthy</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual System.Threading.Tasks.Task<HealthCheckResponse> ChatModuleHealthCheckAsync()
+        {
+            return ChatModuleHealthCheckAsync(System.Threading.CancellationToken.None);
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Health check endpoint
+        /// </summary>
+        /// <remarks>
+        /// Health check endpoint for service monitoring
+        /// </remarks>
+        /// <returns>Service is healthy</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<HealthCheckResponse> ChatModuleHealthCheckAsync(System.Threading.CancellationToken cancellationToken)
+        {
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+                
+                    // Operation Path: "StoreApi/ChatModule/health"
+                    urlBuilder_.Append("StoreApi/ChatModule/health");
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<HealthCheckResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        if (status_ == 503)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<UnhealthyResponse>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ApiException<UnhealthyResponse>("Service is unhealthy", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
 
         /// <returns>successful operation</returns>
         /// <exception cref="ApiException">A server side error occurred.</exception>
@@ -77,8 +521,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/PublicModule/fingerprint/create"
-                    urlBuilder_.Append("AdminApi/PublicModule/fingerprint/create");
+                    // Operation Path: "StoreApi/PublicModule/fingerprint/create"
+                    urlBuilder_.Append("StoreApi/PublicModule/fingerprint/create");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -173,8 +617,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/PublicModule/pet/listPets"
-                    urlBuilder_.Append("AdminApi/PublicModule/pet/listPets");
+                    // Operation Path: "StoreApi/PublicModule/pet/listPets"
+                    urlBuilder_.Append("StoreApi/PublicModule/pet/listPets");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -274,8 +718,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/PublicModule/pet/findByStatus"
-                    urlBuilder_.Append("AdminApi/PublicModule/pet/findByStatus");
+                    // Operation Path: "StoreApi/PublicModule/pet/findByStatus"
+                    urlBuilder_.Append("StoreApi/PublicModule/pet/findByStatus");
                     urlBuilder_.Append('?');
                     foreach (var item_ in petStatus) { urlBuilder_.Append(System.Uri.EscapeDataString("petStatus")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(item_, System.Globalization.CultureInfo.InvariantCulture))).Append('&'); }
                     urlBuilder_.Length--;
@@ -378,8 +822,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/PublicModule/pet/findByTags"
-                    urlBuilder_.Append("AdminApi/PublicModule/pet/findByTags");
+                    // Operation Path: "StoreApi/PublicModule/pet/findByTags"
+                    urlBuilder_.Append("StoreApi/PublicModule/pet/findByTags");
                     urlBuilder_.Append('?');
                     foreach (var item_ in tags) { urlBuilder_.Append(System.Uri.EscapeDataString("tags")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(item_, System.Globalization.CultureInfo.InvariantCulture))).Append('&'); }
                     urlBuilder_.Length--;
@@ -471,8 +915,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/PublicModule/pet/categories"
-                    urlBuilder_.Append("AdminApi/PublicModule/pet/categories");
+                    // Operation Path: "StoreApi/PublicModule/pet/categories"
+                    urlBuilder_.Append("StoreApi/PublicModule/pet/categories");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -555,8 +999,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/PublicModule/pet/tags"
-                    urlBuilder_.Append("AdminApi/PublicModule/pet/tags");
+                    // Operation Path: "StoreApi/PublicModule/pet/tags"
+                    urlBuilder_.Append("StoreApi/PublicModule/pet/tags");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -639,8 +1083,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/ConsumerModule/preferences"
-                    urlBuilder_.Append("AdminApi/ConsumerModule/preferences");
+                    // Operation Path: "StoreApi/ConsumerModule/preferences"
+                    urlBuilder_.Append("StoreApi/ConsumerModule/preferences");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -727,8 +1171,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/ConsumerModule/preferences"
-                    urlBuilder_.Append("AdminApi/ConsumerModule/preferences");
+                    // Operation Path: "StoreApi/ConsumerModule/preferences"
+                    urlBuilder_.Append("StoreApi/ConsumerModule/preferences");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -811,8 +1255,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/StoreModule/pet/listPets"
-                    urlBuilder_.Append("AdminApi/StoreModule/pet/listPets");
+                    // Operation Path: "StoreApi/StoreModule/pet/listPets"
+                    urlBuilder_.Append("StoreApi/StoreModule/pet/listPets");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -905,8 +1349,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/StoreModule/pet"
-                    urlBuilder_.Append("AdminApi/StoreModule/pet");
+                    // Operation Path: "StoreApi/StoreModule/pet"
+                    urlBuilder_.Append("StoreApi/StoreModule/pet");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -999,8 +1443,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/StoreModule/pet"
-                    urlBuilder_.Append("AdminApi/StoreModule/pet");
+                    // Operation Path: "StoreApi/StoreModule/pet"
+                    urlBuilder_.Append("StoreApi/StoreModule/pet");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -1107,8 +1551,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/StoreModule/order/inventory"
-                    urlBuilder_.Append("AdminApi/StoreModule/order/inventory");
+                    // Operation Path: "StoreApi/StoreModule/order/inventory"
+                    urlBuilder_.Append("StoreApi/StoreModule/order/inventory");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -1200,8 +1644,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/StoreModule/order"
-                    urlBuilder_.Append("AdminApi/StoreModule/order");
+                    // Operation Path: "StoreApi/StoreModule/order"
+                    urlBuilder_.Append("StoreApi/StoreModule/order");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -1290,8 +1734,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/AdminModule/isAdmin"
-                    urlBuilder_.Append("AdminApi/AdminModule/isAdmin");
+                    // Operation Path: "StoreApi/AdminModule/isAdmin"
+                    urlBuilder_.Append("StoreApi/AdminModule/isAdmin");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -1378,8 +1822,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/AdminModule/tenantUser"
-                    urlBuilder_.Append("AdminApi/AdminModule/tenantUser");
+                    // Operation Path: "StoreApi/AdminModule/tenantUser"
+                    urlBuilder_.Append("StoreApi/AdminModule/tenantUser");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -1472,8 +1916,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/AdminModule/tenantUser"
-                    urlBuilder_.Append("AdminApi/AdminModule/tenantUser");
+                    // Operation Path: "StoreApi/AdminModule/tenantUser"
+                    urlBuilder_.Append("StoreApi/AdminModule/tenantUser");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -1574,8 +2018,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/AdminModule/tenantUser/listTenantUsers"
-                    urlBuilder_.Append("AdminApi/AdminModule/tenantUser/listTenantUsers");
+                    // Operation Path: "StoreApi/AdminModule/tenantUser/listTenantUsers"
+                    urlBuilder_.Append("StoreApi/AdminModule/tenantUser/listTenantUsers");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -1668,8 +2112,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/AdminModule/subtenant"
-                    urlBuilder_.Append("AdminApi/AdminModule/subtenant");
+                    // Operation Path: "StoreApi/AdminModule/subtenant"
+                    urlBuilder_.Append("StoreApi/AdminModule/subtenant");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -1762,8 +2206,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/AdminModule/subtenant"
-                    urlBuilder_.Append("AdminApi/AdminModule/subtenant");
+                    // Operation Path: "StoreApi/AdminModule/subtenant"
+                    urlBuilder_.Append("StoreApi/AdminModule/subtenant");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -1864,8 +2308,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/AdminModule/subtenant/listSubtenants"
-                    urlBuilder_.Append("AdminApi/AdminModule/subtenant/listSubtenants");
+                    // Operation Path: "StoreApi/AdminModule/subtenant/listSubtenants"
+                    urlBuilder_.Append("StoreApi/AdminModule/subtenant/listSubtenants");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -1904,6 +2348,497 @@ namespace AdminApi
                         {
                             string responseText_ = ( response_.Content == null ) ? string.Empty : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
                             throw new ApiException("Invalid status value", status_, responseText_, headers_, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Get chat by ID
+        /// </summary>
+        /// <remarks>
+        /// Retrieves a chat by its ID
+        /// </remarks>
+        /// <param name="chatId">ID of the chat</param>
+        /// <returns>Chat retrieved successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual System.Threading.Tasks.Task<Chat> ChatModuleGetChatByIdAsync(string chatId)
+        {
+            return ChatModuleGetChatByIdAsync(chatId, System.Threading.CancellationToken.None);
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Get chat by ID
+        /// </summary>
+        /// <remarks>
+        /// Retrieves a chat by its ID
+        /// </remarks>
+        /// <param name="chatId">ID of the chat</param>
+        /// <returns>Chat retrieved successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<Chat> ChatModuleGetChatByIdAsync(string chatId, System.Threading.CancellationToken cancellationToken)
+        {
+            if (chatId == null)
+                throw new System.ArgumentNullException("chatId");
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+                
+                    // Operation Path: "StoreApi/ChatModule/chat/{chatId}"
+                    urlBuilder_.Append("StoreApi/ChatModule/chat/");
+                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(chatId, System.Globalization.CultureInfo.InvariantCulture)));
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<Chat>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        if (status_ == 401)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ChatError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ApiException<ChatError>("Unauthorized", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        if (status_ == 404)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ChatError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ApiException<ChatError>("Chat not found", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Delete chat
+        /// </summary>
+        /// <remarks>
+        /// Deletes a chat and cleans up resources
+        /// </remarks>
+        /// <param name="chatId">ID of the chat to delete</param>
+        /// <returns>Chat deleted successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual System.Threading.Tasks.Task ChatModuleDeleteChatAsync(string chatId)
+        {
+            return ChatModuleDeleteChatAsync(chatId, System.Threading.CancellationToken.None);
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Delete chat
+        /// </summary>
+        /// <remarks>
+        /// Deletes a chat and cleans up resources
+        /// </remarks>
+        /// <param name="chatId">ID of the chat to delete</param>
+        /// <returns>Chat deleted successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task ChatModuleDeleteChatAsync(string chatId, System.Threading.CancellationToken cancellationToken)
+        {
+            if (chatId == null)
+                throw new System.ArgumentNullException("chatId");
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("DELETE");
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+                
+                    // Operation Path: "StoreApi/ChatModule/chat/{chatId}"
+                    urlBuilder_.Append("StoreApi/ChatModule/chat/");
+                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(chatId, System.Globalization.CultureInfo.InvariantCulture)));
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            return;
+                        }
+                        else
+                        if (status_ == 401)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ChatError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ApiException<ChatError>("Unauthorized", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        if (status_ == 404)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ChatError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ApiException<ChatError>("Chat not found", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Send message to chat
+        /// </summary>
+        /// <remarks>
+        /// Sends a new message to an existing chat
+        /// </remarks>
+        /// <param name="chatId">ID of the chat</param>
+        /// <returns>Message sent successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual System.Threading.Tasks.Task<ChatMessage> ChatModuleAddChatMessageAsync(string chatId, ChatMessage body)
+        {
+            return ChatModuleAddChatMessageAsync(chatId, body, System.Threading.CancellationToken.None);
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Send message to chat
+        /// </summary>
+        /// <remarks>
+        /// Sends a new message to an existing chat
+        /// </remarks>
+        /// <param name="chatId">ID of the chat</param>
+        /// <returns>Message sent successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<ChatMessage> ChatModuleAddChatMessageAsync(string chatId, ChatMessage body, System.Threading.CancellationToken cancellationToken)
+        {
+            if (chatId == null)
+                throw new System.ArgumentNullException("chatId");
+
+            if (body == null)
+                throw new System.ArgumentNullException("body");
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    var json_ = Newtonsoft.Json.JsonConvert.SerializeObject(body, _settings.Value);
+                    var content_ = new System.Net.Http.StringContent(json_);
+                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                    request_.Content = content_;
+                    request_.Method = new System.Net.Http.HttpMethod("POST");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+                
+                    // Operation Path: "StoreApi/ChatModule/chat/{chatId}/messages"
+                    urlBuilder_.Append("StoreApi/ChatModule/chat/");
+                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(chatId, System.Globalization.CultureInfo.InvariantCulture)));
+                    urlBuilder_.Append("/messages");
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ChatMessage>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        if (status_ == 400)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ChatError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ApiException<ChatError>("Invalid request", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        if (status_ == 401)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ChatError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ApiException<ChatError>("Unauthorized", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        if (status_ == 404)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ChatError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ApiException<ChatError>("Chat not found", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        {
+                            var responseData_ = response_.Content == null ? null : await response_.Content.ReadAsStringAsync().ConfigureAwait(false);
+                            throw new ApiException("The HTTP status code of the response was not expected (" + status_ + ").", status_, responseData_, headers_, null);
+                        }
+                    }
+                    finally
+                    {
+                        if (disposeResponse_)
+                            response_.Dispose();
+                    }
+                }
+            }
+            finally
+            {
+                if (disposeClient_)
+                    client_.Dispose();
+            }
+        }
+
+        /// <summary>
+        /// Get chat messages
+        /// </summary>
+        /// <remarks>
+        /// Retrieves message history for a chat
+        /// </remarks>
+        /// <param name="chatId">ID of the chat</param>
+        /// <param name="page">Page number for pagination</param>
+        /// <param name="limit">Number of messages per page</param>
+        /// <returns>Messages retrieved successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ChatMessage>> ChatModuleGetChatMessagesAsync(string chatId, int? page, int? limit)
+        {
+            return ChatModuleGetChatMessagesAsync(chatId, page, limit, System.Threading.CancellationToken.None);
+        }
+
+        /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
+        /// <summary>
+        /// Get chat messages
+        /// </summary>
+        /// <remarks>
+        /// Retrieves message history for a chat
+        /// </remarks>
+        /// <param name="chatId">ID of the chat</param>
+        /// <param name="page">Page number for pagination</param>
+        /// <param name="limit">Number of messages per page</param>
+        /// <returns>Messages retrieved successfully</returns>
+        /// <exception cref="ApiException">A server side error occurred.</exception>
+        public virtual async System.Threading.Tasks.Task<System.Collections.Generic.ICollection<ChatMessage>> ChatModuleGetChatMessagesAsync(string chatId, int? page, int? limit, System.Threading.CancellationToken cancellationToken)
+        {
+            if (chatId == null)
+                throw new System.ArgumentNullException("chatId");
+
+            var client_ = _httpClient;
+            var disposeClient_ = false;
+            try
+            {
+                using (var request_ = new System.Net.Http.HttpRequestMessage())
+                {
+                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
+
+                    var urlBuilder_ = new System.Text.StringBuilder();
+                
+                    // Operation Path: "StoreApi/ChatModule/chat/{chatId}/messages"
+                    urlBuilder_.Append("StoreApi/ChatModule/chat/");
+                    urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(chatId, System.Globalization.CultureInfo.InvariantCulture)));
+                    urlBuilder_.Append("/messages");
+                    urlBuilder_.Append('?');
+                    if (page != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("page")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(page, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    if (limit != null)
+                    {
+                        urlBuilder_.Append(System.Uri.EscapeDataString("limit")).Append('=').Append(System.Uri.EscapeDataString(ConvertToString(limit, System.Globalization.CultureInfo.InvariantCulture))).Append('&');
+                    }
+                    urlBuilder_.Length--;
+
+                    PrepareRequest(client_, request_, urlBuilder_);
+
+                    var url_ = urlBuilder_.ToString();
+                    request_.RequestUri = new System.Uri(url_, System.UriKind.RelativeOrAbsolute);
+
+                    PrepareRequest(client_, request_, url_);
+
+                    var response_ = await client_.SendAsync(request_, System.Net.Http.HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
+                    var disposeResponse_ = true;
+                    try
+                    {
+                        var headers_ = new System.Collections.Generic.Dictionary<string, System.Collections.Generic.IEnumerable<string>>();
+                        foreach (var item_ in response_.Headers)
+                            headers_[item_.Key] = item_.Value;
+                        if (response_.Content != null && response_.Content.Headers != null)
+                        {
+                            foreach (var item_ in response_.Content.Headers)
+                                headers_[item_.Key] = item_.Value;
+                        }
+
+                        ProcessResponse(client_, response_);
+
+                        var status_ = (int)response_.StatusCode;
+                        if (status_ == 200)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<System.Collections.Generic.ICollection<ChatMessage>>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            return objectResponse_.Object;
+                        }
+                        else
+                        if (status_ == 401)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ChatError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ApiException<ChatError>("Unauthorized", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
+                        }
+                        else
+                        if (status_ == 404)
+                        {
+                            var objectResponse_ = await ReadObjectResponseAsync<ChatError>(response_, headers_, cancellationToken).ConfigureAwait(false);
+                            if (objectResponse_.Object == null)
+                            {
+                                throw new ApiException("Response was null which was not expected.", status_, objectResponse_.Text, headers_, null);
+                            }
+                            throw new ApiException<ChatError>("Chat not found", status_, objectResponse_.Text, headers_, objectResponse_.Object, null);
                         }
                         else
                         {
@@ -1965,8 +2900,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/PublicModule/pet/{petId}"
-                    urlBuilder_.Append("AdminApi/PublicModule/pet/");
+                    // Operation Path: "StoreApi/PublicModule/pet/{petId}"
+                    urlBuilder_.Append("StoreApi/PublicModule/pet/");
                     urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(petId, System.Globalization.CultureInfo.InvariantCulture)));
 
                     PrepareRequest(client_, request_, urlBuilder_);
@@ -2066,8 +3001,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/StoreModule/pet/{petId}"
-                    urlBuilder_.Append("AdminApi/StoreModule/pet/");
+                    // Operation Path: "StoreApi/StoreModule/pet/{petId}"
+                    urlBuilder_.Append("StoreApi/StoreModule/pet/");
                     urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(petId, System.Globalization.CultureInfo.InvariantCulture)));
 
                     PrepareRequest(client_, request_, urlBuilder_);
@@ -2169,8 +3104,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/StoreModule/order/{orderId}"
-                    urlBuilder_.Append("AdminApi/StoreModule/order/");
+                    // Operation Path: "StoreApi/StoreModule/order/{orderId}"
+                    urlBuilder_.Append("StoreApi/StoreModule/order/");
                     urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(orderId, System.Globalization.CultureInfo.InvariantCulture)));
 
                     PrepareRequest(client_, request_, urlBuilder_);
@@ -2270,8 +3205,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/StoreModule/order/{orderId}"
-                    urlBuilder_.Append("AdminApi/StoreModule/order/");
+                    // Operation Path: "StoreApi/StoreModule/order/{orderId}"
+                    urlBuilder_.Append("StoreApi/StoreModule/order/");
                     urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(orderId, System.Globalization.CultureInfo.InvariantCulture)));
 
                     PrepareRequest(client_, request_, urlBuilder_);
@@ -2371,8 +3306,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/AdminModule/subtenant/seedPets/{store}/{numPets}"
-                    urlBuilder_.Append("AdminApi/AdminModule/subtenant/seedPets/");
+                    // Operation Path: "StoreApi/AdminModule/subtenant/seedPets/{store}/{numPets}"
+                    urlBuilder_.Append("StoreApi/AdminModule/subtenant/seedPets/");
                     urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(store, System.Globalization.CultureInfo.InvariantCulture)));
                     urlBuilder_.Append('/');
                     urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(numPets, System.Globalization.CultureInfo.InvariantCulture)));
@@ -2457,8 +3392,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/AdminModule/suspendTenantUser/{tenantUser}"
-                    urlBuilder_.Append("AdminApi/AdminModule/suspendTenantUser/");
+                    // Operation Path: "StoreApi/AdminModule/suspendTenantUser/{tenantUser}"
+                    urlBuilder_.Append("StoreApi/AdminModule/suspendTenantUser/");
                     urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(tenantUser, System.Globalization.CultureInfo.InvariantCulture)));
 
                     PrepareRequest(client_, request_, urlBuilder_);
@@ -2542,8 +3477,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/AdminModule/tenantUser/{tenantUserId}"
-                    urlBuilder_.Append("AdminApi/AdminModule/tenantUser/");
+                    // Operation Path: "StoreApi/AdminModule/tenantUser/{tenantUserId}"
+                    urlBuilder_.Append("StoreApi/AdminModule/tenantUser/");
                     urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(tenantUserId, System.Globalization.CultureInfo.InvariantCulture)));
 
                     PrepareRequest(client_, request_, urlBuilder_);
@@ -2643,8 +3578,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/AdminModule/tenantUser/delete/{tenantUserId}"
-                    urlBuilder_.Append("AdminApi/AdminModule/tenantUser/delete/");
+                    // Operation Path: "StoreApi/AdminModule/tenantUser/delete/{tenantUserId}"
+                    urlBuilder_.Append("StoreApi/AdminModule/tenantUser/delete/");
                     urlBuilder_.Append(System.Uri.EscapeDataString(ConvertToString(tenantUserId, System.Globalization.CultureInfo.InvariantCulture)));
 
                     PrepareRequest(client_, request_, urlBuilder_);
@@ -2740,8 +3675,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/AdminModule/subtenant/{subtenantId}"
-                    urlBuilder_.Append("AdminApi/AdminModule/subtenant/");
+                    // Operation Path: "StoreApi/AdminModule/subtenant/{subtenantId}"
+                    urlBuilder_.Append("StoreApi/AdminModule/subtenant/");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 
@@ -2840,8 +3775,8 @@ namespace AdminApi
 
                     var urlBuilder_ = new System.Text.StringBuilder();
                 
-                    // Operation Path: "AdminApi/AdminModule/subtenant/delete/{subtenantId}"
-                    urlBuilder_.Append("AdminApi/AdminModule/subtenant/delete/");
+                    // Operation Path: "StoreApi/AdminModule/subtenant/delete/{subtenantId}"
+                    urlBuilder_.Append("StoreApi/AdminModule/subtenant/delete/");
 
                     PrepareRequest(client_, request_, urlBuilder_);
 

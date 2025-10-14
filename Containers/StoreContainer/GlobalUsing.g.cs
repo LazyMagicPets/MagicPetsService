@@ -27,3 +27,6 @@ global using ConsumerModule;
 global using StoreSchema;
 global using StoreSchemaRepo;
 global using StoreModule;
+global using AdminSchema;
+global using AdminSchemaRepo;
+global using AdminModule;

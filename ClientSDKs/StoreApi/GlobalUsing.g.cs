@@ -10,3 +10,4 @@ global using SharedSchema;
 global using PublicSchema;
 global using ConsumerSchema;
 global using StoreSchema;
+global using AdminSchema;

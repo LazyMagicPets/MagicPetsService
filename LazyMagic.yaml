@@ -18,26 +18,6 @@ Directives:
     Artifacts:
       DotNetControllerProject: # methods for each REST path operation (now also generates client interface)
 
-  # CONTAINERS Default  
-  AwsApiLambdaContainerDefault:
-    Type: Container
-    IsDefault: true # this directive may be referenced by other Container directives
-    Artifacts:
-      DotNetApiLambdaProject: # Lambda function that processes the HttpApi request 
-      AwsApiLambdaResource: # AWS SAM template resource for the Lambda function
-        ManagedPolicyArns: 
-        # You can further restict this using the Perms stack
-        # if you want to restrict db access by lambda
-        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
-
-  # API Default
-  ApiDefault:
-    Type: Api
-    IsDefault: true # this directive may be referenced by other Api directives
-    Artifacts:
-      AwsHttpApiResource: # AWS SAM template resource for the HttpApi
-      DotNetHttpApiSDKProject: # Client SDK for the Api
-
   # APP RUNNER Container Default
   AppRunnerContainerDefault:
     Type: Container
@@ -45,17 +25,13 @@ Directives:
     Artifacts:
       AspDotNetProject: # Simple ASP.NET Core Web API project
 
-  # API Default for App Runner (NOT using ApiDefault)
+  # API Default for App Runner
   ApiAppRunnerDefault:
     Type: Api
     IsDefault: true
     Artifacts:
-      AspDotNetApiSDKProject: # Reuse existing HTTP REST client SDK generator
-      AwsAppRunnerResource: # AWS SAM template resource for App Runner service
-        ManagedPolicyArns:
-        # You can further restict permissions using the Perms stack but 
-        # generally the admin module has full access to most services.
-        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
+      AspDotNetApiSDKProject:
+
         
   # API Default for AppSync Events (NOT using ApiDefault)
   ApiAppSyncEventsDefault:
@@ -77,13 +53,13 @@ Directives:
     Service: Service
 
   # AUTHENTICATORS - Authentication services
-  tenantauth:
+  tenantauth: #must be lowercase due to AWS SAM limitations
     Type: Authentication
     Artifacts:
       AwsCognitoResource: 
         Template: Templates/sam.cognito.tenant.yaml
 
-  consumerauth:
+  consumerauth: # must be lowercase due to AWS SAM limitations
     Type: Authentication
     Artifacts:
       AwsCognitoResource:
@@ -160,27 +136,8 @@ Directives:
     - openapi.chat.yaml
 
   # CONTAINERS - executables
- 
-  AdminLambda:
-    Type: Container
-    Defaults: AwsApiLambdaContainerDefault
-    Modules:
-    - PublicModule
-    - ConsumerModule    
-    - StoreModule
-    - AdminModule
-    Artifacts:
-      AwsApiLambdaResource: # AWS SAM template resource for the Lambda function
-        ManagedPolicyArns:
-        # You can further restict permissions using the Perms stack but 
-        # generally the admin module has full access to most services.
-        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
-        - arn:aws:iam::aws:policy/AmazonCognitoPowerUser
-        - arn:aws:iam::aws:policy/CloudFrontFullAccess
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
-
-  AspNetContainer:
+  StoreContainer: # Asp.Net Core host running in App Runner for Admin and Store apps
     Type: Container
     Defaults: AppRunnerContainerDefault
     Modules:
@@ -188,40 +145,47 @@ Directives:
     - PublicModule
     - ConsumerModule    
     - StoreModule
+    - AdminModule
+
+  ConsumerContainer: # Asp.Net Core host running in App Runner for Public and Consumer apps
+    Type: Container
+    Defaults: AppRunnerContainerDefault
+    Modules:
+    - ChatModule
+    - PublicModule
+    - ConsumerModule    
+
 
   # APIS 
-  AdminApi: # ApiGateway HTTP API fronting the AdminLambda
-    Type: Api
-    Defaults: ApiDefault
-    Authentication: tenantauth
-    Containers:
-    - AdminLambda
 
-  TenantApi: # Direct Asp.Net Core host running in App Runner
+  StoreApi: # Direct Asp.Net Core host running in App Runner
     Type: Api
     Defaults: ApiAppRunnerDefault
     Authentication: tenantauth
     Containers:
-    - AspNetContainer
+    - StoreContainer
     Artifacts:
       AwsAppRunnerResource:
         ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
         - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
+        - arn:aws:iam::aws:policy/AmazonCognitoPowerUser
+        - arn:aws:iam::aws:policy/CloudFrontFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
   ConsumerApi: # Direct Asp.Net Core host running in App Runner
     Type: Api
     Defaults: ApiAppRunnerDefault
     Authentication: consumerauth
     Containers:
-    - AspNetContainer
+    - ConsumerContainer
     Artifacts:
       AwsAppRunnerResource:
         ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
         - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
-
-  TenantEventsApi:
+  
+  StoreEventsApi:
     Type: Api
     Defaults: ApiAppSyncEventsDefault
     Authentication: tenantauth
@@ -235,10 +199,9 @@ Directives:
   Service:
     Type: Service
     Apis:
-    - AdminApi
-    - TenantApi
+    - StoreApi
     - ConsumerApi 
-    - TenantEventsApi
+    - StoreEventsApi
     - ConsumerEventsApi
     Artifacts:
       AwsServiceStackTemplate:
@@ -246,8 +209,7 @@ Directives:
   LocalWebService:
     Type: Service
     Apis:
-    - AdminApi
-    - TenantApi
+    - StoreApi
     Artifacts:
       DotNetLocalWebApiProject:
 
@@ -263,14 +225,14 @@ Directives:
     Defaults: WebAppDefault
     Path: admin
     Apis:
-    - AdminApi
+    - StoreApi
 
   StoreApp:
     Type: WebApp
     Defaults: WebAppDefault
     Path: store 
     Apis:
-    - TenantApi
+    - StoreApi
 
   ConsumerApp:
     Type: WebApp

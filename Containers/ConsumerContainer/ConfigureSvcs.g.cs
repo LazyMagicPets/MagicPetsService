@@ -5,9 +5,8 @@ public partial class Startup
 {
     public void ConfigureSvcs(IServiceCollection services)
     {
-        services.AddPublicModule();
+        services.AddChatModule();
+		services.AddPublicModule();
 		services.AddConsumerModule();
-		services.AddStoreModule();
-		services.AddAdminModule();
     }
 }
