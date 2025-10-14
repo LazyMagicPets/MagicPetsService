@@ -132,7 +132,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ChatModuleClientInterface",
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppSyncEventsSDK", "ProjectTemplates\AppSyncEventsSDK\AppSyncEventsSDK.csproj", "{74AE3DF3-342B-FAE1-C2B7-A299D8A7E84F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AppRunner", "ProjectTemplates\AppRunner\AppRunner.csproj", "{15FBE4B1-EA9B-BC37-2EF6-773341CF7048}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "AspDotNetHost", "ProjectTemplates\AspDotNetHost\AspDotNetHost.csproj", "{15FBE4B1-EA9B-BC37-2EF6-773341CF7048}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TenantApi", "ClientSDKs\TenantApi\TenantApi.csproj", "{F14B1E17-5181-4ED7-881E-6E641EC472DC}"
 EndProject

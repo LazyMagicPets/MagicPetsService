@@ -10,7 +10,7 @@ COPY ["Directory.Packages.props", "."]
 COPY ["Directory.Build.props", "."]
 COPY ["CommonPackageHandling.targets", "."]
 COPY ["ServiceVersion.props", "."]
-COPY ["nuget.config", "."]
+COPY ["Containers/AspNetContainer/Nuget.Config.Docker", "./nuget.config"]
 
 # Copy NuGet packages prepared by Deploy-DockerAws
 COPY ["DockerPackages/", "DockerPackages/"]
