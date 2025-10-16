@@ -1,7 +1,0 @@
-            __op__:
-              x-amazon-apigateway-integration:
-                httpMethod: POST
-                type: aws_proxy
-                uri:
-                  Fn::Sub: arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${__LambdaName__.Arn}/invocations
-                payloadFormatVersion: 2.0

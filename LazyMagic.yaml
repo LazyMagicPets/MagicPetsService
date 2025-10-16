@@ -31,7 +31,7 @@ Directives:
     IsDefault: true
     Artifacts:
       AspDotNetApiSDKProject:
-
+      AwsApiAppRunnerResource: # App Runner CloudFormation resource
         
   # API Default for AppSync Events (NOT using ApiDefault)
   ApiAppSyncEventsDefault:
@@ -39,7 +39,6 @@ Directives:
     IsDefault: true
     Artifacts:
       AwsAppSyncEventsResource: # AppSync Events CloudFormation resource
-      DotNetAppSyncEventsSDKProject: # WebSocket client SDK (different from HTTP REST)
 
   # WEBAPP Default
   WebAppDefault:
@@ -53,13 +52,13 @@ Directives:
     Service: Service
 
   # AUTHENTICATORS - Authentication services
-  tenantauth: #must be lowercase due to AWS SAM limitations
+  tenantauth: #must be lowercase due to CF template limitations
     Type: Authentication
     Artifacts:
       AwsCognitoResource: 
         Template: Templates/sam.cognito.tenant.yaml
 
-  consumerauth: # must be lowercase due to AWS SAM limitations
+  consumerauth: # must be lowercase due to CF template limitations
     Type: Authentication
     Artifacts:
       AwsCognitoResource:
@@ -137,7 +136,8 @@ Directives:
 
   # CONTAINERS - executables
 
-  StoreContainer: # Asp.Net Core host running in App Runner for Admin and Store apps
+  # Due to limintations in the AWS CF Templates, keep the name of containers <= 12 characters
+  StoreHost: # Asp.Net Core host running in App Runner for Admin and Store apps
     Type: Container
     Defaults: AppRunnerContainerDefault
     Modules:
@@ -146,26 +146,10 @@ Directives:
     - ConsumerModule    
     - StoreModule
     - AdminModule
-
-  ConsumerContainer: # Asp.Net Core host running in App Runner for Public and Consumer apps
-    Type: Container
-    Defaults: AppRunnerContainerDefault
-    Modules:
-    - ChatModule
-    - PublicModule
-    - ConsumerModule    
-
-
-  # APIS 
-
-  StoreApi: # Direct Asp.Net Core host running in App Runner
-    Type: Api
-    Defaults: ApiAppRunnerDefault
-    Authentication: tenantauth
-    Containers:
-    - StoreContainer
     Artifacts:
       AwsAppRunnerResource:
+        EventsApi: StoreEventsApi # allows StoreContainer to publish events
+        Authentication: tenantauth # this container does its own authentication
         ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
         - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
@@ -173,17 +157,35 @@ Directives:
         - arn:aws:iam::aws:policy/CloudFrontFullAccess
         - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
-  ConsumerApi: # Direct Asp.Net Core host running in App Runner
-    Type: Api
-    Defaults: ApiAppRunnerDefault
-    Authentication: consumerauth
-    Containers:
-    - ConsumerContainer
+  # Due to limintations in the AWS CF Templates, keep the name of containers <= 12 characters
+  ConsumerHost: # Asp.Net Core host running in App Runner for Public and Consumer apps
+    Type: Container
+    Defaults: AppRunnerContainerDefault
+    Modules:
+    - ChatModule
+    - PublicModule
+    - ConsumerModule    
     Artifacts:
       AwsAppRunnerResource:
+        EventsApi: ConsumerEventsApi # allows ConsumerContainer to publish events
+        Authentication: consumerauth # this container does its own authentication
         ManagedPolicyArns:
         - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
         - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
+
+  # APIS 
+
+  StoreApi: # Direct Asp.Net Core host running in App Runner
+    Type: Api
+    Defaults: ApiAppRunnerDefault
+    Containers:
+    - StoreHost
+
+  ConsumerApi: # Direct Asp.Net Core host running in App Runner
+    Type: Api
+    Defaults: ApiAppRunnerDefault
+    Containers:
+    - ConsumerHost
   
   StoreEventsApi:
     Type: Api

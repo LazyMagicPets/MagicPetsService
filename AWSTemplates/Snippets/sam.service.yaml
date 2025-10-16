@@ -13,7 +13,7 @@ Parameters:
 
   EnvironmentParameter:   
     Type: String
-    Description: The stage name for the API Gateway and controls some policies
+    Description: The stage name for API Gateways and used in some policies
   
   SystemSuffixParameter:
     Description: "System Guid. No spaces. Lower case."
@@ -27,12 +27,9 @@ Parameters:
 
 Resources:
 
-#LzLambdas#
-
-#LzQueues#
+#LzAppRunners#
 
 #LzApis#
-
 
 Outputs:
 

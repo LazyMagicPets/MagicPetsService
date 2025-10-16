@@ -1,7 +1,0 @@
-
-      - Statement:
-          - Effect: Allow
-            Action:
-              - cognito-idp:GetUser
-            Resource: 
-#UserPoolArns#
