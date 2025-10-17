@@ -1,0 +1,58 @@
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Visual Studio / VS Code
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosspath
+*.sln.docstates
+
+# Build results
+**/bin/
+**/obj/
+**/out/
+**/.vs/
+
+# NuGet
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+# Test results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.trx
+*.coverage
+*.coveragexml
+
+# Documentation and analysis files
+*.md
+**/*.md
+
+# Text files (but allow LICENSE.txt)
+*.txt
+!LICENSE.txt
+!**/LICENSE.txt
+
+# Release artifacts
+Release/
+MakeRelease/
+
+# IDE and editor files
+*.swp
+*~
+.DS_Store
+
+# Local development
+LocalWebService/
+
+# Node modules (if any)
+**/node_modules/
+
+# Logs
+*.log

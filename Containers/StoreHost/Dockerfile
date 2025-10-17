@@ -1,41 +1,39 @@
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 EXPOSE 8080
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
-# Copy shared build configuration files
-COPY ["Directory.Packages.props", "."]
-COPY ["Directory.Build.props", "."]
-COPY ["CommonPackageHandling.targets", "."]
-COPY ["ServiceVersion.props", "."]
-COPY ["Containers/StoreHost/Nuget.Config.Docker", "./nuget.config"]
+ARG ContainerName=""
 
-# Copy NuGet packages prepared by Deploy-DockerAws
-COPY ["DockerPackages/", "DockerPackages/"]
+# Copy entire solution
+COPY . .
 
-# Copy project file and restore
-COPY ["Containers/StoreHost/StoreHost.csproj", "StoreHost/"]
-WORKDIR /src/StoreHost
-RUN dotnet restore "StoreHost.csproj"
+# Generate nuget.config to use DockerPackages folder
+RUN echo '<?xml version="1.0" encoding="utf-8"?>' > nuget.config && \
+    echo '<configuration>' >> nuget.config && \
+    echo '  <packageSources>' >> nuget.config && \
+    echo '    <clear />' >> nuget.config && \
+    echo '    <add key="DockerCache" value="/src/DockerPackages" />' >> nuget.config && \
+    echo '    <add key="nuget.org" value="https://api.nuget.org/v3/index.json" protocolVersion="3" />' >> nuget.config && \
+    echo '  </packageSources>' >> nuget.config && \
+    echo '  <fallbackPackageFolders>' >> nuget.config && \
+    echo '    <clear />' >> nuget.config && \
+    echo '  </fallbackPackageFolders>' >> nuget.config && \
+    echo '</configuration>' >> nuget.config
 
-# Copy all container source files
-WORKDIR /src
-COPY ["Containers/StoreHost/", "StoreHost/"]
+# Restore the specific container project
+WORKDIR /src/Containers/${ContainerName}
+RUN dotnet restore "${ContainerName}.csproj"
 
-# Copy all referenced projects (Modules, Schemas, etc.)
-COPY ["Modules/", "Modules/"]
-COPY ["Schemas/", "Schemas/"]
-
-# Build
-WORKDIR /src/StoreHost
-RUN dotnet build "StoreHost.csproj" -c Release -o /app/build
+# Build (disable package generation to avoid NuGet pack issues)
+RUN dotnet build "${ContainerName}.csproj" -c Release -o /app/build -p:GeneratePackageOnBuild=false
 
 FROM build AS publish
-RUN dotnet publish "StoreHost.csproj" -c Release -o /app/publish
+RUN dotnet publish "${ContainerName}.csproj" -c Release -o /app/publish
 
 FROM base AS final
 WORKDIR /app
 COPY --from=publish /app/publish .
-ENTRYPOINT ["dotnet", "StoreHost.dll"]
+ENTRYPOINT ["dotnet", "${ContainerName}.dll"]

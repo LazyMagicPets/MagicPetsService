@@ -42,13 +42,13 @@
 		</ItemGroup>
 	</Target>	
 	
-	<!-- Copy Package License -->
+	<!-- Copy Package License --><!--
 	<Target Name="CopyPackageLicense" BeforeTargets="Clean">
 		<Copy SourceFiles="$(SolutionDir)\LICENSE.txt" DestinationFiles="LICENSE.txt" />
 	</Target>
 	<ItemGroup>
 		<None Include="LICENSE.txt" Pack="True" PackagePath=""/>
-	</ItemGroup>
+	</ItemGroup>-->
 	<!-- Copy Package Target -->
 	<Target Name="CopyPackage" AfterTargets="Pack">
 		<Message Importance="high" Text="Copying $(AssemblyName).$(Version).nupkg to Packages folder" />
