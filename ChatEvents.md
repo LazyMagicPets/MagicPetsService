@@ -217,53 +217,149 @@ Fired when an error occurs during message processing.
 
 ## Backend Implementation
 
-### Two-Layer Architecture
+### API Endpoints
+
+The chat system exposes RESTful API endpoints through the ChatModule:
+
+#### Chat Management
+
+- **POST /chat** - Create new chat session
+  - Routes to: `ChatManagerService.CreateChatAsync(callerInfo, body)`
+  - Creates Chat entity in DynamoDB
+  - Creates ChatContext entity in DynamoDB
+  - Initializes in-memory ConnectionChat with background processing
+  - Returns: `Chat` object with generated `ChatId`
+
+- **GET /chat** - List all chats for authenticated user
+  - Routes to: `ChatManagerService.ListChatsAsync(callerInfo)`
+  - Returns chats from DynamoDB, enhanced with in-memory state if active
+
+- **GET /chat/{chatId}** - Get specific chat
+  - Routes to: `ChatManagerService.GetChatAsync(callerInfo, chatId)`
+  - Returns in-memory instance if active, otherwise loads from DynamoDB
+
+- **PUT /chat** - Update chat metadata
+  - Routes to: `ChatManagerService.UpdateChatAsync(callerInfo, body)`
+  - Updates both in-memory and persistent storage
+
+- **DELETE /chat/{chatId}** - Delete chat
+  - Routes to: `ChatManagerService.DeleteChatAsync(callerInfo, chatId)`
+  - Stops background processing, persists messages, deletes from DynamoDB
+
+#### Message Management
+
+- **POST /chat/{chatId}/messages** - Send message to chat
+  - Routes to: `ChatManagerService.SendMessageAsync(callerInfo, chatId, body)`
+  - **Flow**:
+    1. Ensures chat exists in memory (resumes from DynamoDB if needed)
+    2. Validates chat is active and user owns it
+    3. Sets `MessageId`, `ChatId`, `Timestamp`, `Role=User`
+    4. Publishes `Message_received` event via AppSync Events
+    5. Enqueues message to `Channel<ChatMessage>` for background processing
+    6. Returns immediately with `ChatMessage` object (non-blocking)
+    7. Background task processes LLM request and publishes streaming events
+  - **Important**: Returns immediately - LLM response comes via AppSync Events
+
+- **GET /chat/{chatId}/messages** - Get message history
+  - Routes to: `ChatManagerService.GetMessagesAsync(callerInfo, chatId, page, limit)`
+  - Returns messages from in-memory history if active, otherwise from DynamoDB
+  - Supports pagination via `page` and `limit` query parameters
+
+### Orchestrator Pattern
+
+**ChatManagerService** acts as the orchestrator, coordinating between:
+- **Data Layer**: `IChatRepo`, `IChatContextRepo` (DynamoDB persistence)
+- **In-Memory State**: `ConnectionChat` instances with message queues
+- **Background Processing**: LLM orchestration via `ILlmClient`
+- **Event Publishing**: Real-time updates via `IChatEventPublisher`
+
+**Key Responsibilities**:
+1. Manages dual-state (in-memory + DynamoDB) for active chats
+2. Routes API calls to appropriate persistence or in-memory operations
+3. Ensures chat ownership and authorization
+4. Handles chat lifecycle (create, resume, delete)
+5. Coordinates message processing and event publishing
+
+### Message Processing Flow
+
+```
+Client → POST /chat/{chatId}/messages
+   ↓
+ChatManagerService.SendMessageAsync()
+   ├─→ Validate chat exists & user owns it
+   ├─→ Set message metadata (ID, timestamp, role)
+   ├─→ Publish Message_received event ────────→ AppSync Events → Client
+   ├─→ Enqueue to Channel<ChatMessage>
+   └─→ Return ChatMessage (200 OK) ──────────→ Client
+
+Background Task (running continuously)
+   ↓
+Read from Channel<ChatMessage>
+   ├─→ Publish Message_processing event ──────→ AppSync Events → Client
+   ├─→ Call ILlmClient.GenerateResponseAsync()
+   │    └─→ Bedrock Claude 3 Sonnet (streaming)
+   ├─→ For each chunk:
+   │    └─→ Publish Message_streaming event ──→ AppSync Events → Client
+   ├─→ Publish Message_completed event ───────→ AppSync Events → Client
+   ├─→ Persist messages to DynamoDB (batch)
+   └─→ Publish Chat_status_changed event ─────→ AppSync Events → Client
+```
+
+### Two-Layer Architecture for Event Publishing
 
 The backend uses a two-layer architecture for event publishing:
 
 #### Domain Layer: `IChatEventPublisher`
 
-Provides high-level, business-focused methods for publishing chat events:
+Provides high-level, business-focused methods for publishing chat events.
+
+**All methods accept `ICallerInfo` to enable multi-tenant AppSync Events routing:**
 
 ```csharp
 // Service/Schemas/ChatSchemaRepo/Services/IChatEventPublisher.cs
 
 public interface IChatEventPublisher
 {
-    Task PublishUserMessageAsync(string chatId, ChatMessage message);
-    Task PublishProcessingStartedAsync(string chatId, string messageId);
-    Task PublishStreamingChunkAsync(string chatId, string messageId, string chunk);
-    Task PublishMessageCompletedAsync(string chatId, ChatMessage message);
-    Task PublishErrorAsync(string chatId, string error);
-    Task PublishStatusChangedAsync(string chatId, ChatStatus status);
+    Task PublishUserMessageAsync(string chatId, ChatMessage message, ICallerInfo callerInfo);
+    Task PublishProcessingStartedAsync(string chatId, string messageId, ICallerInfo callerInfo);
+    Task PublishStreamingChunkAsync(string chatId, string messageId, string chunk, ICallerInfo callerInfo);
+    Task PublishMessageCompletedAsync(string chatId, ChatMessage message, ICallerInfo callerInfo);
+    Task PublishErrorAsync(string chatId, string error, ICallerInfo callerInfo);
+    Task PublishStatusChangedAsync(string chatId, ChatStatus status, ICallerInfo callerInfo);
 }
 ```
 
+**Key Enhancement:** The `ICallerInfo` parameter contains `Authname` (e.g., "tenantauth", "consumerauth") which the transport layer uses to route events to the correct AppSync Events API.
+
 #### Transport Layer: `IWsEventPublisher`
 
-Provides platform-agnostic WebSocket event publishing:
+Provides platform-agnostic WebSocket event publishing with multi-tenant support:
 
 ```csharp
 // Service/Schemas/ChatSchemaRepo/Services/IWsEventPublisher.cs
 
 public interface IWsEventPublisher
 {
+    /// <param name="callerInfo">Caller authentication context for EventsApi selection</param>
     Task PublishAsync<T>(
         string channel,
         string eventType,
         T data,
-        Dictionary<string, object>? metadata = null);
+        Dictionary<string, object>? metadata = null,
+        ICallerInfo? callerInfo = null);
 }
 ```
 
+**Key Enhancement:** The optional `callerInfo` parameter enables the `AppSyncWsEventPublisher` implementation to dynamically select the correct EventsApi based on `callerInfo.Authname`.
+
 ### Publishing Events
 
-Business logic uses the domain layer interface for simplified event publishing:
+Business logic uses the domain layer interface for simplified event publishing.
 
 **Example - Publishing a message received event:**
 
 ```csharp
-// BEFORE (6 lines):
+// BEFORE (6 lines, no multi-tenant support):
 await _eventPublisher.PublishChatEventAsync(chat.ChatId, new ChatEvent
 {
     EventType = ChatEventType.Message_received,
@@ -272,31 +368,37 @@ await _eventPublisher.PublishChatEventAsync(chat.ChatId, new ChatEvent
     Data = message
 });
 
-// AFTER (1 line):
-await _eventPublisher.PublishUserMessageAsync(chat.ChatId, message);
+// AFTER (1 line, with multi-tenant routing):
+await _eventPublisher.PublishUserMessageAsync(chatId, message, callerInfo);
 ```
 
-**All Domain Layer Methods:**
+**All Domain Layer Methods with `ICallerInfo`:**
 
 ```csharp
 // User message received
-await _eventPublisher.PublishUserMessageAsync(chatId, message);
+await _eventPublisher.PublishUserMessageAsync(chatId, message, callerInfo);
 
 // Processing started
-await _eventPublisher.PublishProcessingStartedAsync(chatId, messageId);
+await _eventPublisher.PublishProcessingStartedAsync(chatId, messageId, callerInfo);
 
 // Streaming chunk
-await _eventPublisher.PublishStreamingChunkAsync(chatId, messageId, chunk);
+await _eventPublisher.PublishStreamingChunkAsync(chatId, messageId, chunk, callerInfo);
 
 // Message completed
-await _eventPublisher.PublishMessageCompletedAsync(chatId, assistantMessage);
+await _eventPublisher.PublishMessageCompletedAsync(chatId, assistantMessage, callerInfo);
 
 // Error occurred
-await _eventPublisher.PublishErrorAsync(chatId, "Error message");
+await _eventPublisher.PublishErrorAsync(chatId, "Error message", callerInfo);
 
 // Status changed
-await _eventPublisher.PublishStatusChangedAsync(chatId, ChatStatus.Active);
+await _eventPublisher.PublishStatusChangedAsync(chatId, ChatStatus.Active, callerInfo);
 ```
+
+**Why `ICallerInfo` is Required:**
+- ChatManagerService receives `callerInfo` from API controller (extracted from JWT)
+- `callerInfo.Authname` determines which AppSync Events API to use
+- Enables single container to route tenant and consumer events to separate APIs
+- Example: Tenant request (`Authname="tenantauth"`) → `tenantauthEventsApi`
 
 ### Implementation Details
 
@@ -358,49 +460,124 @@ public class AppSyncWsEventPublisher : IWsEventPublisher
 
 ### Configuration
 
-The service uses unified configuration for the AppSync Events API endpoint:
+The service supports **multiple AppSync Events APIs** with dynamic routing based on caller authentication.
+
+#### Multi-Tenant AppSync Events Architecture
+
+The system uses **`ICallerInfo.Authname`** to dynamically route events to the correct AppSync Events API:
+
+- **Tenant/Store authenticated requests** (`Authname = "tenantauth"`) → `tenantauthEventsApi`
+- **Consumer authenticated requests** (`Authname = "consumerauth"`) → `consumerauthEventsApi`
+
+This allows a single AppRunner container to serve both tenant and consumer users, with events published to their respective AppSync APIs.
+
+#### Configuration Structure
 
 ```json
 {
   "AWS": {
     "Region": "us-west-2",
     "AppSync": {
-      "EventsApi": {
+      "tenantauthEventsApi": {
         "HttpDomain": "24njcduygfd35m34apqhaaqs6e.appsync-api.us-west-2.amazonaws.com",
         "ApiKey": "da2-xxx...",
         "Region": "us-west-2"
+      },
+      "consumerauthEventsApi": {
+        "HttpDomain": "kwzvarrv3na35ebufl3hqqpmdq.appsync-api.us-west-2.amazonaws.com",
+        "ApiKey": "da2-yyy...",
+        "Region": "us-west-2"
       }
     }
-  },
-  "APPSYNC_EVENTS_API_TYPE": "Tenant"
+  }
 }
 ```
 
-**Configuration Strategy:**
+#### Dynamic EventsApi Resolution
 
-Each AppRunner container uses ONE Events API (not both). Configuration is set via:
+The `AppSyncWsEventPublisher` resolves the correct EventsApi configuration using a **convention-based approach**:
 
-1. **Primary (Unified)**: `AWS:AppSync:EventsApi:*` - Current standard
-2. **Fallback (Type-Specific)**: `AWS:AppSync:{Type}EventsApi:*` - Backward compatible
-   - `Type` determined by `APPSYNC_EVENTS_API_TYPE` environment variable (Tenant or Consumer)
+```csharp
+// AppSyncWsEventPublisher.cs - ResolveEventsApiConfig()
+
+private (string? httpDomain, string? apiKey) ResolveEventsApiConfig(string? authName)
+{
+    if (string.IsNullOrEmpty(authName))
+    {
+        _logger.LogWarning("No authName provided in CallerInfo. Cannot resolve EventsApi configuration.");
+        return (null, null);
+    }
+
+    // Convention-based mapping: {authname}EventsApi
+    // Example: authName="tenantauth" → "AWS:AppSync:tenantauthEventsApi"
+    var configKey = $"AWS:AppSync:{authName}EventsApi";
+    var httpDomain = _configuration[$"{configKey}:HttpDomain"];
+    var apiKey = _configuration[$"{configKey}:ApiKey"];
+
+    return (httpDomain, apiKey);
+}
+```
+
+**Resolution Flow:**
+1. API request arrives with JWT token (contains auth context)
+2. `ICallerInfo` extracts `Authname` from authentication middleware (e.g., "tenantauth")
+3. `ChatManagerService` passes `callerInfo` to all event publisher methods
+4. `ChatEventPublisher` forwards `callerInfo` to `IWsEventPublisher.PublishAsync()`
+5. `AppSyncWsEventPublisher` calls `ResolveEventsApiConfig(callerInfo.Authname)`
+6. Configuration key constructed: `AWS:AppSync:{authname}EventsApi`
+7. Event published to the correct AppSync Events API
+
+**Benefits:**
+- **Single Container, Multiple APIs**: One AppRunner serves both tenant and consumer users
+- **Automatic Routing**: No manual API selection required
+- **Convention-Based**: Add new auth contexts by following naming pattern
+- **Fail-Safe**: Logs warnings if EventsApi configuration is missing
+
+**Example - AppRunner receives from CloudFormation:**
+
+AppRunner containers receive environment variables for **both** AppSync Events APIs:
+
+```yaml
+RuntimeEnvironmentVariables:
+  # Tenant/Store Events API
+  - Name: AWS__AppSync__tenantauthEventsApi__HttpDomain
+    Value: !GetAtt tenantauthEventsApi.Dns.Http
+  - Name: AWS__AppSync__tenantauthEventsApi__ApiKey
+    Value: !GetAtt tenantauthEventsApiApiKey.ApiKey
+  - Name: AWS__AppSync__tenantauthEventsApi__Region
+    Value: !Ref AWS::Region
+
+  # Consumer Events API
+  - Name: AWS__AppSync__consumerauthEventsApi__HttpDomain
+    Value: !GetAtt consumerauthEventsApi.Dns.Http
+  - Name: AWS__AppSync__consumerauthEventsApi__ApiKey
+    Value: !GetAtt consumerauthEventsApiApiKey.ApiKey
+  - Name: AWS__AppSync__consumerauthEventsApi__Region
+    Value: !Ref AWS::Region
+```
 
 **Example - LocalWebService reads from CloudFormation stack:**
 ```csharp
-// Startup.g.cs reads stack outputs and sets unified config
-_configuration["AWS:AppSync:EventsApi:HttpDomain"] = stackOutput.HttpDomain;
-_configuration["AWS:AppSync:EventsApi:ApiKey"] = stackOutput.ApiKey;
+// Startup.g.cs reads stack outputs and sets auth-specific config
+_configuration["AWS:AppSync:tenantauthEventsApi:HttpDomain"] = tenantEventsStackOutput.HttpDomain;
+_configuration["AWS:AppSync:tenantauthEventsApi:ApiKey"] = tenantEventsStackOutput.ApiKey;
+
+_configuration["AWS:AppSync:consumerauthEventsApi:HttpDomain"] = consumerEventsStackOutput.HttpDomain;
+_configuration["AWS:AppSync:consumerauthEventsApi:ApiKey"] = consumerEventsStackOutput.ApiKey;
 ```
 
-**Example - AppRunner receives from CloudFormation:**
-```yaml
-RuntimeEnvironmentVariables:
-  - Name: AWS__AppSync__EventsApi__HttpDomain
-    Value: !GetAtt TenantEventsApi.Dns.Http
-  - Name: AWS__AppSync__EventsApi__ApiKey
-    Value: !GetAtt TenantEventsApiKey.ApiKey
-  - Name: APPSYNC_EVENTS_API_TYPE
-    Value: Tenant
-```
+**Auto-Deployment Behavior:**
+
+AppRunner auto-deployment occurs when:
+1. **New ECR Image Push**: `AutoDeploymentsEnabled: true` triggers automatic deployment when a new image with the matching tag is pushed to ECR
+2. **CloudFormation Stack Update**: Changes to `AWS::AppRunner::Service` resource properties (including `RuntimeEnvironmentVariables`) automatically trigger a service update and redeployment
+   - CloudFormation detects property changes
+   - Pulls the latest image from ECR
+   - Launches new instances with updated configuration
+   - Performs rolling deployment to replace old instances
+   - **No manual AppRunner restart required**
+
+**Important**: When updating environment variables in the CloudFormation template, the service will automatically restart with the new configuration during stack update. Active sessions will be lost during the deployment (see AppRunner.md for session lifecycle details).
 
 **Authentication Methods:**
 
@@ -411,18 +588,34 @@ Toggle via `UseApiKeyAuth` constant in `AppSyncWsEventPublisher.cs`.
 
 ### Event Publishing Flow
 
-1. **ChatManagerService** calls domain method: `await _eventPublisher.PublishUserMessageAsync(chatId, message)`
+1. **ChatManagerService** calls domain method with `callerInfo`:
+   ```csharp
+   await _eventPublisher.PublishUserMessageAsync(chatId, message, callerInfo);
+   ```
+
 2. **ChatEventPublisher** (domain layer):
    - Constructs channel path: `/chat/{chatId}`
    - Converts event type enum to string: `ChatEventType.Message_received.ToString()`
    - Adds metadata with dataType: `nameof(ChatMessage)`
-   - Calls transport layer: `_wsPublisher.PublishAsync(channel, eventType, data, metadata)`
+   - **Passes `callerInfo` to transport layer**:
+   ```csharp
+   await _wsPublisher.PublishAsync(channel, eventType, data, metadata, callerInfo);
+   ```
+
 3. **AppSyncWsEventPublisher** (transport layer):
+   - **Resolves correct EventsApi using `callerInfo.Authname`**:
+     ```csharp
+     var (httpDomain, apiKey) = ResolveEventsApiConfig(callerInfo?.Authname);
+     // Example: "tenantauth" → AWS:AppSync:tenantauthEventsApi
+     ```
    - Extracts chatId from channel path
    - Builds AppSync event payload with `chatId`, `eventType`, `timestamp`, `data`, `dataType`
    - Serializes payload to JSON string (AppSync Events requires JSON strings in events array)
-   - HTTP POST to `https://{domain}/event` with Authorization header
-4. **AppSync Events API** delivers event to all subscribed clients on that channel
+   - HTTP POST to `https://{httpDomain}/event` with API Key or IAM/SigV4 authentication
+
+4. **AppSync Events API** (auth-specific) delivers event to all subscribed clients on that channel:
+   - **tenantauthEventsApi** → Tenant/Store clients subscribed to `/chat/{chatId}`
+   - **consumerauthEventsApi** → Consumer clients subscribed to `/chat/{chatId}`
 
 ## Client Implementation
 
@@ -938,6 +1131,17 @@ _logger.LogInformation(
 
 ## Version History
 
+- **v1.2** (2025-01-22): Multi-tenant AppSync Events routing and orchestrator pattern
+  - **MAJOR**: Implemented multi-tenant AppSync Events routing using `ICallerInfo.Authname`
+  - **MAJOR**: Dynamic EventsApi resolution allowing single container to serve multiple auth contexts
+  - Documented ChatManagerService as orchestrator coordinating data layer, in-memory state, and events
+  - Added comprehensive API endpoint documentation (Chat and Message management)
+  - Documented message processing flow with background task architecture
+  - Added AppRunner auto-deployment behavior documentation
+  - Clarified dual-state management (in-memory + DynamoDB)
+  - Documented chat resume capability from persistent storage
+  - Added convention-based EventsApi configuration pattern (`{authname}EventsApi`)
+  - Updated all event publisher methods to include `ICallerInfo` parameter
 - **v1.1** (2025-01-11): Two-layer architecture refactoring
   - Implemented IChatEventPublisher (domain layer) and IWsEventPublisher (transport layer)
   - Simplified ChatManagerService event publishing (83% code reduction)
@@ -953,5 +1157,5 @@ _logger.LogInformation(
 
 ---
 
-**Last Updated**: 2025-01-11
+**Last Updated**: 2025-01-22
 **Authors**: LazyMagic Team, Claude (Anthropic AI Assistant)

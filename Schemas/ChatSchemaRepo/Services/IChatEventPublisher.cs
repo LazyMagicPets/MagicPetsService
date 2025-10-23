@@ -9,30 +9,30 @@ public interface IChatEventPublisher
     /// <summary>
     /// Publishes user message received event
     /// </summary>
-    Task PublishUserMessageAsync(string chatId, ChatMessage message);
+    Task PublishUserMessageAsync(string chatId, ChatMessage message, ICallerInfo callerInfo);
 
     /// <summary>
     /// Publishes assistant processing started event
     /// </summary>
-    Task PublishProcessingStartedAsync(string chatId, string messageId);
+    Task PublishProcessingStartedAsync(string chatId, string messageId, ICallerInfo callerInfo);
 
     /// <summary>
     /// Publishes streaming chunk event
     /// </summary>
-    Task PublishStreamingChunkAsync(string chatId, string messageId, string chunk);
+    Task PublishStreamingChunkAsync(string chatId, string messageId, string chunk, ICallerInfo callerInfo);
 
     /// <summary>
     /// Publishes assistant message completed event
     /// </summary>
-    Task PublishMessageCompletedAsync(string chatId, ChatMessage message);
+    Task PublishMessageCompletedAsync(string chatId, ChatMessage message, ICallerInfo callerInfo);
 
     /// <summary>
     /// Publishes error event
     /// </summary>
-    Task PublishErrorAsync(string chatId, string error);
+    Task PublishErrorAsync(string chatId, string error, ICallerInfo callerInfo);
 
     /// <summary>
     /// Publishes chat status changed event
     /// </summary>
-    Task PublishStatusChangedAsync(string chatId, ChatStatus status);
+    Task PublishStatusChangedAsync(string chatId, ChatStatus status, ICallerInfo callerInfo);
 }

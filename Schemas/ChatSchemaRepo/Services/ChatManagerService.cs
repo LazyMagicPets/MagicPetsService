@@ -148,7 +148,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
         _backgroundTasks.TryAdd(chat.ChatId, backgroundTask);
 
         // 7. Publish event
-        await _eventPublisher.PublishStatusChangedAsync(chat.ChatId, ChatStatus.Active);
+        await _eventPublisher.PublishStatusChangedAsync(chat.ChatId, ChatStatus.Active, callerInfo);
 
         _logger.LogInformation("DEBUG: About to log Created chat for {ChatId}", chat.ChatId);
         _logger.LogInformation("Created chat {ChatId} for user {UserId}", chat.ChatId, chat.UserId);
@@ -270,7 +270,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
         if (updatedChat != null)
         {
             // 4. Publish event
-            await _eventPublisher.PublishStatusChangedAsync(chatId, chat.Status);
+            await _eventPublisher.PublishStatusChangedAsync(chatId, chat.Status, callerInfo);
 
             _logger.LogInformation("Updated chat {ChatId}", chatId);
         }
@@ -322,7 +322,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
         if (result.StatusCode == 200)
         {
             // 4. Publish event
-            await _eventPublisher.PublishStatusChangedAsync(chatId, ChatStatus.Closed);
+            await _eventPublisher.PublishStatusChangedAsync(chatId, ChatStatus.Closed, callerInfo);
 
             _logger.LogInformation("Deleted chat {ChatId}", chatId);
         }
@@ -386,7 +386,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
         connectionChat.LastActivityAt = DateTime.UtcNow;
 
         // 7. Publish user message event
-        await _eventPublisher.PublishUserMessageAsync(chatId, message);
+        await _eventPublisher.PublishUserMessageAsync(chatId, message, callerInfo);
 
         // 8. Enqueue for LLM processing
         await connectionChat.MessageQueue.Writer.WriteAsync(message, connectionChat.CancellationToken.Token);
@@ -509,7 +509,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
         _backgroundTasks.TryAdd(chatId, backgroundTask);
 
         // 5. Publish event
-        await _eventPublisher.PublishStatusChangedAsync(chatId, chat.Status);
+        await _eventPublisher.PublishStatusChangedAsync(chatId, chat.Status, callerInfo);
 
         _logger.LogInformation("Resumed chat {ChatId} from DynamoDB", chatId);
         return new Microsoft.AspNetCore.Mvc.OkObjectResult(chat);
@@ -596,7 +596,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
                     var fullResponse = new System.Text.StringBuilder();
 
                     // Publish streaming start event
-                    await _eventPublisher.PublishProcessingStartedAsync(chat.ChatId, assistantMessageId);
+                    await _eventPublisher.PublishProcessingStartedAsync(chat.ChatId, assistantMessageId, chat.CallerInfo!);
 
                     // Stream the response
                     await foreach (var textChunk in _llmClient.GenerateResponseStreamAsync(chat.History, chat.CancellationToken.Token))
@@ -605,7 +605,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
 
                         // Publish streaming chunk event with only the new chunk
                         // Client can accumulate chunks on their end
-                        await _eventPublisher.PublishStreamingChunkAsync(chat.ChatId, assistantMessageId, textChunk);
+                        await _eventPublisher.PublishStreamingChunkAsync(chat.ChatId, assistantMessageId, textChunk, chat.CallerInfo!);
                     }
 
                     // Create complete assistant message
@@ -624,7 +624,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
                     chat.Status = ChatStatus.Active;
 
                     // Publish assistant response completed event
-                    await _eventPublisher.PublishMessageCompletedAsync(chat.ChatId, assistantMessage);
+                    await _eventPublisher.PublishMessageCompletedAsync(chat.ChatId, assistantMessage, chat.CallerInfo!);
 
                     _logger.LogInformation("Processed streaming message for chat {ChatId}, total length: {Length}", chat.ChatId, fullResponse.Length);
                 }
@@ -633,7 +633,7 @@ public class ChatManagerService : IChatManagerService, IHostedService
                     _logger.LogError(ex, "Error processing message for chat {ChatId}", chat.ChatId);
 
                     // Publish error event
-                    await _eventPublisher.PublishErrorAsync(chat.ChatId, ex.Message);
+                    await _eventPublisher.PublishErrorAsync(chat.ChatId, ex.Message, chat.CallerInfo!);
 
                     chat.Status = ChatStatus.Error;
                 }

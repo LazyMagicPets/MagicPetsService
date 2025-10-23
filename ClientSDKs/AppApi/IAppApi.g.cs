@@ -10,9 +10,9 @@ using ConsumerModule;
 using StoreModule;
 using AdminModule;
 
-namespace StoreApi
+namespace AppApi
 {
-    public partial interface IStoreApi : IChatModuleClient, IPublicModuleClient, IConsumerModuleClient, IStoreModuleClient, IAdminModuleClient
+    public partial interface IAppApi : IChatModuleClient, IPublicModuleClient, IConsumerModuleClient, IStoreModuleClient, IAdminModuleClient
     {
         // All methods inherited from module client interfaces
     }

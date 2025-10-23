@@ -18,9 +18,7 @@ public class AppSyncWsEventPublisher : IWsEventPublisher
     private readonly ILogger<AppSyncWsEventPublisher> _logger;
     private readonly IConfiguration _configuration;
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly string? _region;
-    private readonly string? _eventApiHttpDomain;
-    private readonly string? _eventApiKey;
+    private readonly string _region;
 
     private readonly AwsCredentialsCache _credentialsCache;
 
@@ -35,58 +33,58 @@ public class AppSyncWsEventPublisher : IWsEventPublisher
         _configuration = configuration;
         _httpClientFactory = httpClientFactory;
 
-        // Single Events API configuration per container
-        // AppRunner: Reads from environment variables set by CloudFormation
-        // LocalWebService: Reads from appsettings.json or user secrets
-        _eventApiHttpDomain = _configuration["AWS:AppSync:EventsApi:HttpDomain"];
-        _eventApiKey = _configuration["AWS:AppSync:EventsApi:ApiKey"];
-
-        // Fallback to type-specific configuration (current LocalWebService pattern)
-        if (string.IsNullOrEmpty(_eventApiHttpDomain))
-        {
-            var apiType = _configuration["APPSYNC_EVENTS_API_TYPE"] ?? "Tenant";
-            _eventApiHttpDomain = _configuration[$"AWS:AppSync:{apiType}EventsApi:HttpDomain"];
-            _eventApiKey = _configuration[$"AWS:AppSync:{apiType}EventsApi:ApiKey"];
-
-            if (!string.IsNullOrEmpty(_eventApiHttpDomain))
-            {
-                _logger.LogInformation("Using {ApiType}EventsApi configuration", apiType);
-            }
-        }
-        else
-        {
-            _logger.LogInformation("Using unified EventsApi configuration");
-        }
-
         // Region resolution with multiple fallbacks
-        _region = _configuration["AWS:AppSync:EventsApi:Region"]
-            ?? _configuration["AWS_REGION"]
+        _region = _configuration["AWS_REGION"]
             ?? _configuration["AWS:Region"]
             ?? "us-east-1";
 
-        // Validation and startup logging
-        if (string.IsNullOrEmpty(_eventApiHttpDomain))
+        _logger.LogInformation("AppSync WebSocket Publisher initialized. Region: {Region}. EventsApi will be resolved dynamically based on caller authentication.", _region);
+    }
+
+    /// <summary>
+    /// Resolves EventsApi configuration dynamically based on authenticator name.
+    /// Uses convention: {authname}EventsApi (e.g., tenantauth -> tenantauthEventsApi)
+    /// </summary>
+    private (string? httpDomain, string? apiKey) ResolveEventsApiConfig(string? authName)
+    {
+        if (string.IsNullOrEmpty(authName))
         {
-            _logger.LogWarning("AppSync Events API HttpDomain not configured. Events will not be published.");
-            _logger.LogWarning("Expected configuration: AWS:AppSync:EventsApi:HttpDomain or AWS:AppSync:{{ApiType}}EventsApi:HttpDomain");
+            _logger.LogWarning("No authName provided in CallerInfo. Cannot resolve EventsApi configuration. Events will not be published.");
+            return (null, null);
+        }
+
+        // Convention-based mapping: {authname}EventsApi
+        var configKey = $"AWS:AppSync:{authName}EventsApi";
+        var httpDomain = _configuration[$"{configKey}:HttpDomain"];
+        var apiKey = _configuration[$"{configKey}:ApiKey"];
+
+        if (!string.IsNullOrEmpty(httpDomain))
+        {
+            _logger.LogDebug("Resolved EventsApi for authName '{AuthName}': {HttpDomain}", authName, httpDomain);
         }
         else
         {
-            _logger.LogInformation("AppSync WebSocket Publisher initialized with domain: {Domain}", _eventApiHttpDomain);
+            _logger.LogWarning("No EventsApi configuration found for authName '{AuthName}'. " +
+                "Expected configuration key: {ConfigKey}:HttpDomain. Events will not be published.",
+                authName, configKey);
         }
 
-        if (string.IsNullOrEmpty(_eventApiKey) && UseApiKeyAuth)
+        if (string.IsNullOrEmpty(apiKey) && UseApiKeyAuth)
         {
-            _logger.LogWarning("AppSync Events API Key not configured. Events may fail to publish.");
-            _logger.LogWarning("Expected configuration: AWS:AppSync:EventsApi:ApiKey or AWS:AppSync:{{ApiType}}EventsApi:ApiKey");
+            _logger.LogWarning("No API Key found for authName '{AuthName}'. " +
+                "Expected configuration key: {ConfigKey}:ApiKey. Events may fail to publish.",
+                authName, configKey);
         }
+
+        return (httpDomain, apiKey);
     }
 
     public async Task PublishAsync<T>(
         string channel,
         string eventType,
         T data,
-        Dictionary<string, object>? metadata = null)
+        Dictionary<string, object>? metadata = null,
+        ICallerInfo? callerInfo = null)
     {
         try
         {
@@ -110,16 +108,19 @@ public class AppSyncWsEventPublisher : IWsEventPublisher
             _logger.LogInformation("Publishing event: {EventType} to channel: {Channel} with data type: {DataType}",
                 eventType, channel, dataTypeName);
 
+            // Resolve EventsApi configuration dynamically based on caller's authName
+            var (httpDomain, apiKey) = ResolveEventsApiConfig(callerInfo?.Authname);
+
             // Check configuration
-            if (string.IsNullOrEmpty(_eventApiHttpDomain))
+            if (string.IsNullOrEmpty(httpDomain))
             {
-                _logger.LogWarning("AppSync Event API HTTP Domain not configured, logging event instead");
+                _logger.LogWarning("AppSync Event API HTTP Domain not resolved, logging event instead");
                 _logger.LogDebug("Event payload: {Payload}", JsonSerializer.Serialize(eventPayload));
                 return;
             }
 
             // Publish to AppSync Events via HTTP
-            await PublishEventAsync(channel, eventPayload, eventType);
+            await PublishEventAsync(channel, eventPayload, eventType, httpDomain, apiKey);
         }
         catch (Exception ex)
         {
@@ -149,7 +150,7 @@ public class AppSyncWsEventPublisher : IWsEventPublisher
         return parts.Length >= 2 ? parts[1] : string.Empty;
     }
 
-    private async Task PublishEventAsync(string channel, object eventPayload, string eventType)
+    private async Task PublishEventAsync(string channel, object eventPayload, string eventType, string httpDomain, string? apiKey)
     {
         // AWS AppSync Events API expects the events array to contain JSON STRINGS, not objects
         // So we serialize the event to a JSON string, then serialize that string again as part of the array
@@ -172,16 +173,15 @@ public class AppSyncWsEventPublisher : IWsEventPublisher
             // API Key authentication - simpler, no signing required
             httpClient.DefaultRequestHeaders.Clear();
 
-            // Use the configured API key (single source per container)
-            if (!string.IsNullOrEmpty(_eventApiKey))
+            // Use the resolved API key
+            if (!string.IsNullOrEmpty(apiKey))
             {
-                httpClient.DefaultRequestHeaders.TryAddWithoutValidation("x-api-key", _eventApiKey);
-                _logger.LogDebug("  API Key configured: {ApiKeyPrefix}...", _eventApiKey.Length > 8 ? _eventApiKey.Substring(0, 8) : "***");
+                httpClient.DefaultRequestHeaders.TryAddWithoutValidation("x-api-key", apiKey);
+                _logger.LogDebug("  API Key configured: {ApiKeyPrefix}...", apiKey.Length > 8 ? apiKey.Substring(0, 8) : "***");
             }
             else
             {
-                _logger.LogWarning("API Key not configured for AppSync Events API");
-                _logger.LogWarning("  Configuration key checked: AWS:AppSync:EventsApi:ApiKey");
+                _logger.LogWarning("API Key not provided for AppSync Events API");
             }
 
             // Use standard JSON content type
@@ -213,7 +213,7 @@ public class AppSyncWsEventPublisher : IWsEventPublisher
         }
 
         // Log detailed request information for debugging
-        var url = $"https://{_eventApiHttpDomain}/event";
+        var url = $"https://{httpDomain}/event";
         _logger.LogDebug("AppSync Events API Request Details:");
         _logger.LogDebug("  Auth Method: {AuthMethod}", UseApiKeyAuth ? "API Key" : "IAM/SigV4");
         _logger.LogDebug("  URL: {Url}", url);

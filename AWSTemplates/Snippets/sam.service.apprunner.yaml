@@ -18,18 +18,7 @@
           ImageConfiguration:
             Port: __Port__
             RuntimeEnvironmentVariables:
-              - Name: ASPNETCORE_ENVIRONMENT
-                Value: !Ref EnvironmentParameter
-              - Name: AWS_REGION
-                Value: !Ref AWS::Region
-              - Name: AWS__Cognito__UserPoolId
-                Value: !Ref __CognitoResource__UserPoolIdParameter
-              - Name: AWS__AppSync__EventsApi__HttpDomain
-                Value: !GetAtt __AppSyncEventsApiName__.Dns.Http
-              - Name: AWS__AppSync__EventsApi__ApiKey
-                Value: !GetAtt __AppSyncEventsApiName__ApiKey.ApiKey
-              - Name: AWS__AppSync__EventsApi__Region
-                Value: !Ref AWS::Region
+__RuntimeEnvironmentVariables__
           ImageRepositoryType: ECR
         AutoDeploymentsEnabled: true
       InstanceConfiguration:

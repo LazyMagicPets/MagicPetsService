@@ -17,7 +17,7 @@ public class ChatEventPublisher : IChatEventPublisher
         _logger = logger;
     }
 
-    public async Task PublishUserMessageAsync(string chatId, ChatMessage message)
+    public async Task PublishUserMessageAsync(string chatId, ChatMessage message, ICallerInfo callerInfo)
     {
         _logger.LogInformation("Publishing user message for chat {ChatId}", chatId);
 
@@ -28,10 +28,11 @@ public class ChatEventPublisher : IChatEventPublisher
             metadata: new Dictionary<string, object>
             {
                 { "dataType", nameof(ChatMessage) }
-            });
+            },
+            callerInfo: callerInfo);
     }
 
-    public async Task PublishProcessingStartedAsync(string chatId, string messageId)
+    public async Task PublishProcessingStartedAsync(string chatId, string messageId, ICallerInfo callerInfo)
     {
         _logger.LogInformation("Publishing processing started for chat {ChatId}", chatId);
 
@@ -42,10 +43,11 @@ public class ChatEventPublisher : IChatEventPublisher
             metadata: new Dictionary<string, object>
             {
                 { "dataType", "Object" }
-            });
+            },
+            callerInfo: callerInfo);
     }
 
-    public async Task PublishStreamingChunkAsync(string chatId, string messageId, string chunk)
+    public async Task PublishStreamingChunkAsync(string chatId, string messageId, string chunk, ICallerInfo callerInfo)
     {
         _logger.LogDebug("Publishing streaming chunk for chat {ChatId}", chatId);
 
@@ -56,10 +58,11 @@ public class ChatEventPublisher : IChatEventPublisher
             metadata: new Dictionary<string, object>
             {
                 { "dataType", "MessageChunk" }
-            });
+            },
+            callerInfo: callerInfo);
     }
 
-    public async Task PublishMessageCompletedAsync(string chatId, ChatMessage message)
+    public async Task PublishMessageCompletedAsync(string chatId, ChatMessage message, ICallerInfo callerInfo)
     {
         _logger.LogInformation("Publishing message completed for chat {ChatId}", chatId);
 
@@ -70,10 +73,11 @@ public class ChatEventPublisher : IChatEventPublisher
             metadata: new Dictionary<string, object>
             {
                 { "dataType", nameof(ChatMessage) }
-            });
+            },
+            callerInfo: callerInfo);
     }
 
-    public async Task PublishErrorAsync(string chatId, string error)
+    public async Task PublishErrorAsync(string chatId, string error, ICallerInfo callerInfo)
     {
         _logger.LogWarning("Publishing error for chat {ChatId}: {Error}", chatId, error);
 
@@ -84,10 +88,11 @@ public class ChatEventPublisher : IChatEventPublisher
             metadata: new Dictionary<string, object>
             {
                 { "dataType", "Object" }
-            });
+            },
+            callerInfo: callerInfo);
     }
 
-    public async Task PublishStatusChangedAsync(string chatId, ChatStatus status)
+    public async Task PublishStatusChangedAsync(string chatId, ChatStatus status, ICallerInfo callerInfo)
     {
         _logger.LogInformation("Publishing status changed for chat {ChatId}: {Status}", chatId, status);
 
@@ -98,6 +103,7 @@ public class ChatEventPublisher : IChatEventPublisher
             metadata: new Dictionary<string, object>
             {
                 { "dataType", "Object" }
-            });
+            },
+            callerInfo: callerInfo);
     }
 }

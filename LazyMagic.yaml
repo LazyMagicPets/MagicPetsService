@@ -11,12 +11,15 @@ Directives:
       DotNetSchemaProject: # system DTOs classes
       DotNetRepoProject: # DynamoDB CRUDL methods for DTOs
 
-  # MODULES Default 
+  # MODULES Default
   ModuleDefault:
     Type: Module
     IsDefault: true # this directive may be referenced by other Module directives
     Artifacts:
       DotNetControllerProject: # methods for each REST path operation (now also generates client interface)
+      AwsModuleResource: # AWS module-level resource requirements
+        ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
 
   # APP RUNNER Container Default
   AppRunnerContainerDefault:
@@ -24,6 +27,7 @@ Directives:
     IsDefault: true
     Artifacts:
       AspDotNetProject: # Simple ASP.NET Core Web API project
+      AwsAppRunnerResource: # AWS App Runner CloudFormation resource
 
   # API Default for App Runner
   ApiAppRunnerDefault:
@@ -103,12 +107,21 @@ Directives:
     - openapi.chat-schema.yaml
 
   # MODULES - libraries handling paths
- 
   AdminModule:
     Type: Module
     Defaults: ModuleDefault
     OpenApiSpecs:
     - openapi.admin.yaml
+    Artifacts:
+      AwsModuleResource:
+        EventsApis:
+        - tenantauthEventsApi # allows tenant authenticated users to publish events
+        - consumerauthEventsApi # allows consumer authenticated users to publish events
+        ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
+        - arn:aws:iam::aws:policy/AmazonCognitoPowerUser
+        - arn:aws:iam::aws:policy/CloudFrontFullAccess
+        - arn:aws:iam::aws:policy/AmazonS3FullAccess
 
   StoreModule:
     Type: Module
@@ -120,7 +133,7 @@ Directives:
     Type: Module
     Defaults: ModuleDefault
     OpenApiSpecs:
-    - openapi.consumer.yaml
+    - openapi.consumer.yaml 
 
   PublicModule:
     Type: Module
@@ -133,85 +146,62 @@ Directives:
     Defaults: ModuleDefault
     OpenApiSpecs:
     - openapi.chat.yaml
+    Artifacts:
+      AwsModuleResource:
+        EventsApis:
+        - tenantauthEventsApi # allows tenant authenticated users to publish events
+        - consumerauthEventsApi # allows consumer authenticated users to publish events
 
   # CONTAINERS - executables
 
-  # Due to limintations in the AWS CF Templates, keep the name of containers <= 12 characters
-  StoreHost: # Asp.Net Core host running in App Runner for Admin and Store apps
+  # Due to limitations in the AWS CF Templates, keep the name of containers <= 12 characters
+  AppHost: # Asp.Net Core host running in App Runner for Admin and Store apps
     Type: Container
     Defaults: AppRunnerContainerDefault
     Modules:
     - ChatModule
     - PublicModule
-    - ConsumerModule    
+    - ConsumerModule
     - StoreModule
     - AdminModule
-    Artifacts:
-      AwsAppRunnerResource:
-        EventsApi: StoreEventsApi # allows StoreContainer to publish events
-        Authentication: tenantauth # this container does its own authentication
-        ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
-        - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
-        - arn:aws:iam::aws:policy/AmazonCognitoPowerUser
-        - arn:aws:iam::aws:policy/CloudFrontFullAccess
-        - arn:aws:iam::aws:policy/AmazonS3FullAccess
-
-  # Due to limintations in the AWS CF Templates, keep the name of containers <= 12 characters
-  ConsumerHost: # Asp.Net Core host running in App Runner for Public and Consumer apps
-    Type: Container
-    Defaults: AppRunnerContainerDefault
-    Modules:
-    - ChatModule
-    - PublicModule
-    - ConsumerModule    
-    Artifacts:
-      AwsAppRunnerResource:
-        EventsApi: ConsumerEventsApi # allows ConsumerContainer to publish events
-        Authentication: consumerauth # this container does its own authentication
-        ManagedPolicyArns:
-        - arn:aws:iam::aws:policy/AmazonDynamoDBFullAccess
-        - arn:aws:iam::aws:policy/AmazonBedrockFullAccess
 
   # APIS 
 
-  StoreApi: # Direct Asp.Net Core host running in App Runner
+  AppApi: # Direct Asp.Net Core host running in App Runner
     Type: Api
     Defaults: ApiAppRunnerDefault
-    Containers:
-    - StoreHost
-
-  ConsumerApi: # Direct Asp.Net Core host running in App Runner
-    Type: Api
-    Defaults: ApiAppRunnerDefault
-    Containers:
-    - ConsumerHost
+    Authenticators:
+    - tenantauth
+    - consumerauth   
+    Containers: # Only one container type per Api for ApiAppRunner 
+    - AppHost
   
-  StoreEventsApi:
+  tenantauthEventsApi:
     Type: Api
     Defaults: ApiAppSyncEventsDefault
-    Authentication: tenantauth
+    Authenticators: 
+    - tenantauth
 
-  ConsumerEventsApi:
+  consumerauthEventsApi:
     Type: Api
     Defaults: ApiAppSyncEventsDefault
-    Authentication: consumerauth
+    Authenticators: 
+    - consumerauth
 
   # Service
   Service:
     Type: Service
     Apis:
-    - StoreApi
-    - ConsumerApi 
-    - StoreEventsApi
-    - ConsumerEventsApi
+    - AppApi
+    - tenantauthEventsApi
+    - consumerauthEventsApi
     Artifacts:
       AwsServiceStackTemplate:
 
   LocalWebService:
     Type: Service
     Apis:
-    - StoreApi
+    - AppApi
     Artifacts:
       DotNetLocalWebApiProject:
 
@@ -227,21 +217,21 @@ Directives:
     Defaults: WebAppDefault
     Path: admin
     Apis:
-    - StoreApi
+    - AppApi
 
   StoreApp:
     Type: WebApp
     Defaults: WebAppDefault
     Path: store 
     Apis:
-    - StoreApi
+    - AppApi
 
   ConsumerApp:
     Type: WebApp
     Defaults: WebAppDefault
     Path: app
     Apis:
-    - ConsumerApi
+    - AppApi
 
 # TENANCIES
   Tenancy:

@@ -38,6 +38,7 @@ public class MockCallerInfo : ICallerInfo
     // Collections
     public Dictionary<string, string> Headers { get; set; } = new();
     public Dictionary<string, string> Claims { get; set; } = new();
+    public string? Authname { get; set; } = "tenantauth";
     public List<string> Permissions { get; set; } = new();
 
     public MockCallerInfo()

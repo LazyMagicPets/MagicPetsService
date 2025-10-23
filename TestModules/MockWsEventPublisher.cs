@@ -14,7 +14,8 @@ public class MockWsEventPublisher : IWsEventPublisher
         string channel,
         string eventType,
         T data,
-        Dictionary<string, object>? metadata = null)
+        Dictionary<string, object>? metadata = null,
+        ICallerInfo? callerInfo = null)
     {
         var wsEvent = new WsEvent
         {

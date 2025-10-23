@@ -14,9 +14,11 @@ public interface IWsEventPublisher
     /// <param name="eventType">Event type identifier</param>
     /// <param name="data">Event data payload</param>
     /// <param name="metadata">Optional metadata (dataType, timestamp, etc.)</param>
+    /// <param name="callerInfo">Caller authentication context for EventsApi selection</param>
     Task PublishAsync<T>(
         string channel,
         string eventType,
         T data,
-        Dictionary<string, object>? metadata = null);
+        Dictionary<string, object>? metadata = null,
+        ICallerInfo? callerInfo = null);
 }
