@@ -36,6 +36,8 @@ Resources:
         KeyValueStoreAssociations:
           - KeyValueStoreARN: !Ref KeyValueStoreArnParameter
       FunctionCode: |
+        // CloudFront Function Runtime: cloudfront-js-2.0
+        // Limitations: No optional chaining (?.), no replaceAll(), no nullish coalescing (??), limited ES6+ features
         import cf from 'cloudfront';
         const kvs = cf.kvs();
         async function handler(event) {
@@ -94,13 +96,13 @@ Resources:
 
 
   # The Request function is used to update S3 origins on the fly using
-  # an associated CloudFront KeyValueStore. This function reads kvs  
-  # using the [subdomain.]domain as the key. The value returned 
-  # is a configuration object optimized for size because KVS 
-  # values must be under 1KB in size and we don't want more than 
+  # an associated CloudFront KeyValueStore. This function reads kvs
+  # using the [subdomain.]domain as the key. The value returned
+  # is a configuration object optimized for size because KVS
+  # values must be under 1KB in size and we don't want more than
   # one kvs access per request.
   # Each kvs JSON entry has the following form:
-  # { 
+  # {
   #     env: "",
   #     tenantKey: "",
   #     subtenantKey: "",
@@ -110,10 +112,10 @@ Resources:
   #     sts: "", // subtenant sufix
   #     region: "",
   # }
-  # Each Behavior entry is an array of strings. See the AssetType switch 
+  # Each Behavior entry is an array of strings. See the AssetType switch
   # statement in the function for documentatio of each type of behavior entry.
-  # 
-  RequestFunction:  
+  #
+  RequestFunction:
     Type: AWS::CloudFront::Function
     Properties:
       Name: !Sub ${SystemKey}---request
@@ -124,9 +126,10 @@ Resources:
         KeyValueStoreAssociations:
           - KeyValueStoreARN: !Ref KeyValueStoreArnParameter
       FunctionCode: !Sub |
+        // CloudFront Function Runtime: cloudfront-js-2.0
+        // Limitations: No optional chaining (?.), no replaceAll(), no nullish coalescing (??), limited ES6+ features
         import cf from 'cloudfront';
-        const kvsARN = "${KeyValueStoreArnParameter}";
-        const kvs = cf.kvs(); 
+        const kvs = cf.kvs();
         let debug = false;
 
         async function handler(event) {
@@ -134,28 +137,36 @@ Resources:
                 const request = event.request;
                 const headers = request.headers;
                 const origin = headers.origin && headers.origin.value;
-                const originalUri = request.uri;
-                const originalDomain = headers.host.value;
+                const origUri = request.uri;
+                const origDom = headers.host.value;
                 if(!request.uri) request.uri = '/';
+                let logMessage = '';
 
-                let logMessage = "";
-                if (request.querystring) {
-                    // Check if it has a 'value' property like headers do
-                    if (request.querystring.value) {
-                        logMessage += '?' + request.querystring.value + '\n';
-                    } else {
-                        // Log the whole object to understand its structure
-                        logMessage += '?querystring object: ' + JSON.stringify(request.querystring) + '\n';
-                    }
-                }
-
-                // Helper function for error responses
                 const err = (code, msg) => ({statusCode: code, statusDescription: code === 404 ? 'Not Found' : 'Error', body: msg});
 
-                // Get config from KVS
-                let config = await GetConfig(headers.host.value);
-                const configJson = JSON.stringify(config);  
-                // Handle preflight requests
+                const ch = (headers.cookie && headers.cookie[0] && headers.cookie[0].value) || '';
+                const stm = ch.match(/lz-subtenant=([^;]+)/);
+                const anm = ch.match(/lz-authname=([^;]+)/);
+
+                // Subdomain redirect to /auth
+                const dp = origDom.split('.');
+                if (dp.length > 2 && !stm && origUri !== '/auth' && !origUri.startsWith('/auth/')) {
+                    const qs = request.querystring || {};
+                    let loc = 'https://' + dp.slice(-2).join('.') + '/auth?subtenant=' + dp[0] + '&returnUrl=' + encodeURIComponent(origUri);
+                    if (qs.authname && qs.authname.value) loc += '&authname=' + encodeURIComponent(qs.authname.value);
+                    return {statusCode: 302, statusDescription: 'Found', headers: {'location': {value: loc}, 'cache-control': {value: 'no-store'}}};
+                }
+
+                let kKey = origDom;
+                if (stm) {
+                    const stc = stm[1];
+                    const rd = origDom.split('.').slice(-2).join('.');
+                    kKey = stc + '.' + rd;
+                    if (debug) logMessage += '\nKVS: ' + kKey + ' (st: ' + stc + ')';
+                }
+
+                let config = await GetConfig(kKey);
+                const cfgJson = JSON.stringify(config);
                 if (config.env === 'dev' && request.method === 'OPTIONS' && origin && 
                     origin.startsWith('https://localhost:') && headers['access-control-request-method']) {
                     return {
@@ -170,123 +181,98 @@ Resources:
                         }
                     };
                 }
-                // Set up keys
-                const systemKey = config.systemKey;
-                const tenantKey = config.tenantKey || '';
-                const subtenantKey = config.subtenantKey || '';
-                // Find matching behavior
-                let behavior = null;
-                let redirectPath = null;
+                const sysKey = config.systemKey;
+                const tenKey = config.tenantKey || '';
+                const stKey = config.subtenantKey || '';
+                let bhv = null;
+                let redPath = null;
                 if(config.behaviors) {
-                    // Create flattened behavior reference array with prefixes
-                    const behaviorsRef = [];
+                    const bref = [];
                     config.behaviors.forEach((b, i) => {
                         const paths = b[0].split(',');
                         paths.forEach((prefix,p) => {
-                            const redirectPath = (p !== 0 ? paths[0] : null);
-                            behaviorsRef.push([prefix, i, redirectPath]);
+                            const redPath = (p !== 0 ? paths[0] : null);
+                            bref.push([prefix, i, redPath]);
                         });
                     });
-
-                    // Sort by path length (longest first)
-                    behaviorsRef.sort((a, b) => b[0].length - a[0].length);
-
-                    // Find the first behavior that matches the request.uri 
-                    for(let i = 0; i < behaviorsRef.length; i++) {
-                        if (request.uri.startsWith(behaviorsRef[i][0])) {
-                            redirectPath = behaviorsRef[i][2];
-                            behavior = config.behaviors[behaviorsRef[i][1]];
-                            break;                
-                        }            
-                    }
-                }   
-                if(!behavior) return err(404, 'No path match');
-
-                // Process behavior
-                const assetType = behavior[1];
-                const awsSuffix = '.amazonaws.com';
-                let originPath = "";
-                let removePrefix = false;
-                let addCacheHeader = false;
-                let assetName = "";
-                let appPath = "";
-
-                switch(assetType) {
-                    case "api":
-                        assetName = behavior[2].replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '');
-                        removePrefix = true;
-                        originPath =  (assetName.includes("execute-api")) ? "/" + config.env : "";
-                        headers['lz-config'] = {value: configJson};
-                        headers['lz-tenantid'] = {value: headers.host.value}; 
-                        const authheader = headers['authorization'] && headers['authorization'].value;
-                        if(authheader && authheader.startsWith('AWS4-HMAC-SHA256 Credential=')) {
-                            headers['lz-config-authorization'] = {value: authheader};
+                    bref.sort((a, b) => b[0].length - a[0].length);
+                    for(let i = 0; i < bref.length; i++) {
+                        if (request.uri.startsWith(bref[i][0])) {
+                            redPath = bref[i][2];
+                            bhv = config.behaviors[bref[i][1]];
+                            break;
                         }
-                        headers['lz-aws-kvsarn'] = {value: kvsARN};
-                        const apiSecondSlash = request.uri.indexOf('/', 1); 
-                        request.uri = apiSecondSlash > 0 ? request.uri.slice(apiSecondSlash) : '/';
+                    }
+                }
+                if(!bhv) return err(404, 'No path match');
+                const aType = bhv[1];
+                const awsSfx = '.amazonaws.com';
+                let oPath = "", aName = "", apPath = "";
+                let rmPfx = false, addCH = false;
+
+                switch(aType) {
+                    case "api":
+                        aName = bhv[2].replace(/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//, '');
+                        rmPfx = true;
+                        oPath =  (aName.includes("execute-api")) ? "/" + config.env : "";
+                        headers['lz-config'] = {value: cfgJson};
+                        headers['lz-tenantid'] = {value: headers.host.value};
+
+                        if (stm) {
+                            headers['lz-subtenant'] = {value: stm[1]};
+                            if (debug) logMessage += '\nst: ' + stm[1];
+                        }
+                        if (anm) {
+                            headers['lz-authname'] = {value: anm[1]};
+                            if (debug) logMessage += '\nan: ' + anm[1];
+                        }
+
+                        const authHdr = headers['authorization'] && headers['authorization'].value;
+                        if(authHdr && authHdr.startsWith('AWS4-HMAC-SHA256 Credential=')) headers['lz-config-authorization'] = {value: authHdr};
+                        headers['lz-aws-kvsarn'] = {value: "${KeyValueStoreArnParameter}"};
+                        const apiS2 = request.uri.indexOf('/', 1);
+                        request.uri = apiS2 > 0 ? request.uri.slice(apiS2) : '/';
                         break;
                     case "assets":
-                        const behaviorLevel = behavior[4];
-                        const assetTenantKey = behaviorLevel > 0 ? tenantKey : '';
-                        const assetSubtenantKey = behaviorLevel > 1 ? subtenantKey : '';
-                        assetName = systemKey + '-' + assetTenantKey + '-' + assetSubtenantKey + '-' + assetType + '-' + behavior[2] + '.s3.' + behavior[3] + awsSuffix;
-                        removePrefix = true;
-                        addCacheHeader = true;
-                        const assetsSecondSlash = request.uri.indexOf('/', 1); 
-                        request.uri = assetsSecondSlash > 0 ? request.uri.slice(assetsSecondSlash) : '/';
+                        const bLvl = bhv[4];
+                        const aTenKey = bLvl > 0 ? tenKey : '';
+                        const aStKey = bLvl > 1 ? stKey : '';
+                        aName = sysKey + '-' + aTenKey + '-' + aStKey + '-' + aType + '-' + bhv[2] + '.s3.' + bhv[3] + awsSfx;
+                        rmPfx = true;
+                        addCH = true;
+                        const astS2 = request.uri.indexOf('/', 1);
+                        request.uri = astS2 > 0 ? request.uri.slice(astS2) : '/';
                         break;
                     case "webapp":
-                        const paths = behavior[0].split(',');
-                        appPath = paths[0];
-                        const webLevel = behavior[4];
-                        const webTenantKey = webLevel > 0 ? tenantKey : '';
-                        const webSubtenantKey = webLevel > 1 ? subtenantKey : '';
-                        assetName = systemKey + '-' + webTenantKey + '-' + webSubtenantKey + '-' + assetType + '-' + behavior[2] + '-' + behavior[3] + '.s3.' + behavior[4] + awsSuffix;
-                        removePrefix = false;
-                        addCacheHeader = true;
-                        originPath = "/wwwroot";
-
-                        // Adjust uri for non-static page requests. We need to return index.html for 
-                        // non-static webapp content. This happens when processing redirects for example.
-                            if (!(/\.[a-zA-Z0-9]+$/.test(request.uri))) {
-                                request.uri = appPath + 'index.html';
-                            }
+                        const paths = bhv[0].split(',');
+                        apPath = paths[0];
+                        const wLvl = bhv[4];
+                        const wTenKey = wLvl > 0 ? tenKey : '';
+                        const wStKey = wLvl > 1 ? stKey : '';
+                        aName = sysKey + '-' + wTenKey + '-' + wStKey + '-' + aType + '-' + bhv[2] + '-' + bhv[3] + '.s3.' + bhv[4] + awsSfx;
+                        rmPfx = false;
+                        addCH = true;
+                        oPath = "/wwwroot";
+                        if (!(/\.[a-zA-Z0-9]+$/.test(request.uri))) request.uri = apPath + 'index.html';
                         break;
                 }
-                // Perform replacements in assetName
-                assetName = assetName
-                    .replaceAll('{sts}', config.sts)
-                    .replaceAll('{ts}', config.ts)
-                    .replaceAll('{ss}', config.ss);
+                aName = aName
+                    .replace(/{sts}/g, config.sts)
+                    .replace(/{ts}/g, config.ts)
+                    .replace(/{ss}/g, config.ss);
 
-                if (assetName.includes('{')) return err(404, 'Bad Config behavior entry');
+                if (aName.includes('{')) return err(404, 'Bad Config behavior entry');
 
-                const cacheKeyValue = assetName + '-' + originPath + '-' +  request.uri;
-                if(addCacheHeader) {
-                    headers['x-custom-cache-key'] = {value: cacheKeyValue};
-                }
-
-                if(request.uri === '/') {
-                    headers['referrer'] = {value: originalDomain + '/sets'};
-                }
+                const cKV = aName + '-' + oPath + '-' +  request.uri;
+                if(addCH) headers['x-custom-cache-key'] = {value: cKV};
+                if(request.uri === '/') headers['referrer'] = {value: origDom + '/sets'};
 
                 cf.updateRequestOrigin({
-                    "domainName": assetName,
-                    "originPath": originPath
+                    "domainName": aName,
+                    "originPath": oPath
                 });
 
-                if(debug ) {
-                    logMessage += "\n originalDomain: " +  originalDomain
-                               + "\n originalUri: " + originalUri
-                               + "\n appPath: " + appPath
-                               + "\n redirectPath:" + redirectPath
-                               + "\n assetName: " + assetName
-                               + "\n originPath:" + originPath
-                               + "\n cachekey: " + cacheKeyValue
-                               + "\n request.uri: " + request.uri;
-                    console.log(logMessage);
-                }
+                if(debug) console.log(logMessage += "\n origDom: " +  origDom + "\n origUri: " + origUri + "\n apPath: " + apPath + "\n redPath:" + redPath + "\n aName: " + aName + "\n oPath:" + oPath + "\n cachekey: " + cKV + "\n request.uri: " + request.uri);
 
                 return request;
             } catch (e) {
@@ -355,12 +341,14 @@ Resources:
         MinTTL: 1
         ParametersInCacheKeyAndForwardedToOrigin:
           CookiesConfig:
-            CookieBehavior: none
+            CookieBehavior: whitelist
+            Cookies:
+              - lz-subtenant
           EnableAcceptEncodingGzip: true
           EnableAcceptEncodingBrotli: true
           HeadersConfig:
             HeaderBehavior: whitelist
-            Headers: 
+            Headers:
               - 'x-custom-cache-key'
           QueryStringsConfig:
             QueryStringBehavior: none
@@ -376,7 +364,9 @@ Resources:
         MinTTL: 1
         ParametersInCacheKeyAndForwardedToOrigin:
           CookiesConfig:
-            CookieBehavior: none
+            CookieBehavior: whitelist
+            Cookies:
+              - lz-subtenant
           EnableAcceptEncodingGzip: true
           EnableAcceptEncodingBrotli: true
           HeadersConfig:
@@ -508,8 +498,8 @@ Outputs:
     Value: !GetAtt RequestFunction.FunctionARN
 
   ApiRequestFunctionArn:
-    Value: !GetAtt RequestFunction.FunctionARN  
-  
+    Value: !GetAtt RequestFunction.FunctionARN
+
   AuthConfigFunctionArn:
     Value: !GetAtt AuthConfigFunction.FunctionARN
 

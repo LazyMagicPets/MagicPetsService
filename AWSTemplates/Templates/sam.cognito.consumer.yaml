@@ -174,14 +174,12 @@ Resources:
       - profile
       CallbackURLs:
       - awsloginmaui://auth-callback
-      - https://localhost:7218/authentication/login-callback
-      - https://uptown.lazymagicdev.click/app/authentication/login-callback
-      - https://downtown.lazymagicdev.click/app/authentication/login-callback 
+      - https://localhost:7218/auth/callback
+      - https://lazymagicdev.click/auth/callback
 
       LogoutURLs:
-      - https://localhost:7218/
-      - https://uptown.lazymagicdev.click/app/
-      - https://downtown.lazymagicdev.click/app/
+      - https://localhost:7218/auth
+      - https://lazymagicdev.click/auth
 
 Outputs:
   UserPoolId:

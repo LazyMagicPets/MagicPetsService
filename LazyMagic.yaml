@@ -233,11 +233,17 @@ Directives:
     Apis:
     - AppApi
 
+  AuthApp:
+    Type: WebApp
+    Defaults: WebAppDefault
+    Path: auth
+
 # TENANCIES
   Tenancy:
     Type: Tenancy
     Defaults: TenancyDefaults
     WebApps:
+    - AuthApp
     - AdminApp
     - StoreApp
     - ConsumerApp
