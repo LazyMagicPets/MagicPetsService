@@ -41,7 +41,15 @@ namespace AdminModule
         [HttpPost, Route("AdminModule/tenantUser")]
         public virtual async Task<ActionResult<TenantUser>> AdminModuleAddTenantUserAsync([FromBody] TenantUser body = null)
         {
-            var callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await TenantUserRepo.CreateAsync(callerInfo, body);
         }
         /// <summary>
@@ -51,7 +59,15 @@ namespace AdminModule
         [HttpPut, Route("AdminModule/tenantUser")]
         public virtual async Task<ActionResult<TenantUser>> AdminModuleUpdateTenantUserAsync([FromBody] TenantUser body = null)
         {
-            var callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await TenantUserRepo.UpdateAsync(callerInfo, body);
         }
         /// <summary>
@@ -61,7 +77,15 @@ namespace AdminModule
         [HttpGet, Route("AdminModule/tenantUser/listTenantUsers")]
         public virtual async Task<ActionResult<System.Collections.Generic.ICollection<TenantUser>>> AdminModuleListTenantUsersAsync()
         {
-            var callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await TenantUserRepo.ListAsync(callerInfo);
         }
         /// <summary>
@@ -120,7 +144,15 @@ namespace AdminModule
         [HttpGet, Route("AdminModule/tenantUser/{tenantUserId}")]
         public virtual async Task<ActionResult<TenantUser>> AdminModuleGetTenantUserByIdAsync(string tenantUserId)
         {
-            var callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await TenantUserRepo.ReadAsync(callerInfo, tenantUserId);
         }
         /// <summary>
@@ -131,7 +163,15 @@ namespace AdminModule
         [HttpDelete, Route("AdminModule/tenantUser/delete/{tenantUserId}")]
         public virtual async Task<IActionResult> AdminModuleDeleteTenantUserAsync(string tenantUserId)
         {
-            var callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await AdminModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await TenantUserRepo.DeleteAsync(callerInfo, tenantUserId);
         }
         /// <summary>

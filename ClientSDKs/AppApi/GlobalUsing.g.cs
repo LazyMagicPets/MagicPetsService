@@ -5,9 +5,3 @@
 // to add additional global usings.
 global using LazyMagic.Shared;
 
-global using ChatSchema;
-global using SharedSchema;
-global using PublicSchema;
-global using ConsumerSchema;
-global using StoreSchema;
-global using AdminSchema;

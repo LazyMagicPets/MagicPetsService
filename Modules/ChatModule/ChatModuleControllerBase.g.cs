@@ -35,7 +35,15 @@ namespace ChatModule
         [HttpPost, Route("ChatModule/chat")]
         public virtual async Task<ActionResult<Chat>> ChatModuleAddChatAsync([FromBody] Chat body)
         {
-            var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await ChatManagerService.CreateChatAsync(callerInfo, body);
         }
         /// <summary>
@@ -48,7 +56,15 @@ namespace ChatModule
         [HttpGet, Route("ChatModule/chat")]
         public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Chat>>> ChatModuleListChatsAsync()
         {
-            var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await ChatManagerService.ListChatsAsync(callerInfo);
         }
         /// <summary>
@@ -61,7 +77,15 @@ namespace ChatModule
         [HttpPut, Route("ChatModule/chat")]
         public virtual async Task<ActionResult<Chat>> ChatModuleUpdateChatAsync([FromBody] Chat body)
         {
-            var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await ChatManagerService.UpdateChatAsync(callerInfo, body);
         }
         /// <summary>
@@ -74,7 +98,15 @@ namespace ChatModule
         [HttpGet, Route("ChatModule/health")]
         public virtual async Task<ActionResult<HealthCheckResponse>> ChatModuleHealthCheckAsync()
         {
-            var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await HealthService.CheckAsync(callerInfo);
         }
         /// <summary>
@@ -88,7 +120,15 @@ namespace ChatModule
         [HttpGet, Route("ChatModule/chat/{chatId}")]
         public virtual async Task<ActionResult<Chat>> ChatModuleGetChatByIdAsync(string chatId)
         {
-            var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await ChatManagerService.GetChatAsync(callerInfo, chatId);
         }
         /// <summary>
@@ -102,7 +142,15 @@ namespace ChatModule
         [HttpDelete, Route("ChatModule/chat/{chatId}")]
         public virtual async Task<IActionResult> ChatModuleDeleteChatAsync(string chatId)
         {
-            var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await ChatManagerService.DeleteChatAsync(callerInfo, chatId);
         }
         /// <summary>
@@ -116,7 +164,15 @@ namespace ChatModule
         [HttpPost, Route("ChatModule/chat/{chatId}/messages")]
         public virtual async Task<ActionResult<ChatMessage>> ChatModuleAddChatMessageAsync(string chatId, [FromBody] ChatMessage body)
         {
-            var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await ChatManagerService.SendMessageAsync(callerInfo, chatId, body);
         }
         /// <summary>
@@ -132,7 +188,15 @@ namespace ChatModule
         [HttpGet, Route("ChatModule/chat/{chatId}/messages")]
         public virtual async Task<ActionResult<System.Collections.Generic.ICollection<ChatMessage>>> ChatModuleGetChatMessagesAsync(string chatId, [FromQuery] int? page = null, [FromQuery] int? limit = null)
         {
-            var callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await ChatModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await ChatManagerService.GetMessagesAsync(callerInfo, chatId, page, limit);
         }
 		public IChatModuleAuthorization ChatModuleAuthorization { get; set; }

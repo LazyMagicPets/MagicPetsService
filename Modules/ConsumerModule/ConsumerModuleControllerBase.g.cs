@@ -32,7 +32,15 @@ namespace ConsumerModule
         [HttpGet, Route("ConsumerModule/preferences")]
         public virtual async Task<ActionResult<Preferences>> ConsumerModuleGetPreferencesAsync()
         {
-            var callerInfo = await ConsumerModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await ConsumerModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await PreferencesRepo.ReadAsync(callerInfo, callerInfo.LzUserId);
         }
         /// <summary>
@@ -42,7 +50,15 @@ namespace ConsumerModule
         [HttpPost, Route("ConsumerModule/preferences")]
         public virtual async Task<ActionResult<Preferences>> ConsumerModuleUpdatePreferencesAsync([FromBody] Preferences body = null)
         {
-            var callerInfo = await ConsumerModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await ConsumerModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await PreferencesRepo.UpdateAsync(callerInfo, body);
         }
 		public IConsumerModuleAuthorization ConsumerModuleAuthorization { get; set; }

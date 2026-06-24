@@ -1,1 +1,13 @@
-<Project></Project>
+<Project>
+  <!--
+    Non-generated extensibility seam for AppHost (imported by AppHost.csproj).
+    The BFF (Backend-For-Frontend) auth library ships as a referenced package but is
+    INERT unless the runtime env var LZ_BFF_ENABLED=true is set AND the assembly is
+    listed in ASPNETCORE_HOSTINGSTARTUPASSEMBLIES (both injected by lz). Adding the
+    reference alone changes no behavior. See Platform/MultiTenantAuth.md sec 8 and
+    Platform/AuthSystem.md.
+  -->
+  <ItemGroup>
+    <PackageReference Include="LazyMagic.OIDC.Bff" />
+  </ItemGroup>
+</Project>

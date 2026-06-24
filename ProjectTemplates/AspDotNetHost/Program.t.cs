@@ -2,7 +2,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using LambdaFunc;
 using System.Text.RegularExpressions;
 
 var builder = WebApplication.CreateBuilder(args);

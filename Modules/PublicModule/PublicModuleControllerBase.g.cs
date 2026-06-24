@@ -29,7 +29,15 @@ namespace PublicModule
         [HttpPost, Route("PublicModule/fingerprint/create")]
         public virtual async Task<ActionResult<Fingerprint>> PublicModuleFingerprintCreateAsync([FromBody] Fingerprint body = null)
         {
-            var callerInfo = await PublicModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await PublicModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await FingerprintRepo.CreateAsync(callerInfo, body);
         }
         /// <summary>
@@ -39,7 +47,15 @@ namespace PublicModule
         [HttpGet, Route("PublicModule/pet/listPets")]
         public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> PublicModuleListPetsAsync()
         {
-            var callerInfo = await PublicModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await PublicModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await PetRepo.ListAsync(callerInfo);
         }
         /// <summary>
@@ -75,7 +91,15 @@ namespace PublicModule
         [HttpGet, Route("PublicModule/pet/categories")]
         public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Category>>> PublicModuleGetPetCategoriesAsync()
         {
-            var callerInfo = await PublicModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await PublicModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await CategoryRepo.ListAsync(callerInfo);
         }
         /// <summary>
@@ -85,7 +109,15 @@ namespace PublicModule
         [HttpGet, Route("PublicModule/pet/tags")]
         public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Tag>>> PublicModuleGetPetTagsAsync()
         {
-            var callerInfo = await PublicModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await PublicModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await TagRepo.ListAsync(callerInfo);
         }
         /// <summary>
@@ -99,7 +131,15 @@ namespace PublicModule
         [HttpGet, Route("PublicModule/pet/{petId}")]
         public virtual async Task<ActionResult<Pet>> PublicModuleGetPetByIdAsync(string petId)
         {
-            var callerInfo = await PublicModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await PublicModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await PetRepo.ReadAsync(callerInfo, petId);
         }
 		public IPublicModuleAuthorization PublicModuleAuthorization { get; set; }

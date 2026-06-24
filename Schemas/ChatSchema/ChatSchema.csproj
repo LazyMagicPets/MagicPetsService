@@ -1,11 +1,11 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 	<!-- This file is copied from the ProjectTemplate Schema.csproj file. 
 	     Do not modify in the target project or your changes will be overwritten. 
 		 To add project-specific settings, update the User.props file in the
 		 target project.
 	-->
 	<PropertyGroup>
-		<TargetFramework>net8.0</TargetFramework>
+		<TargetFramework>net10.0</TargetFramework>
 		<ManagePackageVersionsCentrally>true</ManagePackageVersionsCentrally>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>

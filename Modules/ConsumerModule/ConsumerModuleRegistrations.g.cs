@@ -18,6 +18,6 @@ namespace ConsumerModule
             CustomConfigurations(services);
             return services;            
         }
-        static partial void CustomConfigurations(IServiceCollection sdervices);
+        static partial void CustomConfigurations(IServiceCollection services);
     }
 }

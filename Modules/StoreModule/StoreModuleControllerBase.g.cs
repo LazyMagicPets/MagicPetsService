@@ -32,7 +32,15 @@ namespace StoreModule
         [HttpGet, Route("StoreModule/pet/listPets")]
         public virtual async Task<ActionResult<System.Collections.Generic.ICollection<Pet>>> StoreModuleListPetsAsync()
         {
-            var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await PetRepo.ListAsync(callerInfo);
         }
         /// <summary>
@@ -42,7 +50,15 @@ namespace StoreModule
         [HttpPost, Route("StoreModule/pet")]
         public virtual async Task<ActionResult<Pet>> StoreModuleAddPetAsync([FromBody] Pet body = null)
         {
-            var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await PetRepo.CreateAsync(callerInfo, body);
         }
         /// <summary>
@@ -52,7 +68,15 @@ namespace StoreModule
         [HttpPut, Route("StoreModule/pet")]
         public virtual async Task<ActionResult<Pet>> StoreModuleUpdatePetAsync([FromBody] Pet body = null)
         {
-            var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await PetRepo.UpdateAsync(callerInfo, body);
         }
         /// <summary>
@@ -75,7 +99,15 @@ namespace StoreModule
         [HttpPost, Route("StoreModule/order")]
         public virtual async Task<ActionResult<Order>> StoreModulePlaceOrderAsync([FromBody] Order body)
         {
-            var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await OrderRepo.CreateAsync(callerInfo, body);
         }
         /// <summary>
@@ -86,7 +118,15 @@ namespace StoreModule
         [HttpDelete, Route("StoreModule/pet/{petId}")]
         public virtual async Task<IActionResult> StoreModuleDeletePetAsync(string petId)
         {
-            var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await PetRepo.DeleteAsync(callerInfo, petId);
         }
         /// <summary>
@@ -100,7 +140,15 @@ namespace StoreModule
         [HttpGet, Route("StoreModule/order/{orderId}")]
         public virtual async Task<ActionResult<Order>> StoreModuleGetOrderByIdAsync(string orderId)
         {
-            var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await OrderRepo.ReadAsync(callerInfo, orderId);
         }
         /// <summary>
@@ -111,7 +159,15 @@ namespace StoreModule
         [HttpDelete, Route("StoreModule/order/{orderId}")]
         public virtual async Task<IActionResult> StoreModuleDeleteOrderAsync(string orderId)
         {
-            var callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
+            ICallerInfo callerInfo;
+            try
+            {
+                callerInfo = await StoreModuleAuthorization.GetCallerInfoAsync(this.Request);
+            }
+            catch (AuthorizationException ex)
+            {
+                return StatusCode(ex.StatusCode, new { error = ex.ErrorCode, message = ex.Message });
+            }
             return await OrderRepo.DeleteAsync(callerInfo, orderId);
         }
 		public IStoreModuleAuthorization StoreModuleAuthorization { get; set; }
