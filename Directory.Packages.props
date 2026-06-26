@@ -63,7 +63,7 @@
     <PackageVersion Include="LazyMagic.Service.DynamoDBRepo" Version="3.0.6" />
     <PackageVersion Include="LazyMagic.Service.Authorization" Version="3.0.6" />
     <PackageVersion Include="LazyMagic.Service.Shared" Version="3.0.6" />
-    <PackageVersion Include="LazyMagic.Shared" Version="3.0.6" />
+    <PackageVersion Include="LazyMagic.Shared" Version="3.0.7" />
     <PackageVersion Include="LazyMagic.OIDC.Bff" Version="3.0.9" />
   </ItemGroup>
 </Project>
