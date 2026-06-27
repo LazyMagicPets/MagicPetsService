@@ -5,8 +5,6 @@ VisualStudioVersion = 17.6.33815.320
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MakeRelease", "MakeRelease\MakeRelease.csproj", "{F1F11D3F-EBC4-40C1-8651-456A72D58DA1}"
 EndProject
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "AWSTemplates", "AWSTemplates\AWSTemplates.csproj", "{B8EE3057-0BCC-4D51-8137-88991B57FBDE}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Schema", "ProjectTemplates\Schema\Schema.csproj", "{C28420D1-942A-4B14-8C0F-364176C81F74}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ProjectTemplates", "ProjectTemplates", "{CB7F969B-7AA8-45AD-9AE4-9AB646E9C230}"

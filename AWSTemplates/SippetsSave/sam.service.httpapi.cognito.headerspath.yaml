@@ -1,5 +1,0 @@
-
-      x-amazon-apigateway-request-parameters:
-        "overwrite:header.lz-cognito-region": "$context.region"
-        "overwrite:header.lz-cognito-userpool-id": 
-          Fn::Sub: ${__CognitoResource__UserPoolIdParameter}
