@@ -59,11 +59,11 @@
     <PackageVersion Include="YamlDotNet" Version="16.3.0" />
   </ItemGroup>
   <ItemGroup>
-    <PackageVersion Include="LazyMagic.Service.AwsLocalWebApiRoutingMiddleware" Version="3.0.10" />
-    <PackageVersion Include="LazyMagic.Service.DynamoDBRepo" Version="3.0.10" />
-    <PackageVersion Include="LazyMagic.Service.Authorization" Version="3.0.10" />
-    <PackageVersion Include="LazyMagic.Service.Shared" Version="3.0.10" />
-    <PackageVersion Include="LazyMagic.Shared" Version="3.0.10" />
-    <PackageVersion Include="LazyMagic.OIDC.Bff" Version="3.0.10" />
+    <PackageVersion Include="LazyMagic.Service.AwsLocalWebApiRoutingMiddleware" Version="3.0.17" />
+    <PackageVersion Include="LazyMagic.Service.DynamoDBRepo" Version="3.0.17" />
+    <PackageVersion Include="LazyMagic.Service.Authorization" Version="3.0.17" />
+    <PackageVersion Include="LazyMagic.Service.Shared" Version="3.0.17" />
+    <PackageVersion Include="LazyMagic.Shared" Version="3.0.17" />
+    <PackageVersion Include="LazyMagic.OIDC.Bff" Version="3.0.17" />
   </ItemGroup>
 </Project>

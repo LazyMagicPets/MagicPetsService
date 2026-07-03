@@ -8,15 +8,14 @@
 		<DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
 	</PropertyGroup>
 	<Import Project="User.props"  Condition="Exists('User.props')" />
+	<!-- Self-contained ASP.NET container host: inlined multi-scheme JWT (LZ_AUTH_*) auth,
+	     controllers, CORS, health. No Services\... project references (those were Monro
+	     contamination). Project-specific services go in a generated ConfigureSvcs.cs. -->
 	<ItemGroup>
-		<PackageReference Include="Amazon.AspNetCore.Identity.Cognito" />
-		<PackageReference Include="AWSSDK.AppSync" />
-		<PackageReference Include="AWSSDK.BedrockRuntime" />
 		<PackageReference Include="AWSSDK.Extensions.NETCore.Setup" />
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
 		<PackageReference Include="Microsoft.AspNetCore.Mvc.NewtonsoftJson" />
 		<PackageReference Include="Newtonsoft.Json" />
-		<PackageReference Include="System.Threading.Channels" />
 	</ItemGroup>
 	<Import Project="Projects.g.props"  Condition="Exists('Projects.g.props')"  />
 	<Import Project="Packages.g.props"  Condition="Exists('Packages.g.props')"  />

@@ -22,12 +22,8 @@
 
         protected override async Task<List<string>> GetUserPermissionsAsync(string lzUserId, string userName, string tenancy)
         {
-            if(userName == "Administrator")
-            {
-                return new List<string> { "Admin" };
-            }
+            return new List<string> { "Admin" };
             await Task.Delay(0);
-            return new List<string>();
         }
     }
 }

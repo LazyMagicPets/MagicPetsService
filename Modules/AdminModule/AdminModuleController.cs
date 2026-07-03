@@ -3,14 +3,14 @@
 [ApiController]
 public partial class AdminModuleController
 {
-    // We implement our own constructcor to inject the ISubtenantRepo
+    // We implement our own constructor to inject the ISubtenantRepo
     // as SubtenantRepo is not generated. You must update this constructor
-    // if a new generated repo is added/delted on the module. Just compare
+    // if a new generated repo is added/deleted on the module. Just compare
     // the generated code constructor with this constructor to see what
     // needs to be updated.
 
     // We extend the constructor to include those repos that are not found 
-    // as transitive dependencies of this moudle. Transitive dependencies are
+    // as transitive dependencies of this module. Transitive dependencies are
     // found by path references to schemas. We have methods in this module 
     // that use repos that are not found by path references.
 
@@ -70,11 +70,13 @@ public partial class AdminModuleController
             // Since we may be in a different tenancy, usually the main tenant, when this 
             // is called, we find the Subtenant record for the store.
             var subtenantResult = await SubtenantRepo.ReadAsync(callerInfo, store);
-            if (subtenantResult == null)
+            // Guard .Value, not just the result object: a not-found ReadAsync returns a non-null
+            // result with a null Value, so checking only `== null` would NRE on SetCalculatedFields.
+            if (subtenantResult?.Value == null)
             {
                 return NotFound();
             }
-            var subtenant = subtenantResult.Value!;
+            var subtenant = subtenantResult.Value;
             subtenant.SetCalculatedFields();
             callerInfo.DefaultDB = subtenant.DefaultDB;
             return await PetRepo.SeedAsync(callerInfo, numPets);

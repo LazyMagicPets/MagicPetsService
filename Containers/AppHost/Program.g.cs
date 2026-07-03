@@ -130,10 +130,6 @@ foreach (var (authName, config) in authenticators)
 // Store authenticator names for middleware
 builder.Services.AddSingleton(authenticators.Keys.ToList());
 
-// Add AWS services
-builder.Services.AddAWSService<Amazon.AppSync.IAmazonAppSync>();
-builder.Services.AddAWSService<Amazon.BedrockRuntime.IAmazonBedrockRuntime>();
-
 // Add CORS
 builder.Services.AddCors(options =>
 {

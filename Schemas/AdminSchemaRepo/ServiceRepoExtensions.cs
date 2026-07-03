@@ -8,6 +8,7 @@ public static partial class AdminSchemaRepoExtensions
     {
         services.TryAddAWSService<IAmazonCloudFrontKeyValueStore>();
         services.TryAddAWSService<IAmazonCloudFront>();
+        services.TryAddSingleton<IKvsArnResolver, KvsArnResolver>();
         services.TryAddSingleton<ISubtenantRepo, SubtenantRepo>();
     }
 }

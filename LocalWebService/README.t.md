@@ -16,18 +16,18 @@ For example:
 ```
 {
   "profiles": {
-    "lzm-dev-uptown": {
+    "myapp-dev-uptown": {
       "commandName": "Project",
       "launchBrowser": false,
       "applicationUrl": "https://localhost:5001;http://localhost:5000;",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development",
-        "AWSPROFILE": "lzm-dev",
-        "AWSREGION": "us-west-2",
+        "AWSPROFILE": "myapp-dev",
+        "AWSREGION": "us-east-1",
         "TenantKey": "uptown",
         "UserPoolName": "EmployeeUserPool",
-        "UserPoolClientId": "4nb1k008datg4e0uir6279cbqn",
-        "UserPoolId": "us-west-2_hbLYCDmAh",
+        "UserPoolClientId": "<your-user-pool-client-id>",
+        "UserPoolId": "<your-user-pool-id>",
         "IdentityPoolId": "",
         "UserPoolSecurityLevel": "1"
       }
@@ -38,7 +38,7 @@ For example:
 
 The environmentalVariable section is where you set the variables necessary to configure your LocalWebAPI to service local clients. All of these, except ASPNETCORE_ENVIRONMENT, are updated from the outputs of the sam.devenv.yaml stack. These outputs are stored in AWSTemplates/outputs.json.
 
-You create multiple profiles, one for each type of client you want to test. Fro example, use the lzm-dev-uptown profile to test the Employee client against the uptown tenancy. 
+You create multiple profiles, one for each type of client you want to test. For example, use the myapp-dev-uptown profile to test the Employee client against the uptown tenancy. 
 
 Notes:
 - TenantKey variable is used to select the correct DynamoDB table for the tenancy. 

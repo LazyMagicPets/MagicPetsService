@@ -16,15 +16,18 @@ public class SubtenantRepo : DYDBRepository<Subtenant>, ISubtenantRepo
     public SubtenantRepo(
         IAmazonDynamoDB client,
         IAmazonCloudFrontKeyValueStore cloudFrontKvs,
-        IAmazonCloudFront cloudFront
-        ) : base(client) 
+        IAmazonCloudFront cloudFront,
+        IKvsArnResolver kvsArnResolver
+        ) : base(client)
     {
         _cloudFront = cloudFront;
         _cloudFrontKeyValueStore = cloudFrontKvs;
+        _kvsArnResolver = kvsArnResolver;
     }
 
     private readonly IAmazonCloudFrontKeyValueStore _cloudFrontKeyValueStore;
     private readonly IAmazonCloudFront _cloudFront;
+    private readonly IKvsArnResolver _kvsArnResolver;
 
     protected override void ConstructorExtensions()
     {
@@ -52,23 +55,30 @@ public class SubtenantRepo : DYDBRepository<Subtenant>, ISubtenantRepo
         Console.WriteLine("SubtenantRepo.ListAsync");
 
 
-        if (callerInfo.Headers != null 
-            && callerInfo.Headers.TryGetValue("lz-tenantid", out var kvskey)
-            && callerInfo.Headers.TryGetValue("lz-aws-kvsarn", out var kvsarn)
-            )
+        // Resolve the tenant's KVS ARN by NAME ({sk}-{tk}-kvs == callerInfo.Tenant + "-kvs") via the
+        // control-plane resolver. Previously this block required an `lz-aws-kvsarn` header, but
+        // nothing injects one — so the sync never ran and Subtenant records were never created.
+        var kvsArn = string.IsNullOrEmpty(callerInfo.Tenant)
+            ? null
+            : await _kvsArnResolver.ResolveArnAsync($"{callerInfo.Tenant}-kvs");
+
+        // lz-tenantid (the request host) — look up case-INSENSITIVELY. callerInfo.Headers is a
+        // case-sensitive dictionary and the header arrives title-cased, so the old exact-lowercase
+        // lookup missed and the sync never ran. (AddConfigAsync works because ASP.NET's request.Headers
+        // is case-insensitive.) The KVS is per-tenant, so the domain scope is belt-and-suspenders; the
+        // real filter is "skip the non-tenancy entries" ({host}-auth + AuthConfigs aren't TenancyConfigs).
+        var tenantHost = callerInfo.Headers?
+            .FirstOrDefault(h => string.Equals(h.Key, "lz-tenantid", StringComparison.OrdinalIgnoreCase)).Value;
+
+        if (!string.IsNullOrEmpty(kvsArn))
         {
-            // kvskey is either "subdomain.domain.tld" or "domain.tld". In either case,
-            // we only want the domain.tld part as we are processing all subtenants for 
-            // the tenant. Remember that each tenant has a domain.tld and each 
-            // subtenat has a subdomain.domain.tld. Also remember that the subdomain 
-            // and subtentantKey need not be the same so you can't use sunbtenantKey 
-            // as a surogate for the subdomain.
-            var hostParts = kvskey.Split('.');
-            var tenantKvsKey = string.Join(".", hostParts[^2..]);
+            var tenantKvsKey = !string.IsNullOrEmpty(tenantHost) && tenantHost.Contains('.')
+                ? string.Join(".", tenantHost.Split('.')[^2..])
+                : null;
 
             var request = new ListKeysRequest
             {
-                KvsARN = kvsarn,
+                KvsARN = kvsArn,
                 MaxResults = 50,
                 NextToken = null
             };
@@ -80,7 +90,9 @@ public class SubtenantRepo : DYDBRepository<Subtenant>, ISubtenantRepo
                 foreach (var entry in response.Items)
                 {
                     var entryKey = entry.Key;
-                    if (!entryKey.EndsWith(tenantKvsKey)) continue;
+                    // Only the host-keyed entries are TenancyConfigPacked; {host}-auth + AuthConfigs are not.
+                    if (entryKey.EndsWith("-auth") || entryKey == "AuthConfigs") continue;
+                    if (tenantKvsKey != null && !entryKey.EndsWith(tenantKvsKey)) continue;
                     var value = entry.Value;
 
                     // Update the Subtenant record
