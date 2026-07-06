@@ -3,10 +3,10 @@
 	<!-- Common properties for package handling -->
 	<PropertyGroup>
 		<PackageRepoFolder>$(SolutionDir)\..\Packages</PackageRepoFolder>
-		<Copyright>Copyright (c) 2021,2024 Insight Sciences Corporation. All rights reserved.</Copyright>
+		<Copyright>Copyright (c) 2021 - 2026 Insight Sciences Corporation. All rights reserved.</Copyright>
 		<PackageProjectUrl>https://LazyMagic.org</PackageProjectUrl>
-		<RepositoryUrl>https://github.com/LazyMagicNet/Service</RepositoryUrl>
-		<RepositoryType>GitHub</RepositoryType>
+		<RepositoryUrl>https://github.com/LazyMagicPets/MagicPetsService</RepositoryUrl>
+		<RepositoryType>git</RepositoryType>
 		<Company>Insight Sciences Corporation</Company>
 		<Authors>Tim May, Thomas May</Authors>
 		<Version>$(ServiceVersion)</Version>
