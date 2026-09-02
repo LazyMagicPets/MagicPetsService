@@ -43,16 +43,47 @@ public partial class Startup
             .GetRequiredService<ILoggerFactory>()
             .CreateLogger<Startup>();
 
-        // AWS credentials/services: hook first; default systemconfig.yaml
-        // (Profile/Region) discovery when not handled.
+        // AWS credentials/services: hook first; default systemconfig discovery
+        // (Profile/Region) when not handled.
         var awsHandled = false;
         ConfigureAwsServices(services, ref awsHandled);
         if (!awsHandled)
         {
-            // Configure AWS credentials from the local systemconfig.yaml (Profile/Region).
+            // Configure AWS credentials from the systemconfig (Profile/Region).
+            //
+            // DISCOVERED, NOT HARDCODED. This used to read a fixed "../../systemconfig.yaml".
+            // That path was wrong twice over: the file is named
+            // systemconfig.{systemkey}.{env}.yaml (an unqualified systemconfig.yaml does not
+            // exist), and a fixed number of "../" hardcodes how deep the project sits below
+            // the config, which breaks the moment the workspace layout changes. The result was
+            // a FileNotFoundException rethrown out of ConfigureServices, so the host could not
+            // start at all.
+            //
+            // Walk UP from the working directory and take the first ancestor holding a
+            // systemconfig — the same rule Lz.Core's ConfigLoader.DiscoverConfigFile applies,
+            // so this host resolves the same config the lz CLI would.
             try
             {
-                using (var reader = new StreamReader("../../systemconfig.yaml"))
+                string systemConfigPath = null;
+                for (var probe = new DirectoryInfo(Directory.GetCurrentDirectory());
+                     probe != null && systemConfigPath == null;
+                     probe = probe.Parent)
+                {
+                    var matches = probe.GetFiles("systemconfig.*.yaml");
+                    if (matches.Length > 0)
+                        systemConfigPath = matches.OrderBy(f => f.Name, StringComparer.Ordinal).First().FullName;
+                }
+
+                if (systemConfigPath == null)
+                    throw new FileNotFoundException(
+                        "No systemconfig.*.yaml found in the working directory or any ancestor " +
+                        $"(searched upward from '{Directory.GetCurrentDirectory()}'). Run from " +
+                        "inside the workspace, or implement the ConfigureAwsServices partial to " +
+                        "supply AWS options directly.");
+
+                logger.LogInformation($"Using systemconfig: {systemConfigPath}");
+
+                using (var reader = new StreamReader(systemConfigPath))
                 {
                     var yaml = new YamlStream();
                     yaml.Load(reader);
@@ -68,7 +99,7 @@ public partial class Startup
                         logger.LogInformation($"Using AWS Profile: {profile}");
                     }
                     else
-                        throw new Exception("Profile not found in systemconfig.yaml");
+                        throw new Exception($"Profile not found in {systemConfigPath}");
 
                     if (mapping.Children.TryGetValue(new YamlScalarNode("Region"), out var regionNode))
                         region = ((YamlScalarNode)regionNode).Value;
@@ -162,7 +193,7 @@ public partial class Startup
             return;
 
         // UseAwsLocalWebApiRoutingMiddleware mimics the CloudFront {systemKey}---request function
-        // for local debugging: it reads the local systemconfig.yaml and the system's CloudFront
+        // for local debugging: it reads the discovered systemconfig and the system's CloudFront
         // KeyValueStore ({systemKey}---kvs) and adds the headers the LzAuthorization middleware needs.
         // See https://github.com/LazyMagicOrg/LazyMagic
         app.UseAwsLocalWebApiRoutingMiddleware();
@@ -192,7 +223,7 @@ public partial class Startup
     partial void ConfigureHostServices(IServiceCollection services);
 
     /// <summary>
-    /// Set handled = true to replace the default systemconfig.yaml AWS
+    /// Set handled = true to replace the default systemconfig-discovery AWS
     /// credential/service setup.
     /// </summary>
     partial void ConfigureAwsServices(IServiceCollection services, ref bool handled);
