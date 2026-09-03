@@ -65,8 +65,18 @@
 	</Target>
 	<Target Name="DeleteSpecificPackage">
 		<PropertyGroup>
-			<PackageCacheFolder Condition=" '$(OS)' == 'Windows_NT' ">$(UserProfile)\.nuget\packages\$(AssemblyName)\$(Version)</PackageCacheFolder>
-			<PackageCacheFolder Condition=" '$(OS)' != 'Windows_NT' ">$(Home)/.nuget/packages/$(AssemblyName)/$(Version)</PackageCacheFolder>
+			<!-- Evict from the global-packages folder the restore ACTUALLY used, not a hardcoded
+			     ~/.nuget/packages. $(NuGetPackageRoot) comes from the restore-generated nuget.g.props
+			     and follows a per-workspace globalPackagesFolder set in the workspace NuGet.Config;
+			     the old hardcoded path did not, so with a relocated cache this target evicted nothing
+			     and the fixed-version republish it exists for silently stopped working. Falls back to
+			     the NuGet default only when no restore has run. NuGet lowercases package ids on disk. -->
+			<_PackageRoot>$(NuGetPackageRoot)</_PackageRoot>
+			<_PackageRoot Condition=" '$(_PackageRoot)' == '' AND '$(OS)' == 'Windows_NT' ">$(UserProfile)\.nuget\packages\</_PackageRoot>
+			<_PackageRoot Condition=" '$(_PackageRoot)' == '' AND '$(OS)' != 'Windows_NT' ">$(Home)/.nuget/packages/</_PackageRoot>
+			<_PackageRoot>$([MSBuild]::EnsureTrailingSlash('$(_PackageRoot)'))</_PackageRoot>
+			<PackageCacheFolder Condition=" '$(OS)' == 'Windows_NT' ">$(_PackageRoot)$(AssemblyName.ToLowerInvariant())\$(Version)</PackageCacheFolder>
+			<PackageCacheFolder Condition=" '$(OS)' != 'Windows_NT' ">$(_PackageRoot)$(AssemblyName.ToLowerInvariant())/$(Version)</PackageCacheFolder>
 		</PropertyGroup>
 		<Message Importance="high" Text="Attempting to delete package $(AssemblyName) version $(Version) from cache folder $(PackageCacheFolder)" />
 		<!-- Windows-specific delete command -->
