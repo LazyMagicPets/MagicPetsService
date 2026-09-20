@@ -54,13 +54,79 @@
 	</ItemGroup>-->
 	<!-- Copy Package Target -->
 	<Target Name="CopyPackage" AfterTargets="Pack">
-		<Message Importance="high" Text="Copying $(AssemblyName).$(Version).nupkg to Packages folder" />
-		<MakeDir Directories="$(PackageRepoFolder)" />
-		<Copy SourceFiles=".\bin\$(Configuration)\$(AssemblyName).$(Version).nupkg"
-			  DestinationFiles="$(PackageRepoFolder)\$(AssemblyName).$(Version).nupkg" />
-		<Copy Condition="Exists('.\bin\$(Configuration)\$(AssemblyName).$(Version).snupkg')"
-			  SourceFiles=".\bin\$(Configuration)\$(AssemblyName).$(Version).snupkg"
-			  DestinationFiles="$(PackageRepoFolder)\$(AssemblyName).$(Version).snupkg" />
+		<PropertyGroup>
+			<!-- Pack names its output <PackageId>.<normalized PackageVersion>, which is NOT
+			     $(AssemblyName).$(Version): PackageId need not equal AssemblyName, build metadata
+			     (+g1a2b3c) is dropped from the file name though not from $(Version), a fourth part of
+			     .0 is dropped, and a two-part version is padded to three. Under the fixed 1.0.0 those
+			     never diverged, so the old naive Copy worked by luck; under a derived version they do,
+			     and the copy would fail with MSB3030 - leaving the previous version in the feed and
+			     never publishing the one just built.
+
+			     This reconstructs pack's name rather than reading it, so it models NuGet's
+			     normalization and can be incomplete - leading zeros (1.0.010 -> 1.0.10) are NOT
+			     modelled. That is why a miss is an Error, not a warning: nothing here gates on
+			     warnings, so a silent miss would leave every consumer restoring stale bytes.
+
+			     Not @(NuGetPackOutput), which looks authoritative but is a PREDICTION computed from
+			     $(PackageId)/$(PackageVersion) before pack runs; whether it is right depends on which
+			     hook the version tool uses. Reconstructing here does not depend on that, and unlike
+			     the item it is checked against the disk.
+
+			     $(PackageOutputPath) rather than a hardcoded bin\$(Configuration)\, so `dotnet pack -o`
+			     no longer breaks the copy. -->
+			<_PkgId>$(PackageId)</_PkgId>
+			<_PkgId Condition=" '$(_PkgId)' == '' ">$(AssemblyName)</_PkgId>
+			<_PkgVersion>$(PackageVersion)</_PkgVersion>
+			<_PkgVersion Condition=" '$(_PkgVersion)' == '' ">$(Version)</_PkgVersion>
+			<_PkgVersion>$([System.Text.RegularExpressions.Regex]::Replace('$(_PkgVersion)', '[+].*$', ''))</_PkgVersion>
+			<_PkgVersion>$([System.Text.RegularExpressions.Regex]::Replace('$(_PkgVersion)', '^([0-9]+[.][0-9]+)(?=$|[-])', '$1.0'))</_PkgVersion>
+			<_PkgVersion>$([System.Text.RegularExpressions.Regex]::Replace('$(_PkgVersion)', '^([0-9]+[.][0-9]+[.][0-9]+)[.]0(?=$|-)', '$1'))</_PkgVersion>
+			<_PkgDir>$(PackageOutputPath)</_PkgDir>
+			<_PkgDir Condition=" '$(_PkgDir)' == '' ">$(BaseOutputPath)$(Configuration)\</_PkgDir>
+			<_PkgDir>$([MSBuild]::EnsureTrailingSlash('$(_PkgDir)'))</_PkgDir>
+		</PropertyGroup>
+		<ItemGroup>
+			<_ProducedPackages Include="$(_PkgDir)$(_PkgId).$(_PkgVersion).nupkg" Condition="Exists('$(_PkgDir)$(_PkgId).$(_PkgVersion).nupkg')" />
+			<_ProducedPackages Include="$(_PkgDir)$(_PkgId).$(_PkgVersion).snupkg" Condition="Exists('$(_PkgDir)$(_PkgId).$(_PkgVersion).snupkg')" />
+		</ItemGroup>
+		<Error Condition="'@(_ProducedPackages)' == '' AND '$(IsPackable)' != 'false'" Text="Pack produced no $(_PkgId).$(_PkgVersion).nupkg in $(_PkgDir), so nothing was published to $(PackageRepoFolder). The name above is this target's reconstruction of pack's: PackageId, then PackageVersion with build metadata stripped, a two-part version padded to three, and a fourth part of .0 dropped. NuGet normalizes leading zeros too, which this does not model - if that is what differs, look at the file pack actually wrote in $(_PkgDir)." />
+		<Message Condition="'@(_ProducedPackages)' != ''" Importance="high" Text="Copying @(_ProducedPackages->'%(Filename)%(Extension)', ', ') to $(PackageRepoFolder)" />
+		<MakeDir Condition="'@(_ProducedPackages)' != ''" Directories="$(PackageRepoFolder)" />
+		<Copy Condition="'@(_ProducedPackages)' != ''" SourceFiles="@(_ProducedPackages)" DestinationFolder="$(PackageRepoFolder)" />
+	</Target>
+
+	<!-- Once the new package is in the feed, remove this id's SUPERSEDED packages from BOTH the feed
+	     and the build output directory, so each holds one version per id. Runs after CopyPackage on
+	     purpose: if the copy fails, the previous version stays in the feed rather than leaving the id
+	     with nothing. The files just produced are excluded in both places, so a same-version rebuild
+	     deletes nothing. The target does not run at all when pack produced nothing, so a feed can
+	     never be emptied for an id this build did not replace.
+
+	     Under a derived version every commit produces a new file name, and this is the only thing
+	     stopping either directory growing without bound. Under the old fixed 1.0.0 it was
+	     unnecessary, which is why this repo never had it.
+
+	     ANCHORED ON THE VERSION, deliberately. A bare "$(PackageId).*.nupkg" glob would also match
+	     every package whose id merely EXTENDS this one, so the glob only narrows the candidates and a
+	     regex then requires "<id>." followed by a digit-led version. The regexes use character
+	     classes and never a backslash: MSBuild on Linux/macOS rewrites literal backslashes in
+	     property values to slashes. -->
+	<Target Name="CleanExistingPackages" AfterTargets="CopyPackage" Condition="'@(_ProducedPackages)' != ''">
+		<PropertyGroup>
+			<_CleanId>$(PackageId)</_CleanId>
+			<_CleanId Condition=" '$(_CleanId)' == '' ">$(AssemblyName)</_CleanId>
+			<_OwnPackagePattern>(?i)^$([System.Text.RegularExpressions.Regex]::Escape('$(_CleanId)'))[.][0-9]+([.][0-9]+){1,3}(-[0-9a-z][0-9a-z.-]*)?([+][0-9a-z][0-9a-z.-]*)?[.]s?nupkg$</_OwnPackagePattern>
+		</PropertyGroup>
+		<ItemGroup>
+			<_FeedCandidates Include="$(PackageRepoFolder)\$(_CleanId).*.nupkg;$(PackageRepoFolder)\$(_CleanId).*.snupkg;$(_PkgDir)$(_CleanId).*.nupkg;$(_PkgDir)$(_CleanId).*.snupkg"
+			                 Exclude="@(_ProducedPackages);@(_ProducedPackages->'$(PackageRepoFolder)\%(Filename)%(Extension)')" />
+			<_OwnPackages Include="@(_FeedCandidates)" Condition="$([System.Text.RegularExpressions.Regex]::IsMatch('%(_FeedCandidates.Filename)%(_FeedCandidates.Extension)', '$(_OwnPackagePattern)'))" />
+		</ItemGroup>
+		<Message Condition="'@(_OwnPackages)' != ''" Importance="high" Text="Removing superseded $(_CleanId) packages: @(_OwnPackages->'%(Filename)%(Extension)', ', ')" />
+		<!-- A superseded file another process still has open is not worth failing the build over; it is
+		     swept on the next build. -->
+		<Delete Files="@(_OwnPackages)" TreatErrorsAsWarnings="true" Retries="2" RetryDelayMilliseconds="250" />
 	</Target>
 	<!-- Delete Package from local cache -->
 	<Target Name="DeletePackage" AfterTargets="Build">
@@ -96,5 +162,44 @@
 		</Exec>
 		<Message Condition="'$(ErrorCode)' != '0'" Importance="high" Text="Failed to delete package. Error code: $(ErrorCode)" />
 		<Message Condition="'$(ErrorCode)' == '0'" Importance="high" Text="Successfully deleted package from $(PackageCacheFolder)" />
+	</Target>
+
+	<!-- =====================================================================================
+	     Bracket the ranges this repo's packages declare on EACH OTHER.
+
+	     The sibling packages (AppApi, the *Schema and *ModuleClientInterface set) depend on one
+	     another through ProjectReference, not PackageReference, so central package management never
+	     sees those edges and nothing in Directory.Packages.props affects them. Left alone, pack
+	     writes them as minimums - "AdminSchema >= 1.0.2" - with no upper bound.
+
+	     Under the old fixed 1.0.0 that was inert, because there was only ever one version. Under a
+	     derived version it is not: a consumer resolving "AdminSchema >= 1.0.2" against a feed
+	     holding 1.0.9 silently takes 1.0.9, and a set of packages built together stops being
+	     consumed together. This is the same failure that put LazyMagic 3.0.17 and 3.0.29-alpha in
+	     one graph on 2026-09-20.
+
+	     THE RISK. @(_ProjectReferencesWithVersions) is SDK-INTERNAL - the underscore says so - so a
+	     future SDK could rename it, at which point this target silently stops applying and open
+	     ranges ship again with no error. Scutara covers that fail-open with a publish workflow that
+	     refuses any package whose sibling range is not exact. THIS REPO HAS NO SUCH CHECK, so here
+	     the mechanism is trusted rather than verified; add one if these packages are ever published
+	     beyond the local feed.
+
+	     SCOPE. ProjectReference-derived dependencies only. PackageReference dependencies reach the
+	     nuspec by another path and are untouched: LazyMagic.* keeps the brackets CPM gives it in
+	     Directory.Packages.props, and third-party dependencies stay minimums on purpose -
+	     exact-pinning Newtonsoft.Json would hand consumers diamond conflicts for nothing.
+
+	     CONSEQUENCE, deliberately chosen: a consumer must take the whole set at one version. Mixing
+	     one sibling with a different version of another becomes a hard conflict rather than a silent
+	     resolution. That is the point.
+	     ===================================================================================== -->
+	<Target Name="BracketSiblingProjectReferences" AfterTargets="_GetProjectReferenceVersions">
+		<ItemGroup>
+			<_ProjectReferencesWithVersions Update="@(_ProjectReferencesWithVersions)"
+					Condition="!$([System.String]::Copy('%(ProjectVersion)').StartsWith('['))">
+				<ProjectVersion>[%(ProjectVersion)]</ProjectVersion>
+			</_ProjectReferencesWithVersions>
+		</ItemGroup>
 	</Target>
 </Project>
