@@ -13,7 +13,12 @@ ENV AWS_LWA_READINESS_CHECK_PATH=/health
 WORKDIR /app
 EXPOSE 8080
 
-FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
+# Pinned to the exact patch the repo's global.json demands. A floating sdk:10.0 resolves to
+# whatever is newest, and global.json (rollForward: disable) lands in this build context
+# via COPY . . - so a floating tag would fail the in-image restore the moment the registry
+# moved ahead of the workstation. The runtime stage above stays floating on purpose: it
+# reads no global.json.
+FROM mcr.microsoft.com/dotnet/sdk:10.0.301 AS build
 WORKDIR /src
 
 ARG ContainerName=""
