@@ -128,40 +128,92 @@
 		     swept on the next build. -->
 		<Delete Files="@(_OwnPackages)" TreatErrorsAsWarnings="true" Retries="2" RetryDelayMilliseconds="250" />
 	</Target>
-	<!-- Delete Package from local cache -->
-	<Target Name="DeletePackage" AfterTargets="Build">
-		<MSBuild Projects="$(MSBuildProjectFile)" Targets="DeleteSpecificPackage" Properties="Configuration=$(Configuration)" />
-	</Target>
+	<!-- Evict this project's package from the NuGet global-packages folder after every build, so the
+	     next restore in a consumer re-extracts it from the feed instead of serving the cached copy. A
+	     same-version repack is the ORDINARY case, not a legacy one: a derived version is a function of
+	     git state, and the edit-and-rebuild loop does not advance the commit, so it recomputes the same
+	     version and rewrites the same package with different bytes. Without eviction a consumer keeps
+	     building against the stale bytes.
+
+	     DeleteSpecificPackage now runs in THIS project instance (DependsOnTargets) rather than through
+	     a child <MSBuild> call. That call was MEASURED on 2026-09-20 to resolve the derived version
+	     correctly - it named 1.0.3 for all twelve packages, never the SDK default - because MSBuild
+	     reused the parent's already-executed project instance rather than genuinely re-evaluating. That
+	     is a property of the build graph, though, not a guarantee: the child call asks for a
+	     re-evaluation, and an evaluation runs none of the targets a version tool sets the version in.
+	     DependsOnTargets does not depend on the reuse happening.
+
+	     SKIPPED IN THE CROSS-TARGETING OUTER BUILD. A project with <TargetFrameworks> (plural) builds
+	     in two passes, and the outer pass runs none of the version tool's targets, so there $(Version)
+	     is whatever static evaluation left - now the SDK default, since ServiceVersioning.props
+	     replaced the literal. All twelve packing projects here are single-TFM net10.0 today, so this
+	     guard is insurance against one becoming cross-targeting later. IsCrossTargetingBuild is set,
+	     with this exact condition, by both Microsoft.NET.Sdk's Sdk.targets and MSBuild's
+	     Microsoft.Managed.Before.targets; a target Condition is evaluated when the target RUNS, so it
+	     sees that value even though this file is imported before the SDK's targets. -->
+	<Target Name="DeletePackage" AfterTargets="Build" DependsOnTargets="DeleteSpecificPackage"
+	        Condition="'$(IsCrossTargetingBuild)' != 'true'" />
 	<Target Name="DeleteSpecificPackage">
 		<PropertyGroup>
 			<!-- Evict from the global-packages folder the restore ACTUALLY used, not a hardcoded
 			     ~/.nuget/packages. $(NuGetPackageRoot) comes from the restore-generated nuget.g.props
-			     and follows a per-workspace globalPackagesFolder set in the workspace NuGet.Config;
+			     and follows the per-workspace globalPackagesFolder set in the workspace Nuget.Config;
 			     the old hardcoded path did not, so with a relocated cache this target evicted nothing
-			     and the fixed-version republish it exists for silently stopped working. Falls back to
-			     the NuGet default only when no restore has run. NuGet lowercases package ids on disk. -->
+			     and the republish it exists for silently stopped working. NuGet writes a RELOCATED root
+			     WITHOUT a trailing separator (the default has one), so it is ensured, or the path
+			     collapses to "...\.nuget-packagesappapi\1.0.3" (seen 2026-09-02). Falls back to the
+			     NuGet default only when no restore has run. -->
 			<_PackageRoot>$(NuGetPackageRoot)</_PackageRoot>
 			<_PackageRoot Condition=" '$(_PackageRoot)' == '' AND '$(OS)' == 'Windows_NT' ">$(UserProfile)\.nuget\packages\</_PackageRoot>
 			<_PackageRoot Condition=" '$(_PackageRoot)' == '' AND '$(OS)' != 'Windows_NT' ">$(Home)/.nuget/packages/</_PackageRoot>
 			<_PackageRoot>$([MSBuild]::EnsureTrailingSlash('$(_PackageRoot)'))</_PackageRoot>
-			<PackageCacheFolder Condition=" '$(OS)' == 'Windows_NT' ">$(_PackageRoot)$(AssemblyName.ToLowerInvariant())\$(Version)</PackageCacheFolder>
-			<PackageCacheFolder Condition=" '$(OS)' != 'Windows_NT' ">$(_PackageRoot)$(AssemblyName.ToLowerInvariant())/$(Version)</PackageCacheFolder>
+			<!-- The id and version the package was ACTUALLY built with, read here after the version
+			     tool has run: PackageVersion is what pack stamps, Version is its default. The old
+			     target used $(AssemblyName) and a raw $(Version), both wrong in general - PackageId
+			     need not equal AssemblyName, and NuGet names the cache folder by the lower-cased id and
+			     the NORMALIZED, lower-cased version, with build metadata (+g1a2b3c) dropped and a
+			     fourth part of 0 dropped. Under NBGV the -g<hash> suffix on a non-public branch makes
+			     that difference real rather than theoretical. -->
+			<_EvictId>$(PackageId)</_EvictId>
+			<_EvictId Condition=" '$(_EvictId)' == '' ">$(AssemblyName)</_EvictId>
+			<_EvictVersion>$(PackageVersion)</_EvictVersion>
+			<_EvictVersion Condition=" '$(_EvictVersion)' == '' ">$(Version)</_EvictVersion>
+			<_EvictVersion>$([System.Text.RegularExpressions.Regex]::Replace('$(_EvictVersion)', '[+].*$', ''))</_EvictVersion>
+			<_EvictVersion>$([System.Text.RegularExpressions.Regex]::Replace('$(_EvictVersion)', '^([0-9]+[.][0-9]+)(?=$|[-])', '$1.0'))</_EvictVersion>
+			<_EvictVersion>$([System.Text.RegularExpressions.Regex]::Replace('$(_EvictVersion)', '^([0-9]+[.][0-9]+[.][0-9]+)[.]0(?=$|-)', '$1'))</_EvictVersion>
+			<_EvictVersion>$(_EvictVersion.ToLowerInvariant())</_EvictVersion>
+			<PackageCacheFolder Condition=" '$(OS)' == 'Windows_NT' ">$(_PackageRoot)$(_EvictId.ToLowerInvariant())\$(_EvictVersion)</PackageCacheFolder>
+			<PackageCacheFolder Condition=" '$(OS)' != 'Windows_NT' ">$(_PackageRoot)$(_EvictId.ToLowerInvariant())/$(_EvictVersion)</PackageCacheFolder>
 		</PropertyGroup>
-		<Message Importance="high" Text="Attempting to delete package $(AssemblyName) version $(Version) from cache folder $(PackageCacheFolder)" />
-		<!-- Windows-specific delete command -->
-		<Exec Condition=" '$(OS)' == 'Windows_NT' AND Exists('$(PackageCacheFolder)')"
+		<!-- Three honest outcomes, decided by STATE rather than by exit code. On Windows `rmdir /s /q`
+		     exits 0 when a file inside is in use and it deleted only what it could, so an exit-code
+		     test reports that as success. Exists() in a task condition is evaluated when the task runs,
+		     after the Exec, and sees the post-deletion state.
+
+		     THIS RETIRES THE "Failed to delete package. Error code: " LINE, which fired twelve times
+		     per build here on the NOTHING-TO-EVICT path: the Exec is guarded by Exists(), so when there
+		     was nothing to remove it never ran, $(ErrorCode) stayed empty, and '' != '0' is true - it
+		     reported failure on the success path. The /build skill documents that noise as safe to
+		     ignore; it is now gone rather than documented. -->
+		<!-- A destructive delete NEVER runs on a version we could not determine. With $(_EvictVersion)
+		     empty the path collapses to the id root and rmdir would take EVERY cached version of the
+		     package. Nothing upstream should ever produce an empty version - the SDK defaults it, and
+		     the two fallbacks above cover an unset PackageId - so this is a bug detector, not a
+		     fallback path, and it warns rather than passing silently. -->
+		<Warning Condition=" '$(_EvictVersion)' == '' " Text="No version could be determined for $(_EvictId); skipping the package-cache eviction rather than deleting every cached version of it. The build is producing a package whose version this target cannot see - check version.json and any &lt;Version&gt; override." />
+		<Message Condition=" '$(_EvictVersion)' != '' AND !Exists('$(PackageCacheFolder)')" Importance="high" Text="No cached $(_EvictId) $(_EvictVersion) under $(_PackageRoot) - nothing to evict." />
+		<Exec Condition=" '$(OS)' == 'Windows_NT' AND '$(_EvictVersion)' != '' AND Exists('$(PackageCacheFolder)')"
 			  Command="cmd.exe /c &quot;if exist &quot;$(PackageCacheFolder)&quot; rmdir /s /q &quot;$(PackageCacheFolder)&quot;&quot;"
 			  ContinueOnError="true">
-			<Output TaskParameter="ExitCode" PropertyName="ErrorCode"/>
+			<Output TaskParameter="ExitCode" PropertyName="_EvictExitCode"/>
 		</Exec>
-		<!-- Unix/Linux/Mac-specific delete command -->
-		<Exec Condition=" '$(OS)' != 'Windows_NT' AND Exists('$(PackageCacheFolder)')"
+		<Exec Condition=" '$(OS)' != 'Windows_NT' AND '$(_EvictVersion)' != '' AND Exists('$(PackageCacheFolder)')"
 			  Command="rm -rf &quot;$(PackageCacheFolder)&quot;"
 			  ContinueOnError="true">
-			<Output TaskParameter="ExitCode" PropertyName="ErrorCode"/>
+			<Output TaskParameter="ExitCode" PropertyName="_EvictExitCode"/>
 		</Exec>
-		<Message Condition="'$(ErrorCode)' != '0'" Importance="high" Text="Failed to delete package. Error code: $(ErrorCode)" />
-		<Message Condition="'$(ErrorCode)' == '0'" Importance="high" Text="Successfully deleted package from $(PackageCacheFolder)" />
+		<Message Condition="'$(_EvictExitCode)' != '' AND !Exists('$(PackageCacheFolder)')" Importance="high" Text="Evicted $(PackageCacheFolder); the next restore re-extracts $(_EvictId) $(_EvictVersion) from the feed." />
+		<Warning Condition="'$(_EvictExitCode)' != '' AND Exists('$(PackageCacheFolder)')" Text="Could not evict $(PackageCacheFolder) (exit $(_EvictExitCode); a file inside is probably in use) - a consumer may restore a STALE $(_EvictId) $(_EvictVersion). Close whatever holds it and rebuild." />
 	</Target>
 
 	<!-- =====================================================================================
