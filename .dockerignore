@@ -1,5 +1,10 @@
 # Git
-.git/
+# .git/ is DELIBERATELY NOT excluded. Nerdbank.GitVersioning derives the package version from
+# commit history, and Containers/AppHost/Dockerfile does COPY . ., so without it every in-image
+# build trips the guard in ServiceVersioning.props. NBGV does not fail on a missing repository on
+# its own - it quietly produces a height-0 prerelease that sorts BELOW the real version. Costs
+# roughly 5 MB of build context, against a DockerPackages folder several times larger, and .git
+# reaches only the build stage: the final image copies /app/publish alone.
 .gitignore
 .gitattributes
 

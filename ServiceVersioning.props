@@ -1,0 +1,56 @@
+<Project>
+
+  <!--
+    Derived versioning for the packages this repo publishes. Replaces the <ServiceVersion>1.0.0</ServiceVersion>
+    literal that CommonPackageHandling.targets used to turn into <Version>; the version now comes from
+    version.json plus the number of commits since that file last changed.
+
+    WHY A SEPARATE FILE, imported from CommonPackageHandling.targets, rather than the two obvious places.
+    Directory.Build.props and ServiceVersion.props BOTH reach MakeRelease, which is the one project in
+    this repo with central package management OFF and which imports ServiceVersion.props directly
+    (MakeRelease/MakeRelease.csproj:2). A version-less PackageReference under CPM-off fails restore with
+    NU1015, and one carrying Version= under CPM-on fails NU1008 - so a single declaration cannot serve
+    both regimes. CommonPackageHandling.targets is imported by exactly the 12 projects that pack, and by
+    nothing else, MakeRelease included.
+
+    IT ALSO SURVIVES `lz gen`. Every generated .csproj is rewritten with overwrite:true, so a
+    PackageReference added to one is lost on the next generation. Lz.Gen writes only inside a project
+    folder plus the .sln; it never touches a solution-root file.
+
+    THE IMPORT OF THIS FILE IS UNCONDITIONAL, deliberately. The ServiceVersion.props import it replaced
+    carried Condition="!Exists('ClientSDK')", a copy of a project-template guard that is meaningless in a
+    consumer repo: it resolves against this directory, is true only because the folder here is plural,
+    and anything named ClientSDK created at the repo root would silently disable it. Because the SDK's
+    own default version is also 1.0.0, that regression would be invisible.
+
+    GitVersionBaseDirectory pins the height to the repo root so all 12 compute ONE version. Not
+    per-project pathFilters: pack asks each referenced project for its own PackageVersion, so a commit
+    touching one project would move another's nuspec dependency while leaving its own version alone, and
+    one version would then name two different packages.
+  -->
+  <PropertyGroup>
+    <GitVersionBaseDirectory>$(SolutionDir)</GitVersionBaseDirectory>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Nerdbank.GitVersioning" PrivateAssets="all" />
+  </ItemGroup>
+
+  <!--
+    A SHALLOW clone is loud - NBGV throws MSB4018. NO git repository at all is not: a tree with
+    version.json and no .git builds successfully, with no warning, at height 0 - a prerelease that sorts
+    BELOW the released version. Refuse it rather than ship it.
+
+    This is why .dockerignore no longer excludes .git/. Containers/AppHost/Dockerfile does COPY . ., so
+    without history in the build context every in-image build would hit this guard. Copying .git costs
+    about 5 MB of build context, against a DockerPackages folder that is already several times that, and
+    it buys a real version on the assemblies the image carries. The .git directory reaches only the build
+    stage; the final image copies /app/publish alone.
+  -->
+  <Target Name="RefuseAVersionWithNoGitHistory"
+          BeforeTargets="GetBuildVersion;Build"
+          Condition="!Exists('$(GitVersionBaseDirectory).git')">
+    <Error Text="No git repository at $(GitVersionBaseDirectory), so the version cannot be derived. Nerdbank.GitVersioning does not fail here - it would quietly produce a height-0 prerelease that sorts BELOW the released version, and every package this build produced would carry it. Build from a full clone." />
+  </Target>
+
+</Project>

@@ -1,5 +1,5 @@
 <Project>
-	<Import Project="$(SolutionDir)ServiceVersion.props" Condition="!Exists('ClientSDK')"/>
+	<Import Project="$(SolutionDir)ServiceVersioning.props" />
 	<!-- Common properties for package handling -->
 	<PropertyGroup>
 		<PackageRepoFolder>$(SolutionDir)\..\Packages</PackageRepoFolder>
@@ -9,7 +9,10 @@
 		<RepositoryType>git</RepositoryType>
 		<Company>Insight Sciences Corporation</Company>
 		<Authors>Tim May, Thomas May</Authors>
-		<Version>$(ServiceVersion)</Version>
+		<!-- No <Version> here. ServiceVersioning.props brings in Nerdbank.GitVersioning, which
+		     computes it from version.json plus commit height. A literal would be overridden at
+		     target time with no warning at any verbosity, while restore still reads the literal at
+		     evaluation time - a live trap, not a harmless default. -->
 		<SignAssembly>false</SignAssembly>
 		<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
 		<IncludeSymbols>true</IncludeSymbols>

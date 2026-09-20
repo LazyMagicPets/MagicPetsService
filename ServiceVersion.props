@@ -1,4 +1,9 @@
 <Project>
+  <!-- VESTIGIAL. The packages this repo publishes now derive their version (version.json +
+       ServiceVersioning.props); nothing that packs reads $(ServiceVersion) any more. This file
+       survives for exactly one importer: MakeRelease/MakeRelease.csproj:2, which has central
+       package management off and so cannot share the packing repo's declaration. Removing this
+       and MakeRelease together is a separate decision, not a versioning change. -->
   <PropertyGroup>
     <ServiceVersion>1.0.0</ServiceVersion>
   </PropertyGroup>
