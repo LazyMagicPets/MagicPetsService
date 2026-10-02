@@ -2,10 +2,10 @@
 {
     /// <summary>
     /// AdminModuleAuthorization
-    /// Here we implement a brain-dead authorization scheme that allows only the 
-    /// user named "Administrator" to do anything in this Api. 
-    /// A more realistic implementation would check the user's permissions in a
-    /// database or some other external source.
+    /// Every caller that reaches this module is Admin. That is safe only because the host lets
+    /// nothing but a validated tenantauth (employee) token reach it - see ModuleAuthEnforcement in
+    /// Containers/AppHost. Until a finer rule exists (e.g. a Cognito group), every store employee is
+    /// an admin.
     /// </summary>
     public partial class AdminModuleAuthorization
     {
