@@ -81,6 +81,11 @@
     <PkgVer_LazyMagic_Shared>3.0.17</PkgVer_LazyMagic_Shared>
   </PropertyGroup>
   <Import Project="$(MSBuildThisFileDirectory)../../Packages.Local.props" Condition="Exists('$(MSBuildThisFileDirectory)../../Packages.Local.props')" />
+  <!-- The same override inside a container image build, where the workspace root is outside the
+       build context: lz deploycontainer copies it into DockerPackages/ beside the packages it
+       resolved. Gated on DOTNET_RUNNING_IN_CONTAINER (set by the .NET SDK images) so a
+       DockerPackages/ left on the host by an earlier deploy can never shadow the live lane. -->
+  <Import Project="$(MSBuildThisFileDirectory)DockerPackages/Packages.Local.props" Condition="'$(DOTNET_RUNNING_IN_CONTAINER)' == 'true' And Exists('$(MSBuildThisFileDirectory)DockerPackages/Packages.Local.props')" />
   <ItemGroup>
     <!-- BRACKETED ON PURPOSE. `Version="x"` is a MINIMUM, not a pin: NuGet reads it as "[x, )"
          both when restoring and when PACKING, so without the brackets every package this repo
