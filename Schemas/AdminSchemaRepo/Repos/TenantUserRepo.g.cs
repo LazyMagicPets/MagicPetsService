@@ -10,4 +10,8 @@ public partial interface ITenantUserRepo : IDocumentRepo<TenantUser> {}
 public partial class TenantUserRepo : DYDBRepository<TenantUser>, ITenantUserRepo
 {
     public TenantUserRepo(IAmazonDynamoDB client) : base(client) {}
+
+    // From the TenantUser schema's x-lz-tablelevel and x-lz-tablekind; LazyMagic's defaults when absent.
+    protected override TableLevel TableLevel => TableLevel.Tenant;
+    protected override TableKind TableKind => TableKind.Lsi;
 }

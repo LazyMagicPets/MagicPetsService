@@ -10,4 +10,8 @@ public partial interface IBadaRepo : IDocumentRepo<Bada> {}
 public partial class BadaRepo : DYDBRepository<Bada>, IBadaRepo
 {
     public BadaRepo(IAmazonDynamoDB client) : base(client) {}
+
+    // From the Bada schema's x-lz-tablelevel and x-lz-tablekind; LazyMagic's defaults when absent.
+    protected override TableLevel TableLevel => TableLevel.Default;
+    protected override TableKind TableKind => TableKind.Lsi;
 }

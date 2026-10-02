@@ -10,4 +10,8 @@ public partial interface IPetRepo : IDocumentRepo<Pet> {}
 public partial class PetRepo : DYDBRepository<Pet>, IPetRepo
 {
     public PetRepo(IAmazonDynamoDB client) : base(client) {}
+
+    // From the Pet schema's x-lz-tablelevel and x-lz-tablekind; LazyMagic's defaults when absent.
+    protected override TableLevel TableLevel => TableLevel.Default;
+    protected override TableKind TableKind => TableKind.Lsi;
 }

@@ -10,4 +10,8 @@ public partial interface ICategoryRepo : IDocumentRepo<Category> {}
 public partial class CategoryRepo : DYDBRepository<Category>, ICategoryRepo
 {
     public CategoryRepo(IAmazonDynamoDB client) : base(client) {}
+
+    // From the Category schema's x-lz-tablelevel and x-lz-tablekind; LazyMagic's defaults when absent.
+    protected override TableLevel TableLevel => TableLevel.Default;
+    protected override TableKind TableKind => TableKind.Lsi;
 }

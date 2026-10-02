@@ -9,6 +9,7 @@ components:
     TenantUser:
       type: object
       x-lz-genrepo: true
+      x-lz-tablelevel: Tenant   # users are stored in the TenantDB
       properties:
         id:
           type: string

@@ -394,6 +394,7 @@ components:
           type: integer
           format: int64
       x-lz-genrepo: true
+      x-lz-tablelevel: Tenant
     TenantUserStatus:
       type: object
       properties:

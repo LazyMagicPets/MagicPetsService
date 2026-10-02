@@ -10,4 +10,8 @@ public partial interface IFingerprintRepo : IDocumentRepo<Fingerprint> {}
 public partial class FingerprintRepo : DYDBRepository<Fingerprint>, IFingerprintRepo
 {
     public FingerprintRepo(IAmazonDynamoDB client) : base(client) {}
+
+    // From the Fingerprint schema's x-lz-tablelevel and x-lz-tablekind; LazyMagic's defaults when absent.
+    protected override TableLevel TableLevel => TableLevel.Default;
+    protected override TableKind TableKind => TableKind.Lsi;
 }

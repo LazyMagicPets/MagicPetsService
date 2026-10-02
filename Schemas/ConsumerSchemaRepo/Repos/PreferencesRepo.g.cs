@@ -10,4 +10,8 @@ public partial interface IPreferencesRepo : IDocumentRepo<Preferences> {}
 public partial class PreferencesRepo : DYDBRepository<Preferences>, IPreferencesRepo
 {
     public PreferencesRepo(IAmazonDynamoDB client) : base(client) {}
+
+    // From the Preferences schema's x-lz-tablelevel and x-lz-tablekind; LazyMagic's defaults when absent.
+    protected override TableLevel TableLevel => TableLevel.Default;
+    protected override TableKind TableKind => TableKind.Lsi;
 }

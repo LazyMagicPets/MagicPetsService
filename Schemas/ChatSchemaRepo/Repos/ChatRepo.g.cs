@@ -10,4 +10,8 @@ public partial interface IChatRepo : IDocumentRepo<Chat> {}
 public partial class ChatRepo : DYDBRepository<Chat>, IChatRepo
 {
     public ChatRepo(IAmazonDynamoDB client) : base(client) {}
+
+    // From the Chat schema's x-lz-tablelevel and x-lz-tablekind; LazyMagic's defaults when absent.
+    protected override TableLevel TableLevel => TableLevel.Default;
+    protected override TableKind TableKind => TableKind.Lsi;
 }

@@ -8,10 +8,9 @@ namespace AdminSchemaRepo;
 
 public partial class TenantUserRepo
 {
+    // The TenantDB level comes from x-lz-tablelevel in openapi.admin-schema.yaml.
     protected override void ConstructorExtensions()
     {
-        // Users are stored in the TenantDB
-        tableLevel = TableLevel.Tenant; // Use the TenantDB passed in callerInfo
         debug = false; // Log all calls to the console
         base.ConstructorExtensions();
     }

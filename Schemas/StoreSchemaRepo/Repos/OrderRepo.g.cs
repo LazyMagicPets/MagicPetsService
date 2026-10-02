@@ -10,4 +10,8 @@ public partial interface IOrderRepo : IDocumentRepo<Order> {}
 public partial class OrderRepo : DYDBRepository<Order>, IOrderRepo
 {
     public OrderRepo(IAmazonDynamoDB client) : base(client) {}
+
+    // From the Order schema's x-lz-tablelevel and x-lz-tablekind; LazyMagic's defaults when absent.
+    protected override TableLevel TableLevel => TableLevel.Default;
+    protected override TableKind TableKind => TableKind.Lsi;
 }

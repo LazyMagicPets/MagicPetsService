@@ -29,10 +29,12 @@ public class SubtenantRepo : DYDBRepository<Subtenant>, ISubtenantRepo
     private readonly IAmazonCloudFront _cloudFront;
     private readonly IKvsArnResolver _kvsArnResolver;
 
+    // Subtenants are stored in the TenantDB passed in callerInfo. Set here rather than via
+    // x-lz-tablelevel because Subtenant gets no generated repo, and lz gen refuses the key there.
+    protected override TableLevel TableLevel => TableLevel.Tenant;
+
     protected override void ConstructorExtensions()
     {
-        // Users are stored in the TenantDB
-        tableLevel = TableLevel.Tenant; // Use the TenantDB passed in callerInfo
         debug = false; // Log all calls to the console
         base.ConstructorExtensions();
     }
